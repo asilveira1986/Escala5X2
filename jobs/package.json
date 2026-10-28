@@ -1,0 +1,25 @@
+{
+  "name": "@jc/jobs",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "tsx src/worker.ts",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@jc/connectors": "workspace:*",
+    "@supabase/supabase-js": "^2.50.0",
+    "pg": "^8.13.0",
+    "pg-boss": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}
