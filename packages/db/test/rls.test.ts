@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Client } from 'pg';
-import { comoUsuario, novoUsuario, prepararBanco } from './helpers';
+import { comoUsuario, migracoes, novoUsuario, prepararBanco } from './helpers';
 
 let db: Client;
 let ana: string, bruno: string, carla: string, contador: string, superadm: string;
@@ -170,14 +170,14 @@ describe('auditoria imutável', () => {
   });
 });
 
-describe('migration reversível', () => {
-  it('down remove tudo e up reaplica', async () => {
+describe('migrations reversíveis', () => {
+  it('down (em ordem inversa) remove tudo e up reaplica', async () => {
     const { readFileSync } = await import('node:fs');
     const { join } = await import('node:path');
     const dir = join(import.meta.dirname, '../migrations');
-    await db.query(readFileSync(join(dir, '0001_fundacao.down.sql'), 'utf8'));
+    for (const f of [...migracoes].reverse()) await db.query(readFileSync(join(dir, `${f}.down.sql`), 'utf8'));
     const t = await db.query(`select count(*)::int n from information_schema.tables where table_schema='public'`);
     expect(t.rows[0].n).toBe(0);
-    await db.query(readFileSync(join(dir, '0001_fundacao.up.sql'), 'utf8'));
+    for (const f of migracoes) await db.query(readFileSync(join(dir, `${f}.up.sql`), 'utf8'));
   });
 });
