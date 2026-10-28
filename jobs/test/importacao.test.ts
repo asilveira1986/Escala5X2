@@ -99,6 +99,19 @@ describe('processarImportacao', () => {
     expect(r.relatorio.mensagem).toBeTruthy();
   });
 
+  it('o worker recusa caminho fora da pasta da organização mesmo que o banco seja contornado', async () => {
+    // desliga o gatilho só para simular um banco comprometido; o worker precisa recusar mesmo assim
+    await db.query(`alter table importacao disable trigger importacao_validar`);
+    try {
+      const id = (await db.query<{ id: string }>(
+        `insert into importacao (organizacao_id, empresa_id, tipo, arquivo_path, mapeamento, criado_por) values ($1,$2,'colaboradores',$3,$4,$5) returning id`,
+        [org, emp, `${orgB}/roubado.csv`, JSON.stringify(MAP), rh])).rows[0]!.id;
+      await expect(processarImportacao(pool, id, armazem())).rejects.toThrow(/fora da pasta/);
+    } finally {
+      await db.query(`alter table importacao enable trigger importacao_validar`);
+    }
+  });
+
   it('o armazenamento local não sai do diretório', async () => {
     await expect(armazem().ler('../etc/passwd')).rejects.toThrow(/fora do diretório/);
   });

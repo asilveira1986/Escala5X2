@@ -284,6 +284,19 @@ create trigger herdar_org before insert or update on cenario for each row execut
 create trigger herdar_org before insert or update on importacao for each row
   when (new.empresa_id is not null) execute function herdar_organizacao('empresa');
 
+-- Importação: o arquivo precisa estar na pasta da própria organização (o worker lê com service_role, então
+-- um caminho forjado exporia arquivos de outro cliente) e o autor é sempre quem está autenticado (auditoria).
+create function importacao_validar() returns trigger language plpgsql as $$
+begin
+  if new.arquivo_path !~ ('^' || new.organizacao_id::text || '/[^/]+$') or new.arquivo_path like '%..%' then
+    raise exception 'arquivo_path deve estar na pasta da organização';
+  end if;
+  if auth.uid() is not null then new.criado_por := auth.uid(); end if;
+  return new;
+end $$;
+create trigger importacao_validar before insert or update of arquivo_path, empresa_id, criado_por on importacao
+  for each row execute function importacao_validar();
+
 -- Um acordo só pode ser vinculado a colaborador da mesma organização ou de empresa cliente que tenha
 -- concedido vínculo de nível "juridico" ao escritório dono do acordo.
 create function validar_colaborador_acordo() returns trigger language plpgsql security definer set search_path = public as $$

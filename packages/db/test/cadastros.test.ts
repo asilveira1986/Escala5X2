@@ -170,3 +170,29 @@ describe('acordos coletivos', () => {
     expect((await comoUsuario(db, colab, (c) => c.query('select 1 from acordo_coletivo'), 'aal1')).rowCount).toBe(0);
   });
 });
+
+describe('importação: caminho do arquivo e autoria', () => {
+  const ins = (uid: string, path: string, autor: string | null = null) => comoUsuario(db, uid, (c) => c.query(
+    `insert into importacao (empresa_id, tipo, arquivo_path, criado_por) values ($1,'colaboradores',$2,$3) returning id, criado_por`, [empA, path, autor]));
+  it('aceita arquivo na pasta da própria organização', async () => {
+    const r = await ins(admA, `${orgA}/arquivo.csv`);
+    expect(r.rows[0].criado_por).toBe(admA);
+  });
+  it('rejeita caminho de outra organização, fora de pasta e com ..', async () => {
+    await expect(ins(admA, `${orgB}/arquivo.csv`)).rejects.toThrow(/pasta da organização/);
+    await expect(ins(admA, 'arquivo.csv')).rejects.toThrow(/pasta da organização/);
+    await expect(ins(admA, `${orgA}/../${orgB}/x.csv`)).rejects.toThrow(/pasta da organização/);
+    await expect(ins(admA, `${orgA}/a/b.csv`)).rejects.toThrow(/pasta da organização/);
+  });
+  it('não permite trocar o caminho depois para outra organização', async () => {
+    const id = (await ins(admA, `${orgA}/ok.csv`)).rows[0].id;
+    await expect(comoUsuario(db, admA, (c) => c.query(`update importacao set arquivo_path = $2 where id = $1`, [id, `${orgB}/x.csv`]))).rejects.toThrow(/pasta da organização/);
+  });
+  it('criado_por não pode ser forjado: vale sempre o usuário autenticado', async () => {
+    const r = await ins(admA, `${orgA}/forjado.csv`, rhB);
+    expect(r.rows[0].criado_por).toBe(admA);
+  });
+  it('colaborador não cria importação', async () => {
+    await expect(ins(colab, `${orgA}/c.csv`)).rejects.toThrow(/row-level security/);
+  });
+});

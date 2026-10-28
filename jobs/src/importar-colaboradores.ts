@@ -40,6 +40,8 @@ export async function processarImportacao(pool: Pool, importacaoId: string, arma
     if (!imp) throw new Error(`Importação ${importacaoId} não encontrada`);
     if (imp.status !== 'processando') { await cx.query('rollback'); return null; }
     if (!imp.empresa_id || !imp.mapeamento) throw new Error('Importação sem empresa ou mapeamento');
+    // Defesa em profundidade (o banco também valida): nunca ler arquivo fora da pasta da organização.
+    if (!imp.arquivo_path.startsWith(`${imp.organizacao_id}/`) || imp.arquivo_path.includes('..')) throw new Error('Caminho do arquivo fora da pasta da organização');
     // As escritas ficam atribuídas ao usuário que pediu a importação (auditoria).
     await cx.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: imp.criado_por })]);
 
