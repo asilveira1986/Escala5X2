@@ -4,7 +4,7 @@ drop table if exists importacao, cenario, diagnostico_item, diagnostico, feriado
 alter table empresa drop constraint if exists empresa_sindicato_fk;
 alter table empresa drop column if exists sindicato_id;
 drop table if exists sindicato cascade;
-drop function if exists inserir_colaborador(uuid, text, text, date, uuid, text, text, text, text, text, uuid), revelar_dados_colaborador(uuid), decifrar_texto(bytea), cifrar_texto(text), hash_cpf(text),
+drop function if exists diagnostico_obter(uuid), salvar_cenario(uuid, text, jsonb, jsonb), salvar_diagnostico(uuid, date, jsonb, jsonb), diagnostico_entrada(uuid, date), acordo_vinculado_a_minha_empresa(uuid), inserir_colaborador(uuid, text, text, date, uuid, text, text, text, text, text, uuid), revelar_dados_colaborador(uuid), decifrar_texto(bytea), cifrar_texto(text), hash_cpf(text),
   normalizar_cpf(text), segredo(text), validar_colaborador_acordo(), herdar_organizacao(),
   empresa_do_colaborador(uuid), eh_proprio_colaborador(uuid), pode_gerir_acordo(uuid), pode_ver_acordo(uuid),
   empresa_do_usuario(uuid), minhas_organizacoes_gestao(), sou_superadmin() cascade;

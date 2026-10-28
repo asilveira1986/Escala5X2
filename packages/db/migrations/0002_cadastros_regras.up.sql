@@ -284,11 +284,16 @@ create trigger herdar_org before insert or update on cenario for each row execut
 create trigger herdar_org before insert or update on importacao for each row
   when (new.empresa_id is not null) execute function herdar_organizacao('empresa');
 
--- Colaborador e acordo vinculados precisam ser da mesma organização.
-create function validar_colaborador_acordo() returns trigger language plpgsql as $$
+-- Um acordo só pode ser vinculado a colaborador da mesma organização ou de empresa cliente que tenha
+-- concedido vínculo de nível "juridico" ao escritório dono do acordo.
+create function validar_colaborador_acordo() returns trigger language plpgsql security definer set search_path = public as $$
+declare v_org_acordo uuid;
 begin
-  if (select organizacao_id from acordo_coletivo where id = new.acordo_id) is distinct from new.organizacao_id then
-    raise exception 'acordo de outra organização';
+  select organizacao_id into v_org_acordo from acordo_coletivo where id = new.acordo_id;
+  if v_org_acordo is distinct from new.organizacao_id and not exists (
+       select 1 from colaborador c join vinculo_empresa v on v.empresa_id = c.empresa_id
+        where c.id = new.colaborador_id and v.organizacao_id = v_org_acordo and v.nivel = 'juridico') then
+    raise exception 'acordo de outra organização sem vínculo jurídico com a empresa';
   end if;
   return new;
 end $$;
@@ -350,6 +355,76 @@ begin
   return v_id;
 end $$;
 
+-- ===== Diagnóstico: leitura única dos dados e gravação do resultado =====
+-- security definer + checagem explícita: o diagnóstico precisa enxergar acordos vinculados mesmo quando o
+-- cadastro pertence ao escritório jurídico; ignorar uma exceção em silêncio classificaria o colaborador errado.
+create function diagnostico_entrada(p_empresa uuid, p_data date) returns jsonb
+language plpgsql stable security definer set search_path = public, auth as $$
+declare v jsonb;
+begin
+  if not pode_acessar_empresa(p_empresa) then raise exception 'sem permissão'; end if;
+  select jsonb_build_object(
+    'empresa', (select jsonb_build_object('id', e.id, 'porte', e.porte, 'terceirizada_publica', e.terceirizada_publica,
+                                           'uf', e.uf, 'municipio_ibge', e.municipio_ibge) from empresa e where e.id = p_empresa),
+    'regras', (select coalesce(jsonb_agg(jsonb_build_object('codigo', r.codigo, 'vigencia', r.vigencia::text, 'escopo', r.escopo,
+                 'parametros', r.parametros, 'prioridade', r.prioridade, 'ativa', r.ativa) order by r.codigo, lower(r.vigencia)), '[]')
+                 from regra_jornada r),
+    'sem_contrato', (select count(*) from colaborador c
+                      where c.empresa_id = p_empresa and (c.desligamento is null or c.desligamento >= p_data)
+                        and not exists (select 1 from contrato_versao cv where cv.colaborador_id = c.id and cv.vigencia @> p_data)),
+    'colaboradores', (select coalesce(jsonb_agg(jsonb_build_object(
+        'id', c.id, 'nome', c.nome, 'setor', s.nome, 'turno', cv.turno, 'escolaridade', c.escolaridade,
+        'salario_centavos', round(cv.salario_base * 100)::bigint, 'jornada_semanal_min', cv.jornada_semanal_min,
+        'divisor', cv.divisor, 'tipo_escala', cv.tipo_escala, 'folgas_semana', cv.folgas_semana,
+        'horas_extras_mensais_min', cv.horas_extras_mensais_min,
+        'acordos', (select coalesce(jsonb_agg(jsonb_build_object(
+            'id', a.id, 'vigencia', a.vigencia::text, 'status', a.status,
+            'clausulas', (select coalesce(jsonb_agg(jsonb_build_object('tipo', cl.tipo, 'parametros', cl.parametros)), '[]')
+                            from clausula_jornada cl where cl.acordo_id = a.id))), '[]')
+                      from colaborador_acordo ca join acordo_coletivo a on a.id = ca.acordo_id where ca.colaborador_id = c.id)
+      ) order by c.nome), '[]')
+      from colaborador c
+      join contrato_versao cv on cv.colaborador_id = c.id and cv.vigencia @> p_data
+      left join setor s on s.id = c.setor_id
+     where c.empresa_id = p_empresa and (c.desligamento is null or c.desligamento >= p_data))
+  ) into v;
+  return v;
+end $$;
+
+-- Security invoker: o RLS decide quem pode gravar. Garante que todos os itens pertencem à empresa.
+create function salvar_diagnostico(p_empresa uuid, p_data date, p_resumo jsonb, p_itens jsonb) returns uuid
+language plpgsql security invoker set search_path = public, auth as $$
+declare v_id uuid;
+begin
+  if exists (select 1 from jsonb_array_elements(p_itens) i
+              where not exists (select 1 from colaborador c where c.id = (i ->> 'colaboradorId')::uuid and c.empresa_id = p_empresa)) then
+    raise exception 'item de diagnóstico de colaborador fora da empresa';
+  end if;
+  insert into diagnostico (empresa_id, data_referencia, resumo, criado_por)
+  values (p_empresa, p_data, p_resumo, auth.uid()) returning id into v_id;
+  insert into diagnostico_item (diagnostico_id, colaborador_id, classificacao, dados)
+  select v_id, (i ->> 'colaboradorId')::uuid, i ->> 'classificacao', i from jsonb_array_elements(p_itens) i;
+  return v_id;
+end $$;
+revoke all on function diagnostico_entrada(uuid, date), salvar_diagnostico(uuid, date, jsonb, jsonb) from public, anon;
+grant execute on function diagnostico_entrada(uuid, date), salvar_diagnostico(uuid, date, jsonb, jsonb) to authenticated;
+
+-- Leitura de um diagnóstico salvo com seus itens e cenários (RLS do usuário).
+create function diagnostico_obter(p_id uuid) returns jsonb
+language sql stable security invoker set search_path = public as $$
+  select jsonb_build_object(
+    'id', d.id, 'empresa_id', d.empresa_id, 'data_referencia', d.data_referencia, 'criado_em', d.criado_em, 'resumo', d.resumo,
+    'itens', (select coalesce(jsonb_agg(i.dados order by i.id), '[]') from diagnostico_item i where i.diagnostico_id = d.id),
+    'cenarios', (select coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'nome', c.nome, 'parametros', c.parametros, 'resultado', c.resultado) order by c.nome), '[]')
+                   from cenario c where c.diagnostico_id = d.id))
+  from diagnostico d where d.id = p_id $$;
+
+create function salvar_cenario(p_diagnostico uuid, p_nome text, p_parametros jsonb, p_resultado jsonb) returns uuid
+language sql security invoker set search_path = public as $$
+  insert into cenario (diagnostico_id, nome, parametros, resultado) values (p_diagnostico, p_nome, p_parametros, p_resultado) returning id $$;
+revoke all on function diagnostico_obter(uuid), salvar_cenario(uuid, text, jsonb, jsonb) from public, anon;
+grant execute on function diagnostico_obter(uuid), salvar_cenario(uuid, text, jsonb, jsonb) to authenticated;
+
 -- ===== Alta renda ("hipersuficiente") sem placeholder =====
 -- Cruza escolaridade, salário vigente e o parâmetro da regra EC141_ALTA_RENDA mais recente.
 create view vw_colaborador_vigente with (security_invoker = true) as
@@ -374,11 +449,17 @@ select auditar_tabela('sindicato'), auditar_tabela('unidade'), auditar_tabela('s
        auditar_tabela('feriado'), auditar_tabela('diagnostico'), auditar_tabela('cenario'), auditar_tabela('importacao');
 
 -- ===== Funções de apoio a políticas =====
+-- Acordo/convenção aplicado a colaboradores de uma empresa que o usuário gere (ex.: convenção cadastrada pelo escritório jurídico).
+create function acordo_vinculado_a_minha_empresa(p_acordo uuid) returns boolean
+language sql stable security definer set search_path = public, auth as $$
+  select exists (select 1 from colaborador_acordo ca join colaborador c on c.id = ca.colaborador_id
+                  where ca.acordo_id = p_acordo and pode_acessar_empresa(c.empresa_id)) $$;
 create function pode_ver_acordo(p_acordo uuid) returns boolean
 language sql stable security definer set search_path = public, auth as $$
   select exists (select 1 from acordo_coletivo a where a.id = p_acordo
     and (a.organizacao_id in (select minhas_organizacoes_gestao())
-         or (a.empresa_id is not null and pode_acessar_empresa(a.empresa_id)))) $$;
+         or (a.empresa_id is not null and pode_acessar_empresa(a.empresa_id))
+         or acordo_vinculado_a_minha_empresa(a.id))) $$;
 create function pode_gerir_acordo(p_acordo uuid) returns boolean
 language sql stable security definer set search_path = public, auth as $$
   select exists (select 1 from acordo_coletivo a where a.id = p_acordo
@@ -451,7 +532,8 @@ create policy setor_delete on setor for delete to authenticated
 -- Inline: pode_ver_acordo(id) não enxerga a linha recém-inserida (INSERT ... RETURNING).
 create policy acordo_select on acordo_coletivo for select to authenticated
   using (organizacao_id in (select minhas_organizacoes_gestao())
-         or (empresa_id is not null and pode_acessar_empresa(empresa_id)));
+         or (empresa_id is not null and pode_acessar_empresa(empresa_id))
+         or acordo_vinculado_a_minha_empresa(id));
 create policy acordo_insert on acordo_coletivo for insert to authenticated
   with check (tenho_papel(organizacao_id, array['admin','advogado']::papel[]));
 create policy acordo_update on acordo_coletivo for update to authenticated
@@ -532,5 +614,5 @@ grant usage on all sequences in schema public to authenticated;
 revoke all on function segredo(text), hash_cpf(text), cifrar_texto(text), decifrar_texto(bytea) from public, anon, authenticated;
 grant execute on function normalizar_cpf(text), revelar_dados_colaborador(uuid),
   inserir_colaborador(uuid, text, text, date, uuid, text, text, text, text, text, uuid) to authenticated;
-grant execute on function sou_superadmin(), minhas_organizacoes_gestao(), empresa_do_usuario(uuid), pode_ver_acordo(uuid),
+grant execute on function acordo_vinculado_a_minha_empresa(uuid), sou_superadmin(), minhas_organizacoes_gestao(), empresa_do_usuario(uuid), pode_ver_acordo(uuid),
   pode_gerir_acordo(uuid), eh_proprio_colaborador(uuid), empresa_do_colaborador(uuid) to authenticated;
