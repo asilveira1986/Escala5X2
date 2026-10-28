@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Client } from 'pg';
+import { parseDaterange } from '../../rules-engine/src/datas';
+import { REGRAS_SEED } from '../../rules-engine/src/fixtures/regras';
 import { comoUsuario, novoUsuario, prepararBanco } from './helpers';
 
 let db: Client;
@@ -47,6 +49,13 @@ describe('seeds', () => {
     expect(r.rows.map((x) => x.codigo)).toEqual(['EC141_ACORDO_COMP', 'EC141_ACORDO_DIARIA', 'EC141_ALTA_RENDA', 'EC141_F1', 'EC141_F2', 'EC141_PEQUENA_EMPRESA', 'EC141_TERC_PUBLICO', 'LEGADO_44H']);
     const f = await db.query(`select count(*)::int n from feriado where data between '2026-01-01' and '2028-12-31'`);
     expect(f.rows[0].n).toBe(30);
+  });
+  it('seed SQL é idêntica ao fixture usado nos testes do motor (sem divergência)', async () => {
+    const { rows } = await db.query(`select codigo, vigencia::text v, escopo, parametros, prioridade, ativa from regra_jornada`);
+    const doBanco = rows.map((r) => ({ codigo: r.codigo, vigencia: parseDaterange(r.v), escopo: r.escopo, parametros: r.parametros, prioridade: r.prioridade, ativa: r.ativa }))
+      .sort((a, b) => a.codigo.localeCompare(b.codigo));
+    const fixture = [...REGRAS_SEED].sort((a, b) => a.codigo.localeCompare(b.codigo));
+    expect(doBanco).toEqual(fixture);
   });
   it('seed é idempotente', async () => {
     const { readFileSync } = await import('node:fs');
