@@ -438,16 +438,30 @@ language sql security invoker set search_path = public as $$
 revoke all on function diagnostico_obter(uuid), salvar_cenario(uuid, text, jsonb, jsonb) from public, anon;
 grant execute on function diagnostico_obter(uuid), salvar_cenario(uuid, text, jsonb, jsonb) to authenticated;
 
+-- Exportação de relatório é um evento auditável (quem exportou o quê e quando).
+create function registrar_exportacao(p_diagnostico uuid, p_formato text) returns void
+language plpgsql security definer set search_path = public, auth as $$
+declare d diagnostico%rowtype;
+begin
+  select * into d from diagnostico where id = p_diagnostico;
+  if not found or not pode_acessar_empresa(d.empresa_id) then raise exception 'sem permissão'; end if;
+  if p_formato not in ('pdf', 'xlsx') then raise exception 'formato inválido'; end if;
+  perform auditoria_evento(d.organizacao_id, 'diagnostico', p_diagnostico::text, 'exportar_' || p_formato);
+end $$;
+revoke all on function registrar_exportacao(uuid, text) from public, anon;
+grant execute on function registrar_exportacao(uuid, text) to authenticated;
+
 -- ===== Alta renda ("hipersuficiente") sem placeholder =====
 -- Cruza escolaridade, salário vigente e o parâmetro da regra EC141_ALTA_RENDA mais recente.
 create view vw_colaborador_vigente with (security_invoker = true) as
-select c.id as colaborador_id, c.organizacao_id, c.empresa_id, c.setor_id, c.nome, c.escolaridade,
+select c.id as colaborador_id, c.organizacao_id, c.empresa_id, c.setor_id, s.nome as setor_nome, c.nome, c.matricula, c.cargo, c.escolaridade,
        cv.id as contrato_id, cv.salario_base, cv.jornada_semanal_min, cv.divisor, cv.tipo_escala,
        cv.folgas_semana, cv.turno,
        (c.escolaridade in ('superior','pos')
         and r.piso is not null and cv.salario_base >= r.piso) as hipersuficiente
   from colaborador c
   join contrato_versao cv on cv.colaborador_id = c.id and cv.vigencia @> current_date
+  left join setor s on s.id = c.setor_id
   left join lateral (
     select (rj.parametros ->> 'salario_minimo')::numeric as piso
       from regra_jornada rj

@@ -25,6 +25,21 @@ export function enfileirarImportacao(boss: PgBoss, importacaoId: string) {
   });
 }
 
+/**
+ * Enfileiramento a partir do app web (serverless): conexão curta, sem supervisor, agendador nem migração
+ * (o schema e as filas são criados pelo worker em `iniciarFila`).
+ */
+export async function enfileirarImportacaoAvulsa(connectionString: string, importacaoId: string): Promise<string | null> {
+  const boss = new PgBoss({ connectionString, max: 1, supervise: false, schedule: false, migrate: false, application_name: 'jornadacerta-web' });
+  boss.on('error', (e) => console.error('[pg-boss/web]', e));
+  await boss.start();
+  try {
+    return await enfileirarImportacao(boss, importacaoId);
+  } finally {
+    await boss.stop({ graceful: false, wait: true });
+  }
+}
+
 export async function registrarWorkers(boss: PgBoss, pool: Pool, armazenamento: Armazenamento) {
   await boss.work<PayloadImportacao>(FILA_IMPORTAR_COLABORADORES, { batchSize: 1 }, async ([job]) => {
     if (!job) return;

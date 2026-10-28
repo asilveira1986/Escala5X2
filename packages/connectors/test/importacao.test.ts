@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { describe, expect, it } from 'vitest';
 import {
-  camposObrigatoriosSemColuna, errosParaCsv, lerPlanilha, ErroPlanilha, parseCpf, parseData, parseDinheiroCentavos,
+  camposObrigatoriosSemColuna, errosParaCsv, lerPlanilha, ErroPlanilha, parseCnpj, formatarCnpj, parseCpf, parseData, parseDinheiroCentavos,
   parseEscolaridade, parseJornadaMin, parseTelefone, parseTipoEscala, sugerirMapeamento, validarColaboradores,
 } from '../src';
 
@@ -34,6 +34,12 @@ describe('parsers', () => {
     'escolaridade %s', (v, esperado) => expect(parseEscolaridade(v)).toBe(esperado));
   it.each([['(11) 99999-0000', '11999990000'], ['+55 11 3333-4444', '1133334444'], ['123', null]])(
     'telefone %s', (v, esperado) => expect(parseTelefone(v)).toBe(esperado));
+});
+
+describe('cnpj', () => {
+  it.each([['11.222.333/0001-81', '11222333000181'], ['11222333000181', '11222333000181'], ['11.222.333/0001-82', null], ['00000000000000', null], ['123', null]])(
+    'cnpj %s', (v, esperado) => expect(parseCnpj(v)).toBe(esperado));
+  it('formata', () => expect(formatarCnpj('11222333000181')).toBe('11.222.333/0001-81'));
 });
 
 describe('leitura de planilhas', () => {

@@ -196,3 +196,40 @@ describe('importação: caminho do arquivo e autoria', () => {
     await expect(ins(colab, `${orgA}/c.csv`)).rejects.toThrow(/row-level security/);
   });
 });
+
+describe('storage (políticas por pasta da organização)', () => {
+  const put = (uid: string, nome: string, bucket = 'importacoes') => comoUsuario(db, uid, (c) => c.query(`insert into storage.objects (bucket_id, name) values ($1,$2)`, [bucket, nome]));
+  it('buckets são privados e têm limite de tamanho', async () => {
+    const r = await db.query(`select id, public, file_size_limit::int l from storage.buckets order by id`);
+    expect(r.rows).toEqual([{ id: 'importacoes', public: false, l: 10485760 }, { id: 'marca', public: false, l: 1048576 }]);
+  });
+  it('envia e lê apenas na pasta da própria organização', async () => {
+    await put(admA, `${orgA}/a.csv`);
+    await expect(put(admA, `${orgB}/b.csv`)).rejects.toThrow(/row-level security/);
+    await expect(put(admA, 'solto.csv')).rejects.toThrow(/row-level security/);
+    await db.query(`insert into storage.objects (bucket_id, name) values ('importacoes', $1)`, [`${orgB}/segredo.csv`]);
+    const vistos = await comoUsuario(db, admA, (c) => c.query(`select name from storage.objects where bucket_id='importacoes'`));
+    expect(vistos.rows.map((r) => r.name)).toEqual([`${orgA}/a.csv`]);
+  });
+  it('colaborador não envia planilhas; só admin troca a logo', async () => {
+    await expect(put(colab, `${orgA}/c.csv`)).rejects.toThrow(/row-level security/);
+    await put(admA, `${orgA}/logo.png`, 'marca');
+    await expect(put(rhB, `${orgA}/logo2.png`, 'marca')).rejects.toThrow(/row-level security/);
+  });
+});
+
+describe('exportação auditada', () => {
+  it('registra quem exportou; sem acesso à empresa, falha', async () => {
+    const d = (await db.query(`insert into diagnostico (empresa_id, data_referencia, resumo) values ($1,'2026-10-28','{}') returning id`, [empA])).rows[0].id;
+    await comoUsuario(db, admA, (c) => c.query(`select registrar_exportacao($1,'pdf')`, [d]));
+    const a = await db.query(`select usuario_id, acao from auditoria where registro_id=$1 and acao='exportar_pdf'`, [d]);
+    expect(a.rows).toEqual([{ usuario_id: admA, acao: 'exportar_pdf' }]);
+    await expect(comoUsuario(db, rhB, (c) => c.query(`select registrar_exportacao($1,'pdf')`, [d]))).rejects.toThrow(/sem permissão/);
+    await expect(comoUsuario(db, admA, (c) => c.query(`select registrar_exportacao($1,'doc')`, [d]))).rejects.toThrow(/formato inválido/);
+  });
+  it('a view de colaboradores expõe setor, cargo e matrícula, sem CPF', async () => {
+    const r = await comoUsuario(db, admA, (c) => c.query(`select * from vw_colaborador_vigente limit 1`));
+    expect(Object.keys(r.rows[0])).toEqual(expect.arrayContaining(['setor_nome', 'cargo', 'matricula']));
+    expect(Object.keys(r.rows[0]).join()).not.toMatch(/cpf/);
+  });
+});

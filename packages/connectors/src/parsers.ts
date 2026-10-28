@@ -89,3 +89,18 @@ export function parseHorasMin(v: string): number | null {
   m = /^(\d+(?:[.,]\d+)?)h?$/.exec(s);
   return m ? Math.round(Number(m[1]!.replace(',', '.')) * 60) : null;
 }
+
+/** CNPJ numérico de 14 dígitos com dígitos verificadores válidos; devolve só os dígitos. */
+export function parseCnpj(v: string): string | null {
+  const d = v.replace(/\D/g, '');
+  if (d.length !== 14 || /^(\d)\1{13}$/.test(d)) return null;
+  const dv = (n: number) => {
+    const pesos = n === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const soma = pesos.reduce((a, p, i) => a + p * Number(d[i]), 0);
+    const r = soma % 11;
+    return r < 2 ? 0 : 11 - r;
+  };
+  return dv(12) === Number(d[12]) && dv(13) === Number(d[13]) ? d : null;
+}
+
+export const formatarCnpj = (d: string): string => d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');

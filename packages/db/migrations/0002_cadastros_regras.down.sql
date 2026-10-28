@@ -1,5 +1,6 @@
 drop view if exists vw_colaborador_vigente;
 drop function if exists importacao_validar() cascade;
+drop function if exists registrar_exportacao(uuid, text);
 drop table if exists importacao, cenario, diagnostico_item, diagnostico, feriado, regra_jornada,
   colaborador_acordo, contrato_versao, colaborador, clausula_jornada, acordo_coletivo, setor, unidade cascade;
 alter table empresa drop constraint if exists empresa_sindicato_fk;

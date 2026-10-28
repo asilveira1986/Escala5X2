@@ -5,7 +5,7 @@ import { Pool } from 'pg';
 import type { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { comoUsuario, dbUrl, novoUsuario, prepararBanco } from '../../packages/db/test/helpers';
-import { armazenamentoLocal, enfileirarImportacao, iniciarFila, processarImportacao, registrarWorkers } from '../src';
+import { armazenamentoLocal, enfileirarImportacao, enfileirarImportacaoAvulsa, iniciarFila, processarImportacao, registrarWorkers } from '../src';
 
 let db: Client, pool: Pool, dir: string;
 let rh: string, outro: string, org: string, orgB: string, emp: string;
@@ -142,6 +142,24 @@ describe('fila pg-boss', () => {
       }
       expect(status).toBe('concluida');
       expect((await relatorioDe(id)).relatorio).toMatchObject({ criados: 1 });
+    } finally {
+      await boss.stop({ graceful: false, wait: true });
+    }
+  });
+
+  it('o enfileirador avulso do app web entrega o job ao worker', async () => {
+    const id = await novaImportacao('avulsa.csv', csv('Edu;390.533.447-05;01/01/2022;2.200,00;44;6x1;Médio;Loja'));
+    const boss = await iniciarFila(dbUrl);
+    try {
+      await registrarWorkers(boss, pool, armazem());
+      expect(await enfileirarImportacaoAvulsa(dbUrl, id)).toBeTruthy();
+      expect(await enfileirarImportacaoAvulsa(dbUrl, id)).toBeNull();
+      let status = 'processando';
+      for (let i = 0; i < 60 && status === 'processando'; i++) {
+        await new Promise((r) => setTimeout(r, 500));
+        status = (await relatorioDe(id)).status;
+      }
+      expect(status).toBe('concluida');
     } finally {
       await boss.stop({ graceful: false, wait: true });
     }

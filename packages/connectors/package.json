@@ -18,5 +18,10 @@
   "dependencies": {
     "exceljs": "^4.4.0",
     "papaparse": "^5.7.0"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./mapeamento": "./src/mapeamento.ts",
+    "./parsers": "./src/parsers.ts"
   }
 }
