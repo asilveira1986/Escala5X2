@@ -1,0 +1,40 @@
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
+import { decidirAcesso } from './lib/acesso';
+import { env } from './lib/env';
+
+export async function middleware(req: NextRequest) {
+  let res = NextResponse.next({ request: req });
+  const e = env();
+  const supabase = createServerClient(e.NEXT_PUBLIC_SUPABASE_URL, e.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+    cookies: {
+      getAll: () => req.cookies.getAll(),
+      setAll: (list: { name: string; value: string; options: CookieOptions }[]) => {
+        list.forEach(({ name, value }) => req.cookies.set(name, value));
+        res = NextResponse.next({ request: req });
+        list.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
+      },
+    },
+  });
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+  let papeis: string[] = [];
+  if (user) {
+    const { data } = await supabase.from('membro').select('papel').eq('usuario_id', user.id);
+    papeis = (data ?? []).map((m) => m.papel as string);
+  }
+
+  const destino = decidirAcesso({
+    caminho: req.nextUrl.pathname,
+    autenticado: !!user,
+    nivelAtual: aal?.currentLevel === 'aal2' ? 'aal2' : aal?.currentLevel === 'aal1' ? 'aal1' : null,
+    papeis,
+    mfaCadastrado: aal?.nextLevel === 'aal2',
+  });
+  if (destino) return NextResponse.redirect(new URL(destino, req.url));
+  return res;
+}
+
+export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'] };
