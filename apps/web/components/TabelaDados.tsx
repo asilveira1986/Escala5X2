@@ -19,19 +19,19 @@ export function TabelaDados<T>({ colunas, dados, rotuloBusca = 'Buscar', tamanho
   const total = tabela.getFilteredRowModel().rows.length;
   return (
     <div className="space-y-3">
-      <label className="block max-w-sm text-sm font-medium">
+      <label className="block max-w-sm text-sm font-semibold">
         {rotuloBusca}
         <input value={filtro} onChange={(e) => setFiltro(e.target.value)} className={classeCampo} type="search" />
       </label>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 text-xs uppercase text-slate-600 dark:border-slate-800 dark:text-slate-400">
+          <thead className="text-xs font-semibold uppercase tracking-wide text-suave">
             {tabela.getHeaderGroups().map((g) => (
               <tr key={g.id}>
                 {g.headers.map((h) => {
                   const s = h.column.getIsSorted();
                   return (
-                    <th key={h.id} className="py-2 pr-3" aria-sort={s === 'asc' ? 'ascending' : s === 'desc' ? 'descending' : 'none'}>
+                    <th key={h.id} className="py-2.5 pr-3" aria-sort={s === 'asc' ? 'ascending' : s === 'desc' ? 'descending' : 'none'}>
                       {h.column.getCanSort()
                         ? <button type="button" onClick={h.column.getToggleSortingHandler()} className="font-semibold uppercase hover:underline">{flexRender(h.column.columnDef.header, h.getContext())}{s === 'asc' ? ' ▲' : s === 'desc' ? ' ▼' : ''}</button>
                         : flexRender(h.column.columnDef.header, h.getContext())}
@@ -43,11 +43,11 @@ export function TabelaDados<T>({ colunas, dados, rotuloBusca = 'Buscar', tamanho
           </thead>
           <tbody>
             {tabela.getRowModel().rows.map((r) => (
-              <tr key={r.id} className="border-b border-slate-100 dark:border-slate-800">
+              <tr key={r.id} className="border-b border-linha">
                 {r.getVisibleCells().map((c) => <td key={c.id} className="py-2 pr-3 align-top">{flexRender(c.column.columnDef.cell, c.getContext())}</td>)}
               </tr>
             ))}
-            {total === 0 && <tr><td colSpan={colunas.length} className="py-6 text-center text-slate-600 dark:text-slate-400">{vazio}</td></tr>}
+            {total === 0 && <tr><td colSpan={colunas.length} className="py-6 text-center text-suave">{vazio}</td></tr>}
           </tbody>
         </table>
       </div>

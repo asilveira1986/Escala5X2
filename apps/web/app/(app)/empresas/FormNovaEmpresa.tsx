@@ -7,7 +7,7 @@ import { criarEmpresa, type EstadoCriarEmpresa } from './actions';
 
 export function FormNovaEmpresa({ organizacoes }: { organizacoes: Pick<OrganizacaoRow, 'id' | 'nome'>[] }) {
   const [estado, acao, pendente] = useActionState<EstadoCriarEmpresa, FormData>(criarEmpresa, {});
-  const erro = (c: string) => (estado.erros?.[c] ? <span role="alert" className="mt-1 block text-xs text-red-700 dark:text-red-300">{estado.erros[c]}</span> : null);
+  const erro = (c: string) => (estado.erros?.[c] ? <span role="alert" className="mt-1 block text-xs text-risco-fg">{estado.erros[c]}</span> : null);
   return (
     <form action={acao} className="grid gap-3 sm:grid-cols-2" noValidate>
       <Campo rotulo="Organização dona do dado">

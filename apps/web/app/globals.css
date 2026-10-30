@@ -1,5 +1,68 @@
 @import 'tailwindcss';
 
-:root { color-scheme: light dark; }
-body { @apply bg-slate-50 text-slate-900 antialiased; }
-@media (prefers-color-scheme: dark) { body { @apply bg-slate-950 text-slate-100; } }
+/*
+ * JornadaCerta — sistema visual.
+ * Ideia: calma e clareza. Fundo frio com tom de pinho, uma cor de marca (verde-pinho), um único destaque amarelo
+ * usado com parcimônia, cartões grandes e arredondados, números em destaque.
+ * Cores sempre por token; o tema escuro redefine só os valores.
+ */
+:root {
+  --c-fundo: #f1f5f4;
+  --c-cartao: #ffffff;
+  --c-tinta: #10201e;
+  --c-suave: #496360;
+  --c-linha: #d6e2df;
+  --c-marca: #0f6b63;
+  --c-marca-escuro: #0a4f49;
+  --c-marca-suave: #e0f1ee;
+  --c-sobre-marca: #ffffff;
+  --c-destaque: #f2c230;
+  --c-ok-bg: #dcf3e6;   --c-ok-fg: #14532d;
+  --c-atencao-bg: #fdf0c9; --c-atencao-fg: #6b4a00;
+  --c-risco-bg: #fde3dc;  --c-risco-fg: #8a2a12;
+  --c-neutro-bg: #e6ecea; --c-neutro-fg: #34504c;
+  --font-titulo: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-texto: 'Public Sans', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --c-fundo: #0c1614; --c-cartao: #13211f; --c-tinta: #e5f0ee; --c-suave: #9db6b2; --c-linha: #26403c;
+    --c-marca: #5ec9ba; --c-marca-escuro: #86ddd0; --c-marca-suave: #123530; --c-sobre-marca: #06201c;
+    --c-ok-bg: #123a26; --c-ok-fg: #a6e8c0; --c-atencao-bg: #3d3008; --c-atencao-fg: #f6dc8c;
+    --c-risco-bg: #451c12; --c-risco-fg: #f7b9a6; --c-neutro-bg: #1d2e2b; --c-neutro-fg: #b4cbc7;
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --c-fundo: #0c1614; --c-cartao: #13211f; --c-tinta: #e5f0ee; --c-suave: #9db6b2; --c-linha: #26403c;
+  --c-marca: #5ec9ba; --c-marca-escuro: #86ddd0; --c-marca-suave: #123530; --c-sobre-marca: #06201c;
+  --c-ok-bg: #123a26; --c-ok-fg: #a6e8c0; --c-atencao-bg: #3d3008; --c-atencao-fg: #f6dc8c;
+  --c-risco-bg: #451c12; --c-risco-fg: #f7b9a6; --c-neutro-bg: #1d2e2b; --c-neutro-fg: #b4cbc7;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-fundo: var(--c-fundo);
+  --color-cartao: var(--c-cartao);
+  --color-tinta: var(--c-tinta);
+  --color-suave: var(--c-suave);
+  --color-linha: var(--c-linha);
+  --color-marca: var(--c-marca);
+  --color-marca-escuro: var(--c-marca-escuro);
+  --color-marca-suave: var(--c-marca-suave);
+  --color-sobre-marca: var(--c-sobre-marca);
+  --color-destaque: var(--c-destaque);
+  --color-ok-bg: var(--c-ok-bg);  --color-ok-fg: var(--c-ok-fg);
+  --color-atencao-bg: var(--c-atencao-bg); --color-atencao-fg: var(--c-atencao-fg);
+  --color-risco-bg: var(--c-risco-bg);  --color-risco-fg: var(--c-risco-fg);
+  --color-neutro-bg: var(--c-neutro-bg); --color-neutro-fg: var(--c-neutro-fg);
+  --font-titulo: var(--font-titulo);
+  --font-texto: var(--font-texto);
+}
+
+body { background: var(--c-fundo); color: var(--c-tinta); font-family: var(--font-texto); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: var(--font-titulo); letter-spacing: -0.01em; text-wrap: balance; }
+table { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 3px solid var(--c-marca); outline-offset: 2px; border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

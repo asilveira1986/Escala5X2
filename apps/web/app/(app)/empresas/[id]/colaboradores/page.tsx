@@ -17,7 +17,7 @@ export default async function Colaboradores({ params }: { params: Promise<{ id: 
     <Cartao titulo={`Colaboradores (${dados.length})`}>
       {error ? <Aviso tipo="erro">Não foi possível carregar os colaboradores.</Aviso> : null}
       {dados.length >= LIMITE ? <Aviso>Exibindo os primeiros {LIMITE} colaboradores.</Aviso> : null}
-      <div className="mb-3 text-sm"><Link className="text-blue-800 hover:underline dark:text-blue-300" href={`/empresas/${empresaId}/importar`}>Importar ou atualizar por planilha</Link></div>
+      <div className="mb-3 text-sm"><Link className="text-marca hover:underline" href={`/empresas/${empresaId}/importar`}>Importar ou atualizar por planilha</Link></div>
       <TabelaColaboradores dados={dados} />
     </Cartao>
   );

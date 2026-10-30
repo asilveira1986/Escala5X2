@@ -31,7 +31,7 @@ export default async function StatusImportacao({ params }: { params: Promise<{ i
           </Aviso>
           {r.errosTotal ? (
             <>
-              <p className="text-sm"><a className="text-blue-800 underline dark:text-blue-300" href={`/api/v1/importacoes/${imp.id}/erros.csv`}>Baixar erros em CSV</a> (abre no Excel).</p>
+              <p className="text-sm"><a className="text-marca underline" href={`/api/v1/importacoes/${imp.id}/erros.csv`}>Baixar erros em CSV</a> (abre no Excel).</p>
               <div className="max-h-96 overflow-auto">
                 <table className="w-full text-left text-xs">
                   <thead><tr><th className="pr-3">Linha</th><th className="pr-3">Campo</th><th className="pr-3">Valor</th><th>Problema</th></tr></thead>
@@ -40,7 +40,7 @@ export default async function StatusImportacao({ params }: { params: Promise<{ i
               </div>
             </>
           ) : null}
-          <p className="text-sm"><Link className="text-blue-800 underline dark:text-blue-300" href={`/empresas/${empresaId}/colaboradores`}>Ver colaboradores</Link> · <Link className="text-blue-800 underline dark:text-blue-300" href={`/empresas/${empresaId}/diagnostico`}>Rodar diagnóstico</Link></p>
+          <p className="text-sm"><Link className="text-marca underline" href={`/empresas/${empresaId}/colaboradores`}>Ver colaboradores</Link> · <Link className="text-marca underline" href={`/empresas/${empresaId}/diagnostico`}>Rodar diagnóstico</Link></p>
         </div>
       )}
     </Cartao>

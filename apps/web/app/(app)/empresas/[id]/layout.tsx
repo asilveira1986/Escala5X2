@@ -1,29 +1,31 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { NavEmpresa } from '@/components/NavEmpresa';
+import { Selo } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
-import type { EmpresaRow } from '@/lib/tipos-db';
-import { formatarCnpj } from '@jc/connectors';
+import { ROTULO_STATUS, type EmpresaRow } from '@/lib/tipos-db';
+import { formatarCnpj } from '@jc/connectors/parsers';
+
+const tom = { nao_iniciado: 'cinza', em_risco: 'amarelo', adequado: 'verde' } as const;
 
 export default async function EmpresaLayout({ children, params }: { children: ReactNode; params: Promise<{ id: string }> }) {
   const id = idOu404((await params).id);
   const { supabase } = await exigirUsuario();
-  const { data } = await supabase.from('empresa').select('id, razao_social, cnpj').eq('id', id).maybeSingle();
+  const { data } = await supabase.from('empresa').select('id, razao_social, cnpj, status_adequacao').eq('id', id).maybeSingle();
   const empresa = linhas<EmpresaRow>(data ? [data] : [])[0];
   if (!empresa) notFound();
-  const abas = [['diagnostico', 'Diagnóstico'], ['colaboradores', 'Colaboradores'], ['importar', 'Importar planilha']] as const;
   return (
     <>
-      <div>
-        <Link href="/empresas" className="text-sm text-blue-800 hover:underline dark:text-blue-300">← Empresas</Link>
-        <h1 className="text-2xl font-bold">{empresa.razao_social}</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">CNPJ {formatarCnpj(empresa.cnpj)}</p>
+      <div className="space-y-3">
+        <Link href="/empresas" className="inline-flex min-h-10 items-center text-sm font-semibold text-marca hover:underline">← Todas as empresas</Link>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 className="text-3xl font-bold leading-tight sm:text-4xl">{empresa.razao_social}</h1>
+          <Selo tom={tom[empresa.status_adequacao]}>{ROTULO_STATUS[empresa.status_adequacao]}</Selo>
+        </div>
+        <p className="text-sm text-suave">CNPJ {formatarCnpj(empresa.cnpj)}</p>
       </div>
-      <nav aria-label="Seções da empresa" className="flex gap-1 border-b border-slate-200 dark:border-slate-800">
-        {abas.map(([slug, rotulo]) => (
-          <Link key={slug} href={`/empresas/${id}/${slug}`} className="rounded-t px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">{rotulo}</Link>
-        ))}
-      </nav>
+      <NavEmpresa empresaId={id} />
       {children}
     </>
   );

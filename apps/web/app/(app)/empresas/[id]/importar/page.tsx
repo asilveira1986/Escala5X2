@@ -20,7 +20,7 @@ export default async function Importar({ params }: { params: Promise<{ id: strin
         <Cartao titulo="Importações recentes">
           <ul className="space-y-1 text-sm">
             {historico.map((h) => (
-              <li key={h.id}><Link className="text-blue-800 hover:underline dark:text-blue-300" href={`/empresas/${empresaId}/importar/${h.id}`}>{dataBr(h.criado_em)}</Link> <Selo tom={tom[h.status]}>{rotulo[h.status]}</Selo></li>
+              <li key={h.id}><Link className="text-marca hover:underline" href={`/empresas/${empresaId}/importar/${h.id}`}>{dataBr(h.criado_em)}</Link> <Selo tom={tom[h.status]}>{rotulo[h.status]}</Selo></li>
             ))}
           </ul>
         </Cartao>

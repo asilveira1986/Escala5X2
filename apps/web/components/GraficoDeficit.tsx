@@ -11,11 +11,11 @@ export function GraficoDeficit({ minutosPorDia }: { minutosPorDia: number[] }) {
     <div role="img" aria-label={`Déficit semanal por dia: ${dados.map((d) => `${d.dia} ${d.horas}h`).join(', ')}`} className="h-56 w-full">
       <ResponsiveContainer>
         <BarChart data={dados} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="dia" />
-          <YAxis unit="h" width={48} />
-          <Tooltip formatter={(v: number) => [`${v}h`, 'Déficit']} />
-          <Bar dataKey="horas" fill="#1d4ed8" radius={[4, 4, 0, 0]} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--c-linha)" />
+          <XAxis dataKey="dia" tick={{ fill: 'var(--c-suave)', fontSize: 12 }} axisLine={false} tickLine={false} />
+          <YAxis unit="h" width={48} tick={{ fill: 'var(--c-suave)', fontSize: 12 }} axisLine={false} tickLine={false} />
+          <Tooltip cursor={{ fill: 'var(--c-marca-suave)' }} contentStyle={{ background: 'var(--c-cartao)', border: '1px solid var(--c-linha)', borderRadius: 12, color: 'var(--c-tinta)' }} formatter={(v: number) => [`${v}h`, 'A cobrir']} />
+          <Bar dataKey="horas" fill="var(--c-marca)" radius={[8, 8, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

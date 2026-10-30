@@ -3,8 +3,24 @@
 import { useState, useTransition } from 'react';
 import { CAMPOS_COLABORADOR, type Mapeamento } from '@jc/connectors/mapeamento'; // subcaminho leve: sem exceljs no navegador
 import { Aviso, Botao, Cartao, classeCampo } from '@/components/ui';
+import { IconeEnviar } from '@/components/icones';
 import { supabaseNavegador } from '@/lib/supabase/client';
 import { analisarArquivo, confirmarImportacao, prepararEnvio, validarImportacao, type RespostaEnvio, type RespostaValidacao } from './actions';
+
+const ETAPAS = ['Enviar planilha', 'Conferir colunas', 'Confirmar'];
+
+function Etapas({ atual }: { atual: number }) {
+  return (
+    <ol className="flex flex-wrap gap-2" aria-label="Etapas da importação">
+      {ETAPAS.map((rotulo, i) => (
+        <li key={rotulo} aria-current={i + 1 === atual ? 'step' : undefined}
+          className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold ${i + 1 === atual ? 'bg-marca text-sobre-marca' : i + 1 < atual ? 'bg-marca-suave text-marca' : 'bg-neutro-bg text-neutro-fg'}`}>
+          <span className="grid size-5 place-items-center rounded-full bg-cartao/25 text-xs">{i + 1}</span>{rotulo}
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 export function AssistenteImportacao({ empresaId }: { empresaId: string }) {
   const [envio, setEnvio] = useState<RespostaEnvio | null>(null);
@@ -39,16 +55,21 @@ export function AssistenteImportacao({ empresaId }: { empresaId: string }) {
 
   if (!atual) {
     return (
-      <Cartao titulo="1. Envie a planilha">
-        <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">Aceitamos .csv (UTF-8 ou Windows-1252) e .xlsx de até 10 MB, com cabeçalho na primeira linha. Nada é gravado antes da sua confirmação.</p>
-        <form onSubmit={enviar} className="space-y-3">
-          <label className="block text-sm font-medium">Arquivo
-            <input type="file" name="arquivo" accept=".csv,.xlsx" required className={classeCampo} />
+      <div className="space-y-4">
+      <Etapas atual={1} />
+      <Cartao titulo="Envie a planilha da equipe" subtitulo="Aceitamos arquivos .csv e .xlsx de até 10 MB, com os nomes das colunas na primeira linha. Nada é salvo antes da sua confirmação.">
+        <form onSubmit={enviar} className="space-y-4">
+          <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-linha bg-fundo px-4 py-8 text-center hover:border-marca">
+            <span className="grid size-12 place-items-center rounded-full bg-marca-suave text-marca"><IconeEnviar width={24} height={24} /></span>
+            <span className="font-semibold">Escolha o arquivo no seu computador</span>
+            <span className="text-xs text-suave">Planilha do Excel (.xlsx) ou arquivo separado por vírgula (.csv)</span>
+            <input id="arquivo" type="file" name="arquivo" accept=".csv,.xlsx" required className="mt-2 max-w-full text-sm" />
           </label>
           {envio && !envio.ok ? <Aviso tipo="erro">{envio.erro}</Aviso> : null}
           <Botao disabled={enviando}>{enviando ? 'Lendo arquivo…' : 'Enviar e continuar'}</Botao>
         </form>
       </Cartao>
+      </div>
     );
   }
 
@@ -63,11 +84,12 @@ export function AssistenteImportacao({ empresaId }: { empresaId: string }) {
 
   return (
     <div className="space-y-4">
-      <Cartao titulo="2. Mapeie as colunas">
-        <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">{atual.totalLinhas} linhas encontradas. Confira a sugestão automática e ajuste se necessário. Campos com * são obrigatórios.</p>
+      <Etapas atual={validacao?.ok ? 3 : 2} />
+      <Cartao titulo="Confira as colunas" subtitulo="Já tentamos encaixar cada coluna da sua planilha. Ajuste o que estiver errado; os campos com * são obrigatórios.">
+        <p className="mb-4 text-sm font-semibold">{atual.totalLinhas} linhas encontradas.</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {CAMPOS_COLABORADOR.map((c) => (
-            <label key={c.chave} className="block text-sm font-medium">{c.rotulo}{c.obrigatorio ? ' *' : ''}
+            <label key={c.chave} className="block text-sm font-semibold">{c.rotulo}{c.obrigatorio ? ' *' : ''}
               <select className={classeCampo} value={m[c.chave] ?? ''} onChange={(e) => { setMapa({ ...m, [c.chave]: e.target.value || null }); setValidacao(null); }}>
                 <option value="">— não importar —</option>
                 {atual.colunas.map((col) => <option key={col} value={col}>{col}</option>)}
@@ -84,7 +106,7 @@ export function AssistenteImportacao({ empresaId }: { empresaId: string }) {
         </div>
       </Cartao>
 
-      <Cartao titulo="3. Valide e confirme">
+      <Cartao titulo="Valide e confirme" subtitulo="A validação só confere os dados. Quando estiver tudo certo, importe.">
         <div className="flex flex-wrap gap-2">
           <Botao variante="secundario" onClick={validar} disabled={pendente}>{pendente ? 'Validando…' : 'Validar planilha'}</Botao>
           <Botao onClick={confirmar} disabled={pendente || !podeConfirmar}>Importar colaboradores válidos</Botao>
