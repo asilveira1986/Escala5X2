@@ -17,10 +17,10 @@ export default async function EmpresaLayout({ children, params }: { children: Re
   if (!empresa) notFound();
   return (
     <>
-      <div className="space-y-3">
-        <Link href="/empresas" className="inline-flex min-h-10 items-center text-sm font-semibold text-marca hover:underline">← Todas as empresas</Link>
+      <div className="space-y-1.5">
+        <Link href="/empresas" className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Todas as empresas</Link>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className="text-3xl font-bold leading-tight sm:text-4xl">{empresa.razao_social}</h1>
+          <h1 className="text-2xl font-bold leading-tight sm:text-3xl">{empresa.razao_social}</h1>
           <Selo tom={tom[empresa.status_adequacao]}>{ROTULO_STATUS[empresa.status_adequacao]}</Selo>
         </div>
         <p className="text-sm text-suave">CNPJ {formatarCnpj(empresa.cnpj)}</p>

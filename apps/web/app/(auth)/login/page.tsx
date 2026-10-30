@@ -16,8 +16,8 @@ export default function Login() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Entrar</h1>
-        <p className="mt-1 text-suave">Use seu e-mail e senha, ou peça um link de acesso.</p>
+        <h1 className="text-3xl font-bold">Que bom ver você!</h1>
+        <p className="mt-1 text-suave">Entre com seu e-mail e senha, ou peça um link de acesso.</p>
       </div>
       <form action={acaoSenha} className="space-y-4">
         <Campo rotulo="E-mail"><input name="email" type="email" required autoComplete="email" className={classeCampo} /></Campo>

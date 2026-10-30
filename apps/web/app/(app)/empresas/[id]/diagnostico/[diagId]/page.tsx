@@ -27,7 +27,7 @@ export default async function DetalheDiagnostico({ params }: { params: Promise<{
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href={`/empresas/${empresaId}/diagnostico`} className="inline-flex min-h-10 items-center text-sm font-semibold text-marca hover:underline">← Diagnósticos</Link>
+        <Link href={`/empresas/${empresaId}/diagnostico`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Diagnósticos</Link>
         <div className="flex flex-wrap gap-2">
           <a className={classeBotaoLink} href={`${base}?formato=pdf`}><IconeBaixar width={18} height={18} />Baixar PDF</a>
           <a className={classeBotaoLink} href={`${base}?formato=xlsx`}><IconeBaixar width={18} height={18} />Baixar planilha</a>

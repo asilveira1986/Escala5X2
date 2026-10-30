@@ -24,3 +24,17 @@ export function MarcaLogo({ tamanho = 28 }: { tamanho?: number }) {
     </svg>
   );
 }
+
+/** Ilustração simples para telas vazias: uma semana com dois dias de folga. */
+export function IlustracaoVazia({ tamanho = 96 }: { tamanho?: number }) {
+  return (
+    <svg width={tamanho} height={tamanho} viewBox="0 0 96 96" aria-hidden>
+      <circle cx="48" cy="48" r="44" fill="var(--c-marca-suave)" />
+      <rect x="16" y="26" width="64" height="48" rx="12" fill="var(--c-cartao)" stroke="var(--c-linha)" strokeWidth="2" />
+      <rect x="16" y="26" width="64" height="14" rx="12" fill="var(--c-marca)" />
+      {[0, 1, 2, 3, 4].map((i) => <rect key={i} x={23 + i * 9.2} y="48" width="6.4" height="18" rx="3.2" fill="var(--c-marca)" opacity="0.85" />)}
+      <rect x="69" y="48" width="6.4" height="18" rx="3.2" fill="var(--c-destaque)" />
+      <circle cx="73" cy="22" r="7" fill="var(--c-destaque)" />
+    </svg>
+  );
+}

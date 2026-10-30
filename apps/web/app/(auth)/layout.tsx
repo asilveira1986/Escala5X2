@@ -6,7 +6,7 @@ const pontos = ['Diagnóstico da nova escala em minutos, direto da sua planilha'
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1fr_minmax(420px,520px)]">
-      <aside className="hidden flex-col justify-between bg-marca p-12 text-sobre-marca lg:flex" aria-hidden="false">
+      <aside className="hidden flex-col justify-between bg-marca p-10 text-sobre-marca lg:flex" aria-hidden="false">
         <div className="flex items-center gap-3">
           <span className="rounded-xl bg-cartao p-1"><MarcaLogo tamanho={32} /></span>
           <span className="font-[family-name:var(--font-titulo)] text-2xl font-bold">JornadaCerta</span>

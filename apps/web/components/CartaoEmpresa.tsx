@@ -10,11 +10,11 @@ const acao = { nao_iniciado: 'Começar', em_risco: 'Ver diagnóstico', adequado:
 export function CartaoEmpresa({ empresa: e }: { empresa: Pick<EmpresaRow, 'id' | 'razao_social' | 'cnpj' | 'porte' | 'uf' | 'status_adequacao'> }) {
   const destino = e.status_adequacao === 'nao_iniciado' ? 'colaboradores' : 'diagnostico';
   return (
-    <Link href={`/empresas/${e.id}/${destino}`} className="group flex flex-col gap-4 rounded-2xl border border-linha bg-cartao p-5 transition-colors hover:border-marca">
+    <Link href={`/empresas/${e.id}/${destino}`} className="group flex flex-col gap-3 rounded-3xl border border-linha bg-cartao p-4 shadow-[0_2px_8px_rgba(16,32,30,0.05)] transition-colors hover:border-marca">
       <div className="flex items-start gap-3">
-        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-marca-suave text-marca"><IconeEmpresa /></span>
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-marca-suave text-marca"><IconeEmpresa /></span>
         <div className="min-w-0">
-          <h3 className="truncate text-lg font-bold leading-snug" title={e.razao_social}>{e.razao_social}</h3>
+          <h3 className="truncate text-base font-bold leading-snug" title={e.razao_social}>{e.razao_social}</h3>
           <p className="text-sm text-suave">{formatarCnpj(e.cnpj)} · {ROTULO_PORTE[e.porte]} · {e.uf}</p>
         </div>
       </div>

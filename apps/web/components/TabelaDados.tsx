@@ -18,7 +18,7 @@ export function TabelaDados<T>({ colunas, dados, rotuloBusca = 'Buscar', tamanho
   });
   const total = tabela.getFilteredRowModel().rows.length;
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       <label className="block max-w-sm text-sm font-semibold">
         {rotuloBusca}
         <input value={filtro} onChange={(e) => setFiltro(e.target.value)} className={classeCampo} type="search" />
@@ -31,7 +31,7 @@ export function TabelaDados<T>({ colunas, dados, rotuloBusca = 'Buscar', tamanho
                 {g.headers.map((h) => {
                   const s = h.column.getIsSorted();
                   return (
-                    <th key={h.id} className="py-2.5 pr-3" aria-sort={s === 'asc' ? 'ascending' : s === 'desc' ? 'descending' : 'none'}>
+                    <th key={h.id} className="py-1.5 pr-3" aria-sort={s === 'asc' ? 'ascending' : s === 'desc' ? 'descending' : 'none'}>
                       {h.column.getCanSort()
                         ? <button type="button" onClick={h.column.getToggleSortingHandler()} className="font-semibold uppercase hover:underline">{flexRender(h.column.columnDef.header, h.getContext())}{s === 'asc' ? ' ▲' : s === 'desc' ? ' ▼' : ''}</button>
                         : flexRender(h.column.columnDef.header, h.getContext())}
@@ -44,7 +44,7 @@ export function TabelaDados<T>({ colunas, dados, rotuloBusca = 'Buscar', tamanho
           <tbody>
             {tabela.getRowModel().rows.map((r) => (
               <tr key={r.id} className="border-b border-linha">
-                {r.getVisibleCells().map((c) => <td key={c.id} className="py-2 pr-3 align-top">{flexRender(c.column.columnDef.cell, c.getContext())}</td>)}
+                {r.getVisibleCells().map((c) => <td key={c.id} className="py-1.5 pr-3 align-top">{flexRender(c.column.columnDef.cell, c.getContext())}</td>)}
               </tr>
             ))}
             {total === 0 && <tr><td colSpan={colunas.length} className="py-6 text-center text-suave">{vazio}</td></tr>}

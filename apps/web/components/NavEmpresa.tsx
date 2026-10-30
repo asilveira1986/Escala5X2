@@ -16,11 +16,11 @@ export function NavEmpresa({ empresaId }: { empresaId: string }) {
   const ativa = (slug: string) => caminho.startsWith(`/empresas/${empresaId}/${slug}`);
   return (
     <>
-      <nav aria-label="Seções da empresa" className="hidden gap-1 rounded-2xl border border-linha bg-cartao p-1.5 sm:inline-flex">
+      <nav aria-label="Seções da empresa" className="hidden gap-1 rounded-full border border-linha bg-cartao p-1 sm:inline-flex">
         {abas.map(({ slug, rotulo, Icone }) => (
           <Link key={slug} href={`/empresas/${empresaId}/${slug}`} aria-current={ativa(slug) ? 'page' : undefined}
-            className={`flex min-h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold ${ativa(slug) ? 'bg-marca text-sobre-marca' : 'text-tinta hover:bg-marca-suave'}`}>
-            <Icone width={18} height={18} />{rotulo}
+            className={`flex min-h-9 items-center gap-2 rounded-full px-3.5 text-sm font-semibold ${ativa(slug) ? 'bg-marca text-sobre-marca' : 'text-tinta hover:bg-marca-suave'}`}>
+            <Icone width={17} height={17} />{rotulo}
           </Link>
         ))}
       </nav>
@@ -29,8 +29,8 @@ export function NavEmpresa({ empresaId }: { empresaId: string }) {
           {abas.map(({ slug, rotulo, Icone }) => (
             <li key={slug}>
               <Link href={`/empresas/${empresaId}/${slug}`} aria-current={ativa(slug) ? 'page' : undefined}
-                className={`flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold ${ativa(slug) ? 'text-marca' : 'text-suave'}`}>
-                <span className={`rounded-full px-4 py-1 ${ativa(slug) ? 'bg-marca-suave' : ''}`}><Icone /></span>{rotulo}
+                className={`flex min-h-14 flex-col items-center justify-center gap-1 text-xs font-semibold ${ativa(slug) ? 'text-marca' : 'text-suave'}`}>
+                <span className={`rounded-full px-4 py-0.5 ${ativa(slug) ? 'bg-marca-suave' : ''}`}><Icone /></span>{rotulo}
               </Link>
             </li>
           ))}
