@@ -13,37 +13,57 @@ export type RespostaEnvio =
   | { ok: true; importacaoId: string; colunas: string[]; previa: string[][]; totalLinhas: number; sugestao: Mapeamento }
   | { ok: false; erro: string };
 
-export async function enviarPlanilha(_: RespostaEnvio | null, form: FormData): Promise<RespostaEnvio> {
-  const empresaId = z.string().uuid().safeParse(form.get('empresaId'));
-  const arquivo = form.get('arquivo');
-  if (!empresaId.success) return { ok: false, erro: 'Empresa inválida.' };
-  if (!(arquivo instanceof File) || arquivo.size === 0) return { ok: false, erro: 'Selecione um arquivo .csv ou .xlsx.' };
-  if (arquivo.size > LIMITES.bytes) return { ok: false, erro: 'O arquivo excede 10 MB.' };
-  const ext = arquivo.name.toLowerCase().split('.').pop();
-  if (ext !== 'csv' && ext !== 'xlsx') return { ok: false, erro: 'Formato não suportado. Envie .csv ou .xlsx.' };
+const CAMINHO = /^([0-9a-f-]{36})\/([0-9a-f-]{36})\.(csv|xlsx)$/;
 
-  const bytes = new Uint8Array(await arquivo.arrayBuffer());
+async function organizacaoDaEmpresa(empresaId: string) {
+  const { supabase } = await exigirUsuario();
+  const { data } = await supabase.from('empresa').select('organizacao_id').eq('id', empresaId).maybeSingle();
+  return { supabase, orgId: (data as { organizacao_id: string } | null)?.organizacao_id };
+}
+
+/**
+ * Passo 1: devolve uma URL assinada para o navegador enviar o arquivo direto ao Storage.
+ * (As funções da Vercel limitam o corpo da requisição a 4,5 MB; a planilha pode ter 10 MB.)
+ * O caminho é sempre gerado aqui: <organizacao>/<uuid>.<ext>; o nome do usuário nunca vira caminho.
+ */
+export async function prepararEnvio(empresaId: string, extensao: string, tamanho: number): Promise<{ ok: true; caminho: string; token: string } | { ok: false; erro: string }> {
+  const id = z.string().uuid().safeParse(empresaId);
+  const ext = z.enum(['csv', 'xlsx']).safeParse(extensao.toLowerCase());
+  if (!id.success) return { ok: false, erro: 'Empresa inválida.' };
+  if (!ext.success) return { ok: false, erro: 'Formato não suportado. Envie .csv ou .xlsx.' };
+  if (!Number.isFinite(tamanho) || tamanho <= 0) return { ok: false, erro: 'Selecione um arquivo .csv ou .xlsx.' };
+  if (tamanho > LIMITES.bytes) return { ok: false, erro: 'O arquivo excede 10 MB.' };
+  const { supabase, orgId } = await organizacaoDaEmpresa(id.data);
+  if (!orgId) return { ok: false, erro: 'Empresa não encontrada ou sem permissão.' };
+  const caminho = `${orgId}/${randomUUID()}.${ext.data}`;
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(caminho);
+  if (error || !data) return { ok: false, erro: 'Você não tem permissão para enviar arquivos desta empresa.' };
+  return { ok: true, caminho, token: data.token };
+}
+
+/** Passo 2: depois do envio, lê o arquivo, registra a importação e devolve a prévia e a sugestão de mapeamento. */
+export async function analisarArquivo(empresaId: string, caminho: string): Promise<RespostaEnvio> {
+  const id = z.string().uuid().safeParse(empresaId);
+  const m = CAMINHO.exec(caminho);
+  if (!id.success || !m) return { ok: false, erro: 'Requisição inválida.' };
+  const { supabase, orgId } = await organizacaoDaEmpresa(id.data);
+  if (!orgId || m[1] !== orgId) return { ok: false, erro: 'Empresa não encontrada ou sem permissão.' };
+
+  const descartar = () => supabase.storage.from(BUCKET).remove([caminho]);
+  const baixado = await supabase.storage.from(BUCKET).download(caminho);
+  if (baixado.error || !baixado.data) return { ok: false, erro: 'Arquivo não encontrado. Tente enviar novamente.' };
+  if (baixado.data.size > LIMITES.bytes) { await descartar(); return { ok: false, erro: 'O arquivo excede 10 MB.' }; }
   let planilha;
   try {
-    planilha = await lerPlanilha(bytes, arquivo.name);
+    planilha = await lerPlanilha(new Uint8Array(await baixado.data.arrayBuffer()), caminho);
   } catch (e) {
+    await descartar();
     return { ok: false, erro: e instanceof ErroPlanilha ? e.message : 'Não foi possível ler o arquivo.' };
   }
-
-  const { supabase } = await exigirUsuario();
-  const { data: emp } = await supabase.from('empresa').select('organizacao_id').eq('id', empresaId.data).maybeSingle();
-  const orgId = (emp as { organizacao_id: string } | null)?.organizacao_id;
-  if (!orgId) return { ok: false, erro: 'Empresa não encontrada ou sem permissão.' };
-
-  // Caminho gerado pelo servidor: <organizacao>/<uuid>.<ext>. O banco valida a pasta; o nome do usuário nunca vira caminho.
-  const caminho = `${orgId}/${randomUUID()}.${ext}`;
-  const up = await supabase.storage.from(BUCKET).upload(caminho, bytes, { contentType: ext === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', upsert: false });
-  if (up.error) return { ok: false, erro: 'Falha ao armazenar o arquivo.' };
-
   const { data, error } = await supabase.from('importacao')
-    .insert({ empresa_id: empresaId.data, tipo: 'colaboradores', arquivo_path: caminho, status: 'aguardando_mapeamento' }).select('id').single();
+    .insert({ empresa_id: id.data, tipo: 'colaboradores', arquivo_path: caminho, status: 'aguardando_mapeamento' }).select('id').single();
   if (error || !data) {
-    await supabase.storage.from(BUCKET).remove([caminho]);
+    await descartar();
     return { ok: false, erro: 'Você não tem permissão para importar colaboradores nesta empresa.' };
   }
   return {

@@ -1,27 +1,47 @@
 'use client';
 
-import { useActionState, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { CAMPOS_COLABORADOR, type Mapeamento } from '@jc/connectors/mapeamento'; // subcaminho leve: sem exceljs no navegador
 import { Aviso, Botao, Cartao, classeCampo } from '@/components/ui';
-import { confirmarImportacao, enviarPlanilha, validarImportacao, type RespostaEnvio, type RespostaValidacao } from './actions';
+import { supabaseNavegador } from '@/lib/supabase/client';
+import { analisarArquivo, confirmarImportacao, prepararEnvio, validarImportacao, type RespostaEnvio, type RespostaValidacao } from './actions';
 
 export function AssistenteImportacao({ empresaId }: { empresaId: string }) {
-  const [envio, enviar, enviando] = useActionState<RespostaEnvio | null, FormData>(enviarPlanilha, null);
+  const [envio, setEnvio] = useState<RespostaEnvio | null>(null);
+  const [enviando, setEnviando] = useState(false);
   const [mapa, setMapa] = useState<Mapeamento | null>(null);
   const [validacao, setValidacao] = useState<RespostaValidacao | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
 
-  // Quando um envio novo chega, adota a sugestão de mapeamento.
   const atual = envio?.ok ? envio : null;
-  if (atual && mapa === null) setMapa(atual.sugestao);
+
+  // O navegador envia direto ao Storage (URL assinada); o servidor só autoriza e depois lê o arquivo.
+  async function enviar(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const arquivo = new FormData(e.currentTarget).get('arquivo');
+    if (!(arquivo instanceof File) || arquivo.size === 0) return setEnvio({ ok: false, erro: 'Selecione um arquivo .csv ou .xlsx.' });
+    setEnviando(true);
+    try {
+      const prep = await prepararEnvio(empresaId, arquivo.name.split('.').pop() ?? '', arquivo.size);
+      if (!prep.ok) return setEnvio(prep);
+      const up = await supabaseNavegador().storage.from('importacoes').uploadToSignedUrl(prep.caminho, prep.token, arquivo);
+      if (up.error) return setEnvio({ ok: false, erro: 'Falha ao enviar o arquivo. Tente novamente.' });
+      const r = await analisarArquivo(empresaId, prep.caminho);
+      if (r.ok) setMapa(r.sugestao);
+      setEnvio(r);
+    } catch {
+      setEnvio({ ok: false, erro: 'Falha de conexão ao enviar o arquivo.' });
+    } finally {
+      setEnviando(false);
+    }
+  }
 
   if (!atual) {
     return (
       <Cartao titulo="1. Envie a planilha">
         <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">Aceitamos .csv (UTF-8 ou Windows-1252) e .xlsx de até 10 MB, com cabeçalho na primeira linha. Nada é gravado antes da sua confirmação.</p>
-        <form action={enviar} className="space-y-3">
-          <input type="hidden" name="empresaId" value={empresaId} />
+        <form onSubmit={enviar} className="space-y-3">
           <label className="block text-sm font-medium">Arquivo
             <input type="file" name="arquivo" accept=".csv,.xlsx" required className={classeCampo} />
           </label>

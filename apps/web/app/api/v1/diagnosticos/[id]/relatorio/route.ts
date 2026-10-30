@@ -6,6 +6,7 @@ import { supabaseServidor } from '@/lib/supabase/server';
 import type { EmpresaRow, OrganizacaoRow } from '@/lib/tipos-db';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60; // PDFs grandes (até 500 linhas) e XLSX de milhares de colaboradores
 const LOGO_MAX = 1024 * 1024;
 
 const ehPng = (b: Uint8Array) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;

@@ -34,3 +34,9 @@
 5. Layouts de planilhas reais de clientes (Domínio, Alterdata…) não foram vistos; o mapeamento por apelidos cobre os nomes comuns.
 6. Playwright E2E fica para a Fase 2.
 7. Horas extras: o simulador não checa o limite de 2h/dia (apenas alerta).
+
+## Hospedagem na Vercel
+- Projeto Vercel com **Root Directory = `apps/web`** e a opção "Include source files outside of the Root Directory" ligada (padrão). `apps/web/vercel.json` fixa a região `gru1` (São Paulo).
+- Variáveis (Production e Preview): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_APP_URL` (URL do deploy), `DATABASE_URL` (Session pooler do Supabase, porta 5432; a Vercel não tem IPv6, então não serve a conexão direta). **Não** colocar a `service_role` na Vercel: só o worker a usa.
+- O worker (pg-boss) **não roda na Vercel** (processo longo): hospedar em Railway/Fly com `DATABASE_URL`, `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY`.
+- Funções da Vercel limitam o corpo a 4,5 MB; por isso o upload de planilhas vai direto do navegador ao Storage por URL assinada.
