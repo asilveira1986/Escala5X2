@@ -233,3 +233,26 @@ describe('exportação auditada', () => {
     expect(Object.keys(r.rows[0]).join()).not.toMatch(/cpf/);
   });
 });
+
+describe('cadastro automático e primeiros passos', () => {
+  it('criar usuário no Auth cria a linha em usuario, com o nome informado ou o do e-mail', async () => {
+    const a = (await db.query(`insert into auth.users (email, raw_user_meta_data) values ('maria@empresa.com', '{"nome":"Maria Souza"}') returning id`)).rows[0].id;
+    const b = (await db.query(`insert into auth.users (email) values ('joao.silva@empresa.com') returning id`)).rows[0].id;
+    const c = (await db.query(`insert into auth.users (email, raw_user_meta_data) values ('google@empresa.com', '{"full_name":"Ana Google"}') returning id`)).rows[0].id;
+    const r = await db.query(`select id, nome, email from usuario where id = any($1) order by email`, [[a, b, c]]);
+    expect(r.rows.map((x) => x.nome)).toEqual(['Ana Google', 'joao.silva', 'Maria Souza']);
+  });
+  it('um usuário recém-cadastrado consegue criar a própria organização e vira admin', async () => {
+    const u = (await db.query(`insert into auth.users (email) values ('novo@cliente.com') returning id`)).rows[0].id;
+    const org = await comoUsuario(db, u, async (c) => (await c.query<{ id: string }>(`select criar_organizacao('Contabilidade Nova','contabilidade') id`)).rows[0]!.id);
+    const m = await db.query(`select papel from membro where organizacao_id=$1 and usuario_id=$2`, [org, u]);
+    expect(m.rows).toEqual([{ papel: 'admin' }]);
+    // admin só enxerga a organização depois da verificação em duas etapas
+    expect((await comoUsuario(db, u, (c) => c.query('select 1 from organizacao'), 'aal1')).rowCount).toBe(0);
+    expect((await comoUsuario(db, u, (c) => c.query('select 1 from organizacao'), 'aal2')).rowCount).toBe(1);
+  });
+  it('usuário não consegue chamar a função do gatilho nem inserir em usuario de outro', async () => {
+    await expect(comoUsuario(db, admA, (c) => c.query(`select criar_usuario_ao_cadastrar()`))).rejects.toThrow(/permission denied/);
+    await expect(comoUsuario(db, admA, (c) => c.query(`insert into usuario (id, nome, email) values (gen_random_uuid(), 'x', 'x@x')`))).rejects.toThrow(/row-level security/);
+  });
+});

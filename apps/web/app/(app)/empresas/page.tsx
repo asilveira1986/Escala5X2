@@ -4,6 +4,7 @@ import { Cartao, Titulo } from '@/components/ui';
 import { exigirUsuario, linhas } from '@/lib/contexto';
 import type { EmpresaRow, OrganizacaoRow } from '@/lib/tipos-db';
 import { FormNovaEmpresa } from './FormNovaEmpresa';
+import { FormNovaOrganizacao } from './FormNovaOrganizacao';
 
 export default async function Empresas() {
   const { supabase, user } = await exigirUsuario();
@@ -14,6 +15,15 @@ export default async function Empresas() {
   ]);
   const empresas = linhas<EmpresaRow>(emp);
   const organizacoes = linhas<OrganizacaoRow>(orgs);
+  if (organizacoes.length === 0 && empresas.length === 0) {
+    return (
+      <>
+        <p className="-mb-1 text-sm font-semibold text-marca">{nome ? `Olá, ${nome}!` : 'Olá!'}</p>
+        <Titulo descricao="Antes de cadastrar empresas, conte rapidamente quem você é. Leva menos de um minuto.">Bem-vindo ao JornadaCerta</Titulo>
+        <Cartao titulo="Crie a sua organização"><FormNovaOrganizacao /></Cartao>
+      </>
+    );
+  }
   return (
     <>
       {nome ? <p className="-mb-1 text-sm font-semibold text-marca">Olá, {nome}!</p> : <p className="-mb-1 text-sm font-semibold text-marca">Olá!</p>}

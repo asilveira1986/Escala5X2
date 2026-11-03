@@ -23,7 +23,7 @@ async function garantirBanco(): Promise<void> {
 }
 
 /** Segredo de teste; em produção vem do Vault. */
-export const migracoes = ['0001_fundacao', '0002_cadastros_regras', '0003_storage'];
+export const migracoes = ['0001_fundacao', '0002_cadastros_regras', '0003_storage', '0004_usuario_onboarding'];
 
 export async function conectarAdmin(): Promise<Client> {
   await garantirBanco();
@@ -43,12 +43,11 @@ export async function prepararBanco(): Promise<Client> {
   return admin;
 }
 
+/** Cria o usuário no Auth; o gatilho 0004 cria a linha em public.usuario. */
 export async function novoUsuario(admin: Client, nome: string): Promise<string> {
   const { rows } = await admin.query<{ id: string }>(
-    `insert into auth.users (email) values ($1) returning id`, [`${nome}@teste.com`]);
-  const id = rows[0]!.id;
-  await admin.query(`insert into usuario (id, nome, email) values ($1,$2,$3)`, [id, nome, `${nome}@teste.com`]);
-  return id;
+    `insert into auth.users (email, raw_user_meta_data) values ($1, jsonb_build_object('nome', $2::text)) returning id`, [`${nome}@teste.com`, nome]);
+  return rows[0]!.id;
 }
 
 /** Executa como o usuário (role authenticated + claims JWT) dentro de uma transação; em erro faz rollback. */

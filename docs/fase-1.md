@@ -26,7 +26,7 @@
 - **F2 sem data final**: avalia-se o estado no início; vencimento posterior de acordo vira alerta.
 - Telas usam Tailwind + componentes próprios (sem a CLI do shadcn).
 
-## Não testado / pendências
+## Não testado / pendências (roteiro em `docs/validacao-supabase.md`)
 1. **Fluxo real no Supabase** (login, Storage, RPC via PostgREST, Server Actions): só build, tipos, componentes e RPC simulada em Postgres local. É o principal risco.
 2. **pg-boss no Supabase**: exige conexão direta ou "session mode" (não a porta 6543). Worker precisa ser hospedado (Railway/Fly) com `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`; o app web precisa de `DATABASE_URL` para enfileirar.
 3. Migration `0003_storage` só foi exercitada contra um mínimo do schema `storage`.
