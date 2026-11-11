@@ -35,8 +35,10 @@ export async function conectarAdmin(): Promise<Client> {
 /** Recria um banco limpo, aplica shim + migrations (up). */
 export async function prepararBanco(): Promise<Client> {
   const admin = await conectarAdmin();
-  await admin.query('drop schema if exists public cascade; drop schema if exists auth cascade; drop schema if exists storage cascade; create schema public;');
+  await admin.query('drop schema if exists public cascade; drop schema if exists auth cascade; drop schema if exists storage cascade; drop schema if exists extensions cascade; drop schema if exists vault cascade; create schema public;');
   await admin.query(readFileSync(join(dir, 'test/supabase-shim.sql'), 'utf8'));
+  // mesmo search_path do papel postgres no Supabase
+  await admin.query(`set search_path = "$user", public, extensions`);
   await admin.query(`select set_config('app.chave_dados', 'chave-de-teste', false)`);
   for (const f of migracoes) await admin.query(readFileSync(join(dir, 'migrations', `${f}.up.sql`), 'utf8'));
   for (const f of ['regras', 'feriados']) await admin.query(readFileSync(join(dir, 'seeds', `${f}.sql`), 'utf8'));

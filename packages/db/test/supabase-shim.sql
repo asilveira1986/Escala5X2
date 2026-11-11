@@ -1,4 +1,15 @@
--- Simula o mínimo do Supabase (auth + roles) para rodar migrations em Postgres puro.
+-- Simula o mínimo do Supabase (auth, roles, extensions, vault, storage) para rodar as migrations em Postgres puro.
+-- No Supabase as extensões ficam no schema "extensions" (não em public): reproduzir isso pega erros de search_path.
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
+create extension if not exists btree_gist with schema extensions;
+-- Vault: view com o segredo em claro, como em vault.decrypted_secrets.
+create schema if not exists vault;
+create table if not exists vault.secrets (id uuid primary key default gen_random_uuid(), name text unique, secret text, description text);
+create or replace view vault.decrypted_secrets as select id, name, description, secret as decrypted_secret from vault.secrets;
+create or replace function vault.create_secret(new_secret text, new_name text default null, new_description text default '') returns uuid
+language sql as $$ insert into vault.secrets (name, secret, description) values (new_name, new_secret, new_description) returning id $$;
+
 do $$ begin
   if not exists (select 1 from pg_roles where rolname='anon') then create role anon nologin; end if;
   if not exists (select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin; end if;
