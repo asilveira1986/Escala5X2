@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 DB=packages/db
 OUT=$DB/setup/supabase_instalar_tudo.sql
-UNDO=$DB/setup/supabase_desfazer_tudo.sql
+UNDO=$DB/setup/supabase_recomecar_do_zero.sql
 MIGS=$(ls $DB/migrations/*.up.sql | sort)
 
 {
@@ -27,10 +27,20 @@ commit;
 SQL
 } > "$OUT"
 
-{
-  echo "-- JornadaCerta: desfaz a instalação (apaga as tabelas do app). Use só em projeto de testes."
-  echo "begin;"
-  for f in $(ls $DB/migrations/*.down.sql | sort -r); do echo; echo "-- ===== $(basename "$f") ====="; cat "$f"; done
-  echo "commit;"
-} > "$UNDO"
+cat > "$UNDO" <<'SQL'
+-- JornadaCerta: RECOMEÇAR DO ZERO. Apaga TUDO que estiver no schema "public" (tabelas, funções, tipos, dados)
+-- e o recria vazio, com as permissões padrão do Supabase. Funciona em qualquer estado: vazio, parcial ou completo.
+-- Não mexe nos usuários (Authentication), nos segredos do Vault nem nos arquivos do Storage.
+-- USE SÓ EM PROJETO DE TESTE, SEM DADOS REAIS.
+begin;
+drop schema if exists public cascade;
+create schema public;
+comment on schema public is 'standard public schema';
+grant usage on schema public to postgres, anon, authenticated, service_role;
+grant all on schema public to postgres;
+alter default privileges in schema public grant all on tables to postgres, anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to postgres, anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to postgres, anon, authenticated, service_role;
+commit;
+SQL
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"

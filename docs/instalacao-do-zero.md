@@ -6,7 +6,8 @@ O container do Claude **não consegue falar direto com o Postgres** (só HTTPS),
 1. Crie o projeto em **South America (São Paulo)**. Região não muda depois. Nome sugerido: `jornadacerta-dev`. Guarde a senha do banco.
 2. **SQL Editor → New query:** cole todo o conteúdo de `packages/db/setup/supabase_instalar_tudo.sql` e clique em **Run**.
    Resultado esperado, na última tabela: regras legais 8, feriados 30, tabelas com RLS 21, sem RLS 0, buckets 2.
-   Se der erro, nada foi aplicado (é uma transação): copie a mensagem inteira. Para recomeçar um projeto de teste: rode antes `supabase_desfazer_tudo.sql`.
+   Se der erro, nada foi aplicado (é uma transação): copie a mensagem inteira.
+   Erro `type "tipo_org" already exists`: o banco já tem algo instalado. Rode `packages/db/setup/supabase_diagnostico.sql` para ver o que existe. Se for um projeto de teste sem dados, rode `supabase_recomecar_do_zero.sql` (apaga tudo do schema `public`, funciona em qualquer estado) e depois o instalador de novo.
 3. **Chave de criptografia (Vault).** Em *Integrations → Vault*, ative se pedir. No SQL Editor:
    ```sql
    select vault.create_secret(encode(extensions.gen_random_bytes(32), 'hex'), 'chave_dados', 'Cifragem de CPF e telefone');
