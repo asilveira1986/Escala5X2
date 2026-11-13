@@ -13,27 +13,22 @@ O container do Claude **não consegue falar direto com o Postgres** (só HTTPS),
    select decrypted_secret from vault.decrypted_secrets where name = 'chave_dados';
    ```
    Copie o valor do segundo comando **para um gerenciador de senhas**. Se for perdido, os CPFs ficam irrecuperáveis. Não cole no chat.
-4. **Authentication:** *Sign In / Providers → Email* ligado (senha mínima 8; "Confirm email" pode ficar desligado em desenvolvimento). *Multi-Factor* com **TOTP** habilitado. *URL Configuration:* Site URL = URL do app; Redirect URLs = `https://SEU-APP.vercel.app/auth/callback` e `http://localhost:3000/auth/callback`.
+4. **Authentication:** *Sign In / Providers → Email* ligado (senha mínima 8; "Confirm email" pode ficar desligado em desenvolvimento). *Multi-Factor* com **TOTP** habilitado. *URL Configuration:* Site URL = URL do app; Redirect URLs = `https://SEU-DOMINIO-RAILWAY/auth/callback` e `http://localhost:3000/auth/callback`.
 5. **Primeiro usuário:** *Authentication → Users → Add user → Create new user* (marque *Auto Confirm User*). Ao entrar no app, ele cria a organização e cadastra o autenticador.
 6. **Chaves:** *Settings → API Keys* (publishable e secret) e *Integrations → Data API* (Project URL). *Connect → Session pooler* (porta 5432) para a `DATABASE_URL`.
 
-## 2. Vercel (projeto do app)
-- *Settings → General → Root Directory* = `apps/web`. *Settings → Git → Production Branch* = `main`.
-- *Settings → Environment Variables* (Production e Preview): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable), `NEXT_PUBLIC_APP_URL` (URL do app), `DATABASE_URL` (Session pooler). **Nunca** a secret key.
-- Depois de mudar variável: **Deployments → ⋯ → Redeploy** (as `NEXT_PUBLIC_*` entram na hora do build).
+## 2. Hospedagem (Railway)
+Veja `docs/hospedagem-railway.md`: dois serviços (`web` e `worker`) a partir deste repositório, com as variáveis e o domínio.
 
 ## 3. Ambiente do Claude (barra de título → ambiente → Edit)
 Cinco variáveis: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (secret key), `DATABASE_URL`. Rede: `*.supabase.co` e `*.pooler.supabase.com`. Abra uma **sessão nova** para valer.
 
-## 4. Worker de importação (ainda por fazer)
-A importação de planilhas é processada por um worker sempre ligado (Railway ou Fly, região de São Paulo) com `DATABASE_URL`, `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY`. Sem ele, o upload funciona mas a importação fica em "processando". O Dockerfile do worker ainda não existe no repositório.
-
 ## Se algo falhar
 | Sintoma | Causa provável |
 |---|---|
-| Tela de login sem estilo | A Vercel publica uma branch antiga: *Production Branch* = `main` e Redeploy |
+| Tela de login sem estilo | O serviço está publicando uma branch antiga: confira a *Branch* no Railway |
 | `relation ... does not exist` | O SQL do passo 1.2 não foi aplicado |
 | "Invalid login credentials" | Usuário não criado, sem *Auto Confirm*, ou senha errada |
-| Volta sempre ao login | Variáveis `NEXT_PUBLIC_*` ausentes ou antigas na Vercel (falta Redeploy) |
+| Volta sempre ao login | Variáveis `NEXT_PUBLIC_*` ausentes ou antigas no Railway (cada mudança refaz o build) |
 | Erro ao abrir link do e-mail | *Redirect URLs* sem `/auth/callback` |
 | Erro ao cadastrar autenticador | MFA/TOTP desligado no Supabase |
