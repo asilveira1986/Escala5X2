@@ -122,4 +122,14 @@ INC12=$DB/setup/supabase_atualizar_otimizacao.sql
   echo "commit;"
 } > "$INC12"
 echo "gerado: $INC12"
+# Atualização incremental das solicitações (migration 0013) para bancos com as migrations 0001 a 0012.
+INC13=$DB/setup/supabase_atualizar_solicitacoes.sql
+{
+  echo "-- JornadaCerta: solicitações e trocas (migration 0013) em um banco que já tem as migrations 0001 a 0012."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0013_solicitacoes.up.sql"
+  echo "commit;"
+} > "$INC13"
+echo "gerado: $INC13"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"
