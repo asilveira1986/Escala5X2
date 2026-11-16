@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { Casca } from '@/components/Casca';
 import { ComparacaoCenarios } from '@/components/ComparacaoCenarios';
 import { PainelDiagnostico } from '@/components/PainelDiagnostico';
 import { TabelaItens } from '@/components/TabelaItens';
@@ -78,5 +79,12 @@ describe('resumoSimples', () => {
   it('só fase 2: o primeiro prazo é o início da fase 2', () => {
     const f2 = diagnosticar(equipe(3).map((c) => ({ ...c, jornadaSemanalMin: 2520, divisorContrato: 210, tipoEscala: '5x2' as const, escolaridade: 'medio' as const, salarioBaseCentavos: 200_000 })), '2026-10-28', REGRAS_SEED);
     expect(resumoSimples(f2).primeiroPrazo).toBe('2027-12-15');
+  });
+});
+
+describe('Casca', () => {
+  it('mostra o aviso de modo de teste só quando o MFA está desligado', () => {
+    expect(html(<Casca email="a@b.com" mfaDesligado><p>x</p></Casca>)).toContain('verificação em duas etapas está desativada');
+    expect(html(<Casca email="a@b.com"><p>x</p></Casca>)).not.toContain('desativada');
   });
 });
