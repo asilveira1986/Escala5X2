@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Casca } from '@/components/Casca';
+
+vi.mock('next/navigation', () => ({ usePathname: () => '/empresas', useRouter: () => ({ push: vi.fn() }) }));
 
 const html = (el: React.ReactElement) => renderToStaticMarkup(el);
 
