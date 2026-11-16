@@ -39,6 +39,9 @@ export type ContextoColaborador = {
   folgasSemana?: number | null;
   horasExtrasMensaisMin?: number;
   acordos: AcordoDoColaborador[];
+  /** Vínculo: escalar fora dele é bloqueio. Opcionais para não quebrar o diagnóstico. */
+  admissao?: DataISO;
+  desligamento?: DataISO | null;
 };
 
 export type RegrasEfetivas = {
@@ -53,6 +56,10 @@ export type RegrasEfetivas = {
   domingoRodizio?: { aCadaNSemanas: number };
   regimeCompensatorio?: { escala: string; maxDiariaMin: number };
   bancoHoras?: Record<string, unknown>;
+  /** Intervalo intrajornada (CLT art. 71): mínimo acima de 6h, mínimo entre 4h e 6h, máximo sem acordo. */
+  intervaloMinAcima6hMin: number;
+  intervaloMin4a6hMin: number;
+  intervaloMaxMin: number;
   /** Teto semanal geral, antes das exceções (alta renda e acordos). */
   tetoGeralSemanalMin: number;
   /** Códigos das regras aplicadas, na ordem de mescla (rastreabilidade jurídica). */

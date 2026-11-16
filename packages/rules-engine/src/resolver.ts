@@ -63,6 +63,10 @@ export function resolverRegras(ctx: ContextoColaborador, data: DataISO, regras: 
     interjornadaMin: num(base, 'interjornada_min')!,
     maxHoraExtraDiaMin: num(base, 'max_he_dia_min')!,
     adicionalHePercentual: num(base, 'he_percentual_min')!,
+    // Intrajornada: valores da CLT, sobrescritos se a regra cadastrada trouxer outros (dado, não código).
+    intervaloMinAcima6hMin: num(base, 'intervalo_min_acima_6h') ?? 60,
+    intervaloMin4a6hMin: num(base, 'intervalo_min_4a6h') ?? 15,
+    intervaloMaxMin: num(base, 'intervalo_max') ?? 120,
     tetoGeralSemanalMin: num(base, 'max_semanal_min')!,
     regrasAplicadas: aplicadas,
   };
