@@ -42,6 +42,7 @@ describe('Minha escala', () => {
     expect(await screen.findByText('Escala não está publicada.')).toBeTruthy();
     expect(darCiencia).toHaveBeenCalledWith('e1');
     darCiencia.mockResolvedValueOnce({ ok: true });
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Estou ciente desta escala' }) as HTMLButtonElement).disabled).toBe(false)); // transição terminou
     fireEvent.click(screen.getByRole('button', { name: 'Estou ciente desta escala' }));
     await waitFor(() => expect(darCiencia).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.queryByText('Escala não está publicada.')).toBeNull());
