@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+**/.next
+**/dist
+.git
+.github
+.turbo
+.env
+.env.*
+!.env.example
+docs
+*.md
+packages/db/test
+**/test
+**/*.test.ts
+**/*.test.tsx
+.pgdata

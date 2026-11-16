@@ -256,3 +256,18 @@ describe('cadastro automático e primeiros passos', () => {
     await expect(comoUsuario(db, admA, (c) => c.query(`insert into usuario (id, nome, email) values (gen_random_uuid(), 'x', 'x@x')`))).rejects.toThrow(/row-level security/);
   });
 });
+
+describe('chave de criptografia no Vault (como no Supabase)', () => {
+  it('lê o segredo chave_dados do Vault; sem segredo e sem configuração, falha com mensagem clara', async () => {
+    await db.query(`select set_config('app.chave_dados', '', false)`);
+    try {
+      await expect(db.query(`select hash_cpf('11144477735')`)).rejects.toThrow(/segredo chave_dados não configurado/);
+      await db.query(`select vault.create_secret('segredo-do-vault', 'chave_dados', 'teste')`);
+      const r = await db.query(`select decifrar_texto(cifrar_texto('abc')) t, hash_cpf('111.444.777-35') = hash_cpf('11144477735') igual`);
+      expect(r.rows[0]).toEqual({ t: 'abc', igual: true });
+    } finally {
+      await db.query(`delete from vault.secrets where name = 'chave_dados'`);
+      await db.query(`select set_config('app.chave_dados', 'chave-de-teste', false)`);
+    }
+  });
+});

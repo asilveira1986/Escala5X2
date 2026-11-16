@@ -155,7 +155,7 @@ end $$;
 
 -- ===== Auditoria encadeada =====
 create function auditoria_gravar() returns trigger
-language plpgsql security definer set search_path = public, auth as $$
+language plpgsql security definer set search_path = public, auth, extensions as $$
 declare
   v_row jsonb := to_jsonb(coalesce(new, old));
   v_org uuid;
