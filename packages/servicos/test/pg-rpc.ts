@@ -22,3 +22,24 @@ export function rpcPg(db: Client, uid: string, aal: 'aal1' | 'aal2' = 'aal2'): C
     },
   };
 }
+
+/** Como o cliente service_role do servidor (sem RLS): só para funções restritas, como publicar_escala. */
+export function rpcPgServidor(db: Client): ClienteRpc {
+  return {
+    async rpc(nome, args) {
+      const chaves = Object.keys(args);
+      const sql = `select ${nome}(${chaves.map((k, i) => `${k} => $${i + 1}`).join(', ')}) as r`;
+      const valores = chaves.map((k) => { const v = args[k]; return v !== null && typeof v === 'object' ? JSON.stringify(v) : v; });
+      await db.query('begin');
+      try {
+        await db.query('set local role service_role');
+        const r = await db.query(sql, valores as unknown[]);
+        await db.query('commit');
+        return { data: r.rows[0]?.r ?? null, error: null };
+      } catch (e) {
+        await db.query('rollback');
+        return { data: null, error: { message: e instanceof Error ? e.message : String(e) } };
+      }
+    },
+  };
+}
