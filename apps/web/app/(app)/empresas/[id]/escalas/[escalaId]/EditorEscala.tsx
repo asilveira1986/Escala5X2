@@ -7,7 +7,7 @@ import { resumirHoras, validarEntrada, type EntradaEscala } from '@jc/servicos';
 import { dataBr, diaDaSemana, duracao, type Violacao } from '@jc/rules-engine';
 import { Aviso, Botao, Cartao, Selo } from '@/components/ui';
 import {
-  aplicarPincel, chave, contarTrabalhando, diasDoPeriodo, faixaHoras, indexar, NOMES_DIA, repetirPrimeiraSemana, rotuloCelula,
+  aplicarPincel, ausenciasPorCelula, chave, contarTrabalhando, diasComCoberturaBaixa, diasDoPeriodo, faixaHoras, indexar, NOMES_DIA, repetirPrimeiraSemana, rotuloCelula,
   severidadePorCelula, type Celula, type Modelo, type Pincel,
 } from '@/lib/escala-editor';
 import { novaVersao, publicar, salvarGrade } from '../actions';
@@ -36,6 +36,8 @@ export function EditorEscala({ empresaId, entrada, modelos }: { empresaId: strin
   const celulas = useMemo(() => indexar(alocs), [alocs]);
   const severidades = useMemo(() => severidadePorCelula(resultado.violacoes), [resultado]);
   const trabalhando = useMemo(() => contarTrabalhando(alocs, dias), [alocs, dias]);
+  const ausencias = useMemo(() => ausenciasPorCelula(entrada.ausencias, dias), [entrada, dias]);
+  const coberturaBaixa = useMemo(() => diasComCoberturaBaixa(resultado.violacoes), [resultado]);
   const feriados = useMemo(() => new Map(entrada.feriados.map((f) => [f.data, f.nome])), [entrada]);
   const horas = useMemo(() => {
     try { return new Map(resumirHoras(entrada, alocs).map((r) => [r.colaboradorId, r.horas])); } catch { return new Map(); }
@@ -144,6 +146,8 @@ export function EditorEscala({ empresaId, entrada, modelos }: { empresaId: strin
                   className={`inline-flex min-h-11 items-center rounded-full border px-3 text-sm font-semibold sm:min-h-9 ${ativo ? 'border-marca bg-marca-suave' : 'border-linha bg-cartao'}`}>{rotulo}</button>
               );
             })}
+            <Link href={`/empresas/${empresaId}/escalas/cobertura`} className="ml-auto text-sm font-semibold text-marca hover:underline">Cobertura</Link>
+            <Link href={`/empresas/${empresaId}/escalas/ausencias`} className="text-sm font-semibold text-marca hover:underline">Férias</Link>
             {modelos.length === 0 ? <Link href={`/empresas/${empresaId}/escalas`} className="text-sm font-semibold text-marca hover:underline">Cadastre turnos para pintar a grade</Link> : null}
           </div>
         </Cartao>
@@ -186,11 +190,12 @@ export function EditorEscala({ empresaId, entrada, modelos }: { empresaId: strin
                     {dias.map((d) => {
                       const k = chave(c.colaboradorId, d);
                       const itens = celulas.get(k) ?? [];
-                      const r = rotuloCelula(itens);
+                      const aus = itens.length === 0 ? ausencias.get(k) : undefined;
+                      const r = aus ? { curto: aus === 'ferias' ? 'Fér' : 'Afa', longo: aus === 'ferias' ? 'Férias lançadas' : 'Afastamento lançado' } : rotuloCelula(itens);
                       const sev = severidades.get(k);
                       const modelo = itens[0]?.modeloId ? modeloPorId.get(itens[0].modeloId) : undefined;
                       const trabalho = itens.some((i) => i.tipo === 'trabalho');
-                      const fundo = trabalho ? '' : itens.length ? 'bg-neutro-bg text-neutro-fg' : '';
+                      const fundo = trabalho ? '' : itens.length || aus ? 'bg-neutro-bg text-neutro-fg' : '';
                       return (
                         <td key={d} className="border-b border-linha p-0.5">
                           <button id={`cel-${k}`} type="button" onClick={() => pintar(c.colaboradorId, d)} disabled={somenteLeitura}
@@ -213,7 +218,10 @@ export function EditorEscala({ empresaId, entrada, modelos }: { empresaId: strin
             <tfoot>
               <tr>
                 <th scope="row" className="sticky left-0 z-10 bg-cartao px-3 py-1.5 text-left text-xs">Pessoas trabalhando</th>
-                {trabalhando.map((n, i) => <td key={dias[i]} className="px-0.5 py-1.5 text-center font-semibold">{n}</td>)}
+                {trabalhando.map((n, i) => {
+                  const baixa = coberturaBaixa.has(dias[i]!);
+                  return <td key={dias[i]} title={baixa ? 'Abaixo da cobertura mínima' : undefined} className={`px-0.5 py-1.5 text-center font-semibold ${baixa ? 'rounded bg-atencao-bg text-atencao-fg' : ''}`}>{n}{baixa ? <span className="sr-only"> (abaixo do mínimo)</span> : null}</td>;
+                })}
                 <td className="sticky right-0 bg-cartao" />
               </tr>
             </tfoot>

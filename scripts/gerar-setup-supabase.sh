@@ -92,4 +92,14 @@ commit;
 SQL
 } > "$INC9"
 echo "gerado: $INC9"
+# Atualização incremental da cobertura (migration 0010) para bancos que já têm as migrations 0001 a 0009.
+INC10=$DB/setup/supabase_atualizar_cobertura.sql
+{
+  echo "-- JornadaCerta: validação da demanda de cobertura (migration 0010) em um banco que já tem as migrations 0001 a 0009."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0010_demanda_setor.up.sql"
+  echo "commit;"
+} > "$INC10"
+echo "gerado: $INC10"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"
