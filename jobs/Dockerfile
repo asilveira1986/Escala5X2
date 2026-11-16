@@ -17,6 +17,9 @@ COPY jobs/package.json jobs/
 RUN pnpm install --frozen-lockfile --prod=false --filter @jc/jobs...
 COPY jobs jobs
 COPY packages/connectors packages/connectors
-RUN useradd --system --uid 1001 app && chown -R app /repo
+# Usuário sem privilégios, com pasta pessoal gravável. O início não usa pnpm/corepack (que tentaria baixar o pnpm
+# em tempo de execução e falharia com EACCES): chama o tsx direto.
+RUN useradd --system --create-home --uid 1001 app && chown -R app /repo
 USER app
-CMD ["pnpm", "--filter", "@jc/jobs", "start"]
+WORKDIR /repo/jobs
+CMD ["node_modules/.bin/tsx", "src/worker.ts"]
