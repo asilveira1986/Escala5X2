@@ -9,17 +9,21 @@ const ids = (c: ContextoMenu) => montarMenu(c).flatMap((s) => s.grupos.map((g) =
 describe('montarMenu', () => {
   it('gestor dentro de uma empresa: Geral, Empresa (com grupos e subitens) e nada de colaborador', () => {
     const m = montarMenu(ctx());
-    expect(m.map((s) => s.id)).toEqual(['geral', 'empresa']);
-    expect(m[0]!.grupos.map((g) => g.id)).toEqual(['carteira', 'empresas']);
+    expect(m.map((s) => s.id)).toEqual(['geral', 'empresa', 'configuracoes']);
+    expect(m[0]!.grupos.map((g) => g.id)).toEqual(['carteira']);
     const emp = m[1]!.grupos;
     expect(emp.map((g) => g.id)).toEqual(['visao', 'diagnostico', 'equipe', 'escalas', 'pedidos', 'ponto-folha']);
     expect(emp.find((g) => g.id === 'escalas')!.itens!.map((i) => i.rotulo)).toEqual(['Escalas do mês', 'Turnos', 'Cobertura mínima', 'Férias e afastamentos']);
     expect(emp.find((g) => g.id === 'ponto-folha')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/ponto`, `/empresas/${E}/banco-horas`, `/empresas/${E}/folha`]);
     expect(emp.find((g) => g.id === 'equipe')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/colaboradores`, `/empresas/${E}/importar`]);
   });
+  it('Configurações reúne a lista de empresas e o cadastro de nova empresa', () => {
+    const cfg = montarMenu(ctx()).find((s) => s.id === 'configuracoes')!;
+    expect(cfg.grupos[0]!.itens!.map((i) => [i.rotulo, i.href])).toEqual([['Empresas', '/empresas'], ['Nova empresa', '/empresas/nova']]);
+  });
   it('fora de uma empresa não há seção da empresa; sem carteira, o item some', () => {
-    expect(ids(ctx({ empresaId: null }))).toEqual(['geral:carteira', 'geral:empresas']);
-    expect(ids(ctx({ empresaId: null, temCarteira: false }))).toEqual(['geral:empresas']);
+    expect(ids(ctx({ empresaId: null }))).toEqual(['geral:carteira', 'configuracoes:config']);
+    expect(ids(ctx({ empresaId: null, temCarteira: false }))).toEqual(['configuracoes:config']);
   });
   it('colaborador sem papel de gestão: só o menu pessoal', () => {
     const m = montarMenu(ctx({ ehGestor: false, temMinhaEscala: true, temCarteira: false, empresaId: null }));
@@ -29,11 +33,11 @@ describe('montarMenu', () => {
   });
   it('gestor que também é colaborador ganha "Minha área" no fim', () => {
     const m = montarMenu(ctx({ temMinhaEscala: true }));
-    expect(m.map((s) => s.id)).toEqual(['geral', 'empresa', 'colaborador']);
+    expect(m.map((s) => s.id)).toEqual(['geral', 'empresa', 'configuracoes', 'colaborador']);
     expect(m.at(-1)!.titulo).toBe('Minha área');
   });
   it('quem não gere nem é colaborador (conta nova) enxerga Empresas para criar a organização', () => {
-    expect(ids(ctx({ ehGestor: false, temCarteira: false, empresaId: null }))).toEqual(['geral:empresas']);
+    expect(ids(ctx({ ehGestor: false, temCarteira: false, empresaId: null }))).toEqual(['configuracoes:config']);
   });
   it('colaborador-só nunca vê a seção da empresa, mesmo com a URL de uma empresa', () => {
     expect(ids(ctx({ ehGestor: false, temMinhaEscala: true, temCarteira: false }))).toEqual(['colaborador:minha-escala', 'colaborador:meus-pedidos', 'colaborador:meu-banco']);
@@ -70,7 +74,8 @@ describe('posicaoAtual', () => {
     expect(posicaoAtual(m, `/empresas/${E}/`)?.grupoId).toBe('visao');
     expect(posicaoAtual(m, `/empresas/${E}/folha?mes=2027-02`)).toMatchObject({ itemId: 'folha' });
     expect(posicaoAtual(m, '/minha-escala')).toMatchObject({ grupoId: 'minha-escala' });
-    expect(posicaoAtual(m, '/empresas')).toMatchObject({ grupoId: 'empresas' });
+    expect(posicaoAtual(m, '/empresas')).toMatchObject({ grupoId: 'config', itemId: 'config-empresas' });
+    expect(posicaoAtual(m, '/empresas/nova')).toMatchObject({ grupoId: 'config', itemId: 'config-nova-empresa' });
   });
   it('caminho desconhecido não marca nada', () => {
     expect(posicaoAtual(m, '/qualquer/coisa')).toBeNull();

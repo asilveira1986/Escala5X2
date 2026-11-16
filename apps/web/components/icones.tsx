@@ -55,3 +55,6 @@ export const IconeRelogio = (p: P) => <svg {...base} {...p}><circle cx="12" cy="
 export const IconeBanco = (p: P) => <svg {...base} {...p}><path d="M4 9.5l8-5 8 5M5.5 10v7.5M10 10v7.5M14 10v7.5M18.5 10v7.5M3.5 19.5h17" /></svg>;
 export const IconeFolha = (p: P) => <svg {...base} {...p}><path d="M7 3.5h7l4.5 4.5v11A1.5 1.5 0 0117 20.5H7A1.5 1.5 0 015.5 19V5A1.5 1.5 0 017 3.5z" /><path d="M14 3.5V8h4.5M9 12.5h6M9 16h6" /></svg>;
 export const IconeSair = (p: P) => <svg {...base} {...p}><path d="M14 4.5h3.5A1.5 1.5 0 0119 6v12a1.5 1.5 0 01-1.5 1.5H14M10.5 8L6.5 12l4 4M6.5 12H16" /></svg>;
+
+export const IconeConfig = (p: P) => <svg {...base} {...p}><circle cx="12" cy="12" r="3" /><path d="M19.4 14.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>;
+export const IconeMais = (p: P) => <svg {...base} {...p}><path d="M12 5v14M5 12h14" /></svg>;

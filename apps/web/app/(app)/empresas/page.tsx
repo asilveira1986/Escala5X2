@@ -1,9 +1,9 @@
 import { CartaoEmpresa } from '@/components/CartaoEmpresa';
 import { EstadoVazio } from '@/components/EstadoVazio';
-import { Cartao, Titulo } from '@/components/ui';
+import Link from 'next/link';
+import { Cartao, classeBotaoLinkPrimario, Titulo } from '@/components/ui';
 import { exigirUsuario, linhas } from '@/lib/contexto';
 import type { EmpresaRow, OrganizacaoRow } from '@/lib/tipos-db';
-import { FormNovaEmpresa } from './FormNovaEmpresa';
 import { FormNovaOrganizacao } from './FormNovaOrganizacao';
 
 export default async function Empresas() {
@@ -27,15 +27,17 @@ export default async function Empresas() {
   return (
     <>
       {nome ? <p className="-mb-1 text-sm font-semibold text-marca">Olá, {nome}!</p> : <p className="-mb-1 text-sm font-semibold text-marca">Olá!</p>}
-      <Titulo descricao="Escolha uma empresa para ver o diagnóstico da nova escala 5x2 ou cadastre uma nova.">Suas empresas</Titulo>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <Titulo descricao="Escolha uma empresa para abrir o sistema dela.">Suas empresas</Titulo>
+        {organizacoes.length > 0 ? <Link href="/empresas/nova" className={classeBotaoLinkPrimario}>Nova empresa</Link> : null}
+      </div>
       {empresas.length > 0 ? (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {empresas.map((e) => <li key={e.id} className="contents"><CartaoEmpresa empresa={e} /></li>)}
         </ul>
       ) : (
-        <Cartao><EstadoVazio titulo="Vamos começar?">Cadastre a primeira empresa. Em seguida você importa a planilha de colaboradores e recebe o diagnóstico em poucos minutos.</EstadoVazio></Cartao>
+        <Cartao><EstadoVazio titulo="Vamos começar?">Use o botão Nova empresa. Em seguida você importa a planilha de colaboradores e recebe o diagnóstico em poucos minutos.</EstadoVazio></Cartao>
       )}
-      {organizacoes.length > 0 && <Cartao titulo="Cadastrar empresa"><FormNovaEmpresa organizacoes={organizacoes} /></Cartao>}
     </>
   );
 }
