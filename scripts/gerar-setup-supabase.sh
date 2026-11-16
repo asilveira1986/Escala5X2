@@ -152,4 +152,14 @@ INC15=$DB/setup/supabase_atualizar_folha.sql
   echo "commit;"
 } > "$INC15"
 echo "gerado: $INC15"
+# Atualização incremental da importação do ponto/AFD (migration 0016) para bancos com as migrations 0001 a 0015.
+INC16=$DB/setup/supabase_atualizar_ponto.sql
+{
+  echo "-- JornadaCerta: importação do ponto (AFD, migration 0016) em um banco que já tem as migrations 0001 a 0015."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0016_ponto_afd.up.sql"
+  echo "commit;"
+} > "$INC16"
+echo "gerado: $INC16"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"
