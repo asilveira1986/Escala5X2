@@ -58,4 +58,21 @@ commit;
 SQL
 } > "$INC"
 echo "gerado: $INC"
+# Atualização incremental das escalas (Fase 2) para bancos que já têm as migrations 0001 a 0005.
+INC6=$DB/setup/supabase_atualizar_escalas.sql
+{
+  echo "-- JornadaCerta: adiciona as tabelas de escalas (Fase 2) a um banco já instalado (migrations 0001 a 0005)."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0006_escalas.up.sql"
+  cat <<'SQL'
+
+-- conferência: deve listar as 7 tabelas novas
+select table_name from information_schema.tables
+ where table_schema = 'public' and table_name in ('turno_modelo','demanda_cobertura','ausencia','escala','alocacao','violacao','ciencia')
+ order by 1;
+commit;
+SQL
+} > "$INC6"
+echo "gerado: $INC6"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"

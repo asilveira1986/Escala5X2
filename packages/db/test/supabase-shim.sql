@@ -21,7 +21,7 @@ create or replace function auth.jwt() returns jsonb language sql stable as $$
   select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
 create or replace function auth.uid() returns uuid language sql stable as $$
   select nullif(auth.jwt() ->> 'sub', '')::uuid $$;
-grant usage on schema public, auth to anon, authenticated;
+grant usage on schema public, auth to anon, authenticated, service_role;
 grant execute on function auth.jwt(), auth.uid() to anon, authenticated;
 
 -- Mínimo do Storage do Supabase (buckets, objects, foldername) para testar as políticas de 0003.
