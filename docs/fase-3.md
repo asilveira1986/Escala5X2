@@ -50,5 +50,8 @@ Em *Escalas → Fechamento para a folha* (por mês). O sistema calcula, para cad
 
 **Ativação:** `packages/db/setup/supabase_atualizar_folha.sql` (uma vez). Para a coluna Matrícula sair preenchida, cadastre a matrícula dos colaboradores (planilha de importação).
 
+## Importação do ponto (AFD)
+Veja `docs/ponto-afd.md`: leitor dos leiautes 1.510 (PIS) e 671 (CPF), marcações sem CPF/PIS em claro, vínculo ao colaborador, desfazer importação e conferência escala × ponto. **Pendente: validar com um AFD real do relógio.**
+
 ### Ainda não feito (próximas fatias)
-Notificações (e-mail/WhatsApp) de pedido novo e de decisão; ciência apenas dos afetados em versões geradas por troca; ajuste de ponto; exportação para folha; WhatsApp; cobrança.
+Usar as horas apuradas pelo ponto no fechamento da folha e no banco de horas; notificações (e-mail/WhatsApp) de pedido novo e de decisão; ciência apenas dos afetados em versões geradas por troca; ajuste de ponto; exportação para folha; WhatsApp; cobrança.

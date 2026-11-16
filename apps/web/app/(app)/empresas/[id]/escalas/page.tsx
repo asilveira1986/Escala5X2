@@ -41,6 +41,7 @@ export default async function Escalas({ params }: { params: Promise<{ id: string
         <Link href={`/empresas/${empresaId}/escalas/ausencias`} className={classeBotaoLink}>Férias e afastamentos</Link>
         <Link href={`/empresas/${empresaId}/banco-horas`} className={classeBotaoLink}>Banco de horas</Link>
         <Link href={`/empresas/${empresaId}/folha`} className={classeBotaoLink}>Fechamento para a folha</Link>
+        <Link href={`/empresas/${empresaId}/ponto`} className={classeBotaoLink}>Ponto (AFD)</Link>
       </div>
       <Cartao titulo="Escalas">
         {escalas.length === 0 ? <EstadoVazio titulo="Nenhuma escala ainda">Crie a primeira acima. Os turnos que você cadastrar ficam disponíveis para pintar na grade.</EstadoVazio> : (

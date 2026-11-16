@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { EstadoVazio } from '@/components/EstadoVazio';
 import { Cartao } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
+import { todasAsLinhas } from '@/lib/paginar';
 import { horasTexto, saldoTexto } from '@/lib/banco-horas-ui';
 import { calcularSaldo, lerEntradaDiagnostico, valorEstimadoVencido, type Lancamento } from '@jc/servicos';
 import { dataDeInstante, divisorEfetivo, resolverRegras, valorHoraCentavos } from '@jc/rules-engine';
@@ -12,15 +13,16 @@ export default async function BancoHoras({ params }: { params: Promise<{ id: str
   const empresaId = idOu404((await params).id);
   const { supabase } = await exigirUsuario();
   const hoje = dataDeInstante(new Date());
-  const [{ data: col }, { data: lan }, { data: ger }, { data: entradaBruta }] = await Promise.all([
-    supabase.from('colaborador').select('id, nome, desligamento').eq('empresa_id', empresaId).order('nome').limit(5000),
-    supabase.from('banco_horas_lancamento').select('id, colaborador_id, data, minutos, origem, descricao, vence_em, estorna_id, criado_em').eq('empresa_id', empresaId).limit(20000),
+  const [col, lan, { data: ger }, { data: entradaBruta }] = await Promise.all([
+    // o Supabase corta cada consulta em 1000 linhas: lê por páginas
+    todasAsLinhas<{ id: string; nome: string; desligamento: string | null }>((a, b) => supabase.from('colaborador').select('id, nome, desligamento').eq('empresa_id', empresaId).order('nome').range(a, b)),
+    todasAsLinhas<Lancamento>((a, b) => supabase.from('banco_horas_lancamento').select('id, colaborador_id, data, minutos, origem, descricao, vence_em, estorna_id, criado_em').eq('empresa_id', empresaId).order('id').range(a, b), { maximo: 500_000 }),
     supabase.rpc('pode_gerir_empresa', { p_empresa: empresaId }),
     supabase.rpc('diagnostico_entrada', { p_empresa: empresaId, p_data: hoje }),
   ]);
-  const colaboradores = linhas<{ id: string; nome: string; desligamento: string | null }>(col);
+  const colaboradores = col.linhas;
   const porPessoa = new Map<string, Lancamento[]>();
-  for (const l of linhas<Lancamento>(lan)) porPessoa.set(l.colaborador_id, [...(porPessoa.get(l.colaborador_id) ?? []), l]);
+  for (const l of lan.linhas) porPessoa.set(l.colaborador_id, [...(porPessoa.get(l.colaborador_id) ?? []), l]);
 
   // Valor estimado do que pagar pelo crédito vencido (hora × adicional de hora extra); só para quem tem contrato vigente.
   const valorHora = new Map<string, { hora: number; adicional: number }>();

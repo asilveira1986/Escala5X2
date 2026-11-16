@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { EstadoVazio } from '@/components/EstadoVazio';
 import { Cartao, Selo } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
+import { todasAsLinhas } from '@/lib/paginar';
 import { lerDaterange } from '@/lib/cobertura';
 import { dataBr } from '@jc/rules-engine';
 import { BotaoRemover } from '../cobertura/BotaoRemover';
@@ -15,7 +16,7 @@ export default async function Ausencias({ params }: { params: Promise<{ id: stri
   const { supabase } = await exigirUsuario();
   const [aus, col, ger] = await Promise.all([
     supabase.from('ausencia').select('id, colaborador_id, periodo, tipo, observacao').eq('empresa_id', empresaId).order('periodo', { ascending: false }).limit(300),
-    supabase.from('colaborador').select('id, nome, desligamento').eq('empresa_id', empresaId).order('nome').limit(5000),
+    todasAsLinhas<{ id: string; nome: string; desligamento: string | null }>((a, b) => supabase.from('colaborador').select('id, nome, desligamento').eq('empresa_id', empresaId).order('nome').range(a, b)).then((r) => ({ data: r.linhas })),
     supabase.rpc('pode_gerir_empresa', { p_empresa: empresaId }),
   ]);
   const colaboradores = linhas<{ id: string; nome: string; desligamento: string | null }>(col.data);
