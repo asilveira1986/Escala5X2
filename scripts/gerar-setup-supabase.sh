@@ -112,4 +112,14 @@ INC11=$DB/setup/supabase_atualizar_carteira.sql
   echo "commit;"
 } > "$INC11"
 echo "gerado: $INC11"
+# Atualização incremental da geração automática de escalas (migration 0012) para bancos com as migrations 0001 a 0011.
+INC12=$DB/setup/supabase_atualizar_otimizacao.sql
+{
+  echo "-- JornadaCerta: geração automática de escalas (migration 0012) em um banco que já tem as migrations 0001 a 0011."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0012_otimizacao.up.sql"
+  echo "commit;"
+} > "$INC12"
+echo "gerado: $INC12"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"

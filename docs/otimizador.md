@@ -27,3 +27,11 @@ pnpm --filter @jc/servicos test      # inclui a integração (pula se não houve
 4. Verifique `GET /health` → `{"status":"ok"}`.
 
 Sem `OPTIMIZER_TOKEN` o serviço recusa tudo (503). A documentação interativa do FastAPI fica desligada.
+
+## Integração com o app (Fase 3 b)
+Fluxo: editor → **Gerar propostas** → `solicitar_otimizacao` (banco confere a permissão e guarda um retrato da escala) → fila pg-boss → **worker** monta o problema, chama o otimizador, **revalida com o motor TypeScript** e grava o resultado em `otimizacao` → a tela acompanha e mostra até 3 propostas → **Aplicar na grade** (revalida de novo contra o estado atual da escala e grava com a trava de revisão).
+
+- Uma geração ativa por escala; pedido que não entra na fila expira em 2 min e o processamento preso, em 10 min. Dá para cancelar.
+- Proposta com bloqueio nunca chega à tela; a divergência vai para o log do worker.
+- Ativação: rodar `packages/db/setup/supabase_atualizar_otimizacao.sql`; no serviço **worker** do Railway, definir `OPTIMIZER_URL` e `OPTIMIZER_TOKEN` (os mesmos do serviço `optimizer`); o serviço **web** já usa `DATABASE_URL` para enfileirar. Sem as variáveis, o pedido termina com mensagem clara ("otimizador não configurado").
+- Teste de ponta a ponta com o otimizador real: `jobs/test/otimizacao-real.test.ts` (pula sem `apps/optimizer/.venv`).
