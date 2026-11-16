@@ -4,6 +4,9 @@ import { decidirAcesso } from './acesso';
 const base = { autenticado: true, nivelAtual: 'aal1' as const, papeis: ['admin'], mfaCadastrado: false };
 
 describe('decidirAcesso', () => {
+  it('o link de convite (/auth/confirmar) é público para quem ainda não entrou', () => {
+    expect(decidirAcesso({ caminho: '/auth/confirmar', autenticado: false, nivelAtual: null, papeis: [], mfaCadastrado: false })).toBeNull();
+  });
   it('anônimo vai ao login, exceto em rotas públicas', () => {
     expect(decidirAcesso({ ...base, autenticado: false, caminho: '/carteira' })).toBe('/login');
     expect(decidirAcesso({ ...base, autenticado: false, caminho: '/login' })).toBeNull();

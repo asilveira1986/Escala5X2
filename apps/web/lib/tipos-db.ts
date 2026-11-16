@@ -14,3 +14,5 @@ export type ImportacaoRow = {
 };
 export const ROTULO_PORTE = { mei: 'MEI', me: 'Microempresa', epp: 'Empresa de pequeno porte', medio: 'Médio porte', grande: 'Grande porte' } as const;
 export const ROTULO_STATUS = { nao_iniciado: 'Não iniciado', em_risco: 'Em risco', adequado: 'Adequado' } as const;
+
+export type LinhaEquipe = ColaboradorVigenteRow & { acesso: { estado: 'sem' | 'pendente' | 'com'; email?: string } };
