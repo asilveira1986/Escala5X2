@@ -21,5 +21,18 @@ Regras do banco: só o próprio colaborador pede por si; só pedidos de hoje em 
 ### Ativação
 Rodar `packages/db/setup/supabase_atualizar_solicitacoes.sql` (uma vez). Ele também atualiza `escala_entrada` para trazer o modelo de turno de cada alocação.
 
+## Banco de horas
+Livro-razão **imutável** (só se acrescenta; correção = **estorno** com motivo, que fica registrado). Cada lançamento é em minutos: crédito (+) ou débito (−).
+
+**Regras (vindas do acordo):** crédito só existe para colaborador com acordo **vigente** que tenha a cláusula `banco_horas` (a lei exige acordo); sem acordo o banco recusa. Parâmetros da cláusula: `prazo_meses` (padrão 6; define o vencimento de cada crédito), `limite_saldo_min` (teto do saldo positivo; ausente = sem teto) e `limite_negativo_min` (quanto o saldo pode ficar negativo; padrão 0).
+
+**Vencimento:** os débitos consomem primeiro o crédito que vence antes (FIFO por vencimento). Compensar depois do vencimento não apaga o vencido: ele continua **a pagar como hora extra** (o painel mostra a estimativa com o valor da hora e o adicional). O RH registra o *pagamento*, que quita primeiro os vencidos.
+
+**Telas:** RH em *Escalas → Banco de horas* (lista por colaborador com saldo, a vencer em 30 dias, vencido e valor estimado; extrato, lançar e estornar por pessoa). O colaborador vê saldo, vencimentos e extrato em *Minha escala → Meu banco de horas* (só os próprios lançamentos).
+
+**Ativação:** `packages/db/setup/supabase_atualizar_banco_horas.sql` (uma vez). Para lançar crédito é preciso cadastrar um acordo com a cláusula de banco de horas e vinculá-lo ao colaborador.
+
+**Ainda não feito no banco de horas:** alimentação automática pelo ponto (depende da importação AFD) e pela escala (horas extras programadas), compensação pedida pelo colaborador como solicitação, e exportação do pagamento para a folha.
+
 ### Ainda não feito (próximas fatias)
-Notificações (e-mail/WhatsApp) de pedido novo e de decisão; ciência apenas dos afetados em versões geradas por troca; ajuste de ponto; banco de horas; PWA; exportação para folha; WhatsApp; cobrança.
+Notificações (e-mail/WhatsApp) de pedido novo e de decisão; ciência apenas dos afetados em versões geradas por troca; ajuste de ponto; PWA; exportação para folha; WhatsApp; cobrança.

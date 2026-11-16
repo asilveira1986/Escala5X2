@@ -65,7 +65,9 @@ describe('processarOtimizacao', () => {
     expect(e.resultado.propostas[0].alocacoes).toHaveLength(21);            // resultado completo, para aplicar
     expect(e.resultado.propostas[0].alocacoes[0]).toMatchObject({ tipo: 'trabalho', modeloId: turnoId(), inicioMin: 480 });
     expect(e.resumo.descartadas).toBe(0);
-    expect((await db.query(`select usuario_id from auditoria where tabela='otimizacao' and registro_id=$1 and acao='UPDATE'`, [id])).rows.every((x) => x.usuario_id === adm)).toBe(true);
+    const aud = (await db.query(`select usuario_id from auditoria where tabela='otimizacao' and registro_id=$1 and acao='update'`, [id])).rows;
+    expect(aud.length).toBeGreaterThan(0);                                  // o worker grava (processando e concluída)
+    expect(aud.every((x) => x.usuario_id === adm)).toBe(true);              // e as escritas ficam atribuídas a quem pediu
   });
 
   it('proposta com bloqueio é descartada pelo motor TypeScript e registrada no log', async () => {

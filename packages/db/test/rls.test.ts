@@ -69,6 +69,7 @@ describe('isolamento entre organizações', () => {
   });
   it('não lê membros nem auditoria de outra organização', async () => {
     const m = await comoUsuario(db, ana, (c) => c.query('select organizacao_id from membro'));
+    expect(m.rows.length).toBeGreaterThan(0);
     expect(m.rows.every((r) => r.organizacao_id === orgA)).toBe(true);
     const a = await comoUsuario(db, ana, (c) => c.query('select distinct organizacao_id from auditoria'));
     expect(a.rows.map((r) => r.organizacao_id)).toEqual([orgA]);

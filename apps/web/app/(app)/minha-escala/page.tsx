@@ -42,7 +42,10 @@ export default async function MinhaEscala() {
         <p className="mt-1 text-suave">Olá, {nome.split(' ')[0]}. Aqui estão os seus horários publicados.</p>
       </div>
 
-      <Link href="/minha-escala/pedidos" className="inline-flex min-h-11 items-center rounded-full border border-linha bg-cartao px-4 text-sm font-semibold text-marca hover:bg-marca-suave sm:min-h-9">Pedir troca, folga ou férias</Link>
+      <div className="flex flex-wrap gap-2">
+        <Link href="/minha-escala/pedidos" className="inline-flex min-h-11 items-center rounded-full border border-linha bg-cartao px-4 text-sm font-semibold text-marca hover:bg-marca-suave sm:min-h-9">Pedir troca, folga ou férias</Link>
+        <Link href="/minha-escala/banco-horas" className="inline-flex min-h-11 items-center rounded-full border border-linha bg-cartao px-4 text-sm font-semibold text-marca hover:bg-marca-suave sm:min-h-9">Meu banco de horas</Link>
+      </div>
 
       {pendentes.length > 0 ? <Aviso tipo="info">{pendentes.length === 1 ? 'Há uma escala aguardando a sua ciência.' : `Há ${pendentes.length} escalas aguardando a sua ciência.`} Leia e confirme abaixo.</Aviso> : null}
 

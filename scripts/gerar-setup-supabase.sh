@@ -132,4 +132,14 @@ INC13=$DB/setup/supabase_atualizar_solicitacoes.sql
   echo "commit;"
 } > "$INC13"
 echo "gerado: $INC13"
+# Atualização incremental do banco de horas (migration 0014) para bancos com as migrations 0001 a 0013.
+INC14=$DB/setup/supabase_atualizar_banco_horas.sql
+{
+  echo "-- JornadaCerta: banco de horas (migration 0014) em um banco que já tem as migrations 0001 a 0013."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0014_banco_horas.up.sql"
+  echo "commit;"
+} > "$INC14"
+echo "gerado: $INC14"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"
