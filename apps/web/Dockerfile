@@ -40,6 +40,8 @@ WORKDIR /repo
 RUN useradd --system --uid 1001 app
 COPY --from=build --chown=app /repo/apps/web/.next/standalone ./
 COPY --from=build --chown=app /repo/apps/web/.next/static ./apps/web/.next/static
+# Arquivos públicos (service worker): o modo standalone do Next não os inclui sozinho.
+COPY --from=build --chown=app /repo/apps/web/public ./apps/web/public
 USER app
 # O Railway define PORT; o servidor do Next lê PORT.
 EXPOSE 3000

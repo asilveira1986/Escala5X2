@@ -84,6 +84,7 @@ describe('ListaPedidos', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Aceitar a troca de Ana' }));
     expect(await screen.findByText(/não está mais aguardando/)).toBeTruthy();
     expect(responderPedido).toHaveBeenCalledWith('s1', true);
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Recusar a troca de Ana' }) as HTMLButtonElement).disabled).toBe(false));   // a transição terminou
     fireEvent.click(screen.getByRole('button', { name: 'Recusar a troca de Ana' }));
     await waitFor(() => expect(responderPedido).toHaveBeenLastCalledWith('s1', false));
   });

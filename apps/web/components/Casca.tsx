@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { BotaoSair } from './BotaoSair';
 import { MarcaLogo } from './icones';
 
 /** Estrutura geral do aplicativo: barra superior leve e conteúdo centralizado. */
@@ -21,9 +22,7 @@ export function Casca({ email, children, mfaDesligado = false, temMinhaEscala = 
             <span className="hidden max-w-48 truncate text-sm text-suave sm:block" title={email}>{email}</span>
             {temCarteira ? <Link href="/carteira" className="min-h-9 content-center rounded-full px-3.5 text-sm font-semibold text-marca hover:bg-marca-suave">Carteira</Link> : null}
             {temMinhaEscala ? <Link href="/minha-escala" className="min-h-9 content-center rounded-full px-3.5 text-sm font-semibold text-marca hover:bg-marca-suave">Minha escala</Link> : null}
-            <form action="/auth/sair" method="post">
-              <button className="min-h-9 rounded-full px-3.5 text-sm font-semibold text-marca hover:bg-marca-suave">Sair</button>
-            </form>
+            <BotaoSair />
           </div>
         </nav>
       </header>
