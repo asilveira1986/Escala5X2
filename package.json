@@ -2,13 +2,16 @@
   "name": "jornadacerta",
   "private": true,
   "packageManager": "pnpm@10.28.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "db:test": "pnpm --filter @jc/db test"
+    "db:test": "pnpm --filter @jc/db test",
+    "test:otimizador": "sh -c 'cd apps/optimizer && .venv/bin/python -m pytest -q'"
   },
   "devDependencies": {
     "turbo": "^2.5.0",
