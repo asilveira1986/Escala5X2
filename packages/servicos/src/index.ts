@@ -4,3 +4,4 @@ export * from './diagnostico';
 export * from './escala-entrada';
 export * from './escala';
 export * from './otimizador';
+export * from './solicitacoes';
