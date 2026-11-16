@@ -151,7 +151,7 @@ export function EditorEscala({ empresaId, entrada, modelos, otimizacao = null }:
             })}
             <Link href={`/empresas/${empresaId}/escalas/cobertura`} className="ml-auto text-sm font-semibold text-marca hover:underline">Cobertura</Link>
             <Link href={`/empresas/${empresaId}/escalas/ausencias`} className="text-sm font-semibold text-marca hover:underline">Férias</Link>
-            {modelos.length === 0 ? <Link href={`/empresas/${empresaId}/escalas`} className="text-sm font-semibold text-marca hover:underline">Cadastre turnos para pintar a grade</Link> : null}
+            {modelos.length === 0 ? <Link href={`/empresas/${empresaId}/escalas/turnos`} className="text-sm font-semibold text-marca hover:underline">Cadastre turnos para pintar a grade</Link> : null}
           </div>
         </Cartao>
       ) : null}

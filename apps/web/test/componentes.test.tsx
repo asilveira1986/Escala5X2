@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Casca } from '@/components/Casca';
 import { ComparacaoCenarios } from '@/components/ComparacaoCenarios';
 import { PainelDiagnostico } from '@/components/PainelDiagnostico';
@@ -8,6 +8,8 @@ import { resumoSimples } from '@/lib/resumo';
 import { diagnosticar } from '@jc/rules-engine';
 import { REGRAS_SEED } from '../../../packages/rules-engine/src/fixtures/regras';
 import { cenario, diagnostico, equipe } from './fixtures';
+
+vi.mock('next/navigation', () => ({ usePathname: () => '/empresas', useRouter: () => ({ push: vi.fn() }) }));
 
 const html = (el: React.ReactElement) => renderToStaticMarkup(el).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 
