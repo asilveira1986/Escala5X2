@@ -1,6 +1,7 @@
 'use server';
 
-import { carregarEntradaEscala, ErroServico, publicarEscala } from '@jc/servicos';
+import { enfileirarOtimizacaoAvulsa } from '@jc/jobs';
+import { carregarEntradaEscala, ErroServico, publicarEscala, validarEntrada } from '@jc/servicos';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -101,5 +102,82 @@ export async function novaVersao(escalaId: string): Promise<{ ok: true; escalaId
     return { ok: true, escalaId: novo };
   } catch (err) {
     return { ok: false, erro: traduzir(err, 'Não foi possível criar a nova versão.') };
+  }
+}
+
+// ===== Geração automática de propostas (otimizador) =====
+export type ResumoProposta = {
+  indice: number; status: 'otima' | 'viavel'; alertas: number; infos: number;
+  metricas: { faltaCobertura: number; faltaIdeal: number; deficitHorasMin: number; domingosMin: number; domingosMax: number; preferenciasNaoAtendidas: number; custoReais: number; mudancasEmRelacaoReferencia: number; objetivo: number };
+};
+export type EstadoOtimizacao = {
+  id: string; status: 'pendente' | 'processando' | 'concluida' | 'erro'; erro: string | null;
+  resumo: null | { status: 'otima' | 'viavel' | 'inviavel'; mensagem: string | null; tempoMs: number; descartadas: number; propostas: ResumoProposta[] };
+};
+
+export async function gerarPropostasAutomaticas(escalaId: string, numSolucoes: 1 | 2 | 3 = 3, tempoLimiteS = 30): Promise<{ ok: true; id: string } | { ok: false; erro: string }> {
+  const eid = id.safeParse(escalaId);
+  if (!eid.success) return { ok: false, erro: 'Pedido inválido.' };
+  const url = process.env.DATABASE_URL;
+  if (!url) return { ok: false, erro: 'A fila de processamento não está configurada neste ambiente (DATABASE_URL).' };
+  const { supabase } = await exigirUsuario();
+  const { data, error } = await supabase.rpc('solicitar_otimizacao', { p_escala: eid.data, p_opcoes: { numSolucoes, tempoLimiteS } });
+  if (error || typeof data !== 'string') {
+    return { ok: false, erro: /permission|sem permiss|row-level/i.test(error?.message ?? '') ? 'Você não tem permissão para gerar propostas nesta escala.' : (error?.message ?? 'Não foi possível pedir as propostas.') };
+  }
+  try {
+    await enfileirarOtimizacaoAvulsa(url, data);
+  } catch {
+    await supabase.rpc('cancelar_otimizacao', { p_id: data }); // libera a escala para um novo pedido
+    return { ok: false, erro: 'O pedido foi registrado, mas não foi possível colocá-lo na fila. Tente de novo em instantes.' };
+  }
+  return { ok: true, id: data };
+}
+
+export async function cancelarOtimizacao(otimizacaoId: string): Promise<{ ok: boolean }> {
+  const oid = id.safeParse(otimizacaoId);
+  if (!oid.success) return { ok: false };
+  const { supabase } = await exigirUsuario();
+  const { error } = await supabase.rpc('cancelar_otimizacao', { p_id: oid.data });
+  return { ok: !error };
+}
+
+export async function lerOtimizacao(otimizacaoId: string): Promise<EstadoOtimizacao | null> {
+  const oid = id.safeParse(otimizacaoId);
+  if (!oid.success) return null;
+  const { supabase } = await exigirUsuario();
+  const { data } = await supabase.from('otimizacao').select('id, status, erro, resumo').eq('id', oid.data).maybeSingle();
+  return (data as EstadoOtimizacao | null) ?? null;
+}
+
+const propostaZ = z.object({
+  indice: z.number().int(),
+  alocacoes: z.array(z.object({
+    colaboradorId: z.string(), data: z.string(), tipo: z.enum(['trabalho', 'folga', 'dsr', 'ferias', 'afastamento', 'feriado']),
+    inicioMin: z.number().optional(), fimMin: z.number().optional(), intervaloMin: z.number().optional(), modeloId: z.string().nullable().optional(),
+  })),
+});
+
+/** Aplica uma proposta à grade (rascunho). Revalida contra o estado ATUAL da escala: se algo mudou e há bloqueio, recusa. */
+export async function aplicarProposta(otimizacaoId: string, indice: number): Promise<{ ok: true } | { ok: false; erro: string }> {
+  const oid = id.safeParse(otimizacaoId);
+  if (!oid.success || !Number.isInteger(indice)) return { ok: false, erro: 'Pedido inválido.' };
+  const { supabase } = await exigirUsuario();
+  const { data } = await supabase.from('otimizacao').select('escala_id, status, resultado').eq('id', oid.data).maybeSingle();
+  const o = data as { escala_id: string; status: string; resultado: { propostas?: unknown[] } | null } | null;
+  if (!o || o.status !== 'concluida') return { ok: false, erro: 'Esta geração de propostas não está disponível.' };
+  const proposta = (o.resultado?.propostas ?? []).map((p) => propostaZ.safeParse(p)).find((p) => p.success && p.data.indice === indice);
+  if (!proposta?.success) return { ok: false, erro: 'Proposta não encontrada.' };
+  try {
+    const entrada = await carregarEntradaEscala(supabase, o.escala_id);
+    if (entrada.escala.status !== 'rascunho') return { ok: false, erro: 'A escala já foi publicada; crie uma nova versão para alterá-la.' };
+    const validacao = validarEntrada(entrada, proposta.data.alocacoes);
+    if (validacao.bloqueios > 0) return { ok: false, erro: 'A escala mudou desde que a proposta foi gerada (por exemplo, férias lançadas) e ela já não é válida. Gere as propostas de novo.' };
+    const { error } = await supabase.rpc('salvar_alocacoes', { p_escala: o.escala_id, p_revisao: entrada.escala.revisao, p_alocacoes: paraGravacao(proposta.data.alocacoes as Celula[]) });
+    if (error) return { ok: false, erro: /alterada por outra pessoa/.test(error.message) ? 'A escala foi alterada por outra pessoa. Recarregue a página e aplique de novo.' : 'Não foi possível aplicar a proposta.' };
+    revalidatePath(`/empresas`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: traduzir(e, 'Não foi possível aplicar a proposta.') };
   }
 }

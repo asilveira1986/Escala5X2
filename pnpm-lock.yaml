@@ -90,6 +90,12 @@ importers:
       '@jc/connectors':
         specifier: workspace:*
         version: link:../packages/connectors
+      '@jc/rules-engine':
+        specifier: workspace:*
+        version: link:../packages/rules-engine
+      '@jc/servicos':
+        specifier: workspace:*
+        version: link:../packages/servicos
       '@supabase/supabase-js':
         specifier: ^2.50.0
         version: 2.118.0

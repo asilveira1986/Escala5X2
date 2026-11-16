@@ -17,6 +17,8 @@ COPY jobs/package.json jobs/
 RUN pnpm install --frozen-lockfile --prod=false --filter @jc/jobs...
 COPY jobs jobs
 COPY packages/connectors packages/connectors
+COPY packages/rules-engine packages/rules-engine
+COPY packages/servicos packages/servicos
 # Usuário sem privilégios, com pasta pessoal gravável. O início não usa pnpm/corepack (que tentaria baixar o pnpm
 # em tempo de execução e falharia com EACCES): chama o tsx direto.
 RUN useradd --system --create-home --uid 1001 app && chown -R app /repo

@@ -10,13 +10,14 @@ import {
   aplicarPincel, ausenciasPorCelula, chave, contarTrabalhando, diasComCoberturaBaixa, diasDoPeriodo, faixaHoras, indexar, NOMES_DIA, repetirPrimeiraSemana, rotuloCelula,
   severidadePorCelula, type Celula, type Modelo, type Pincel,
 } from '@/lib/escala-editor';
-import { novaVersao, publicar, salvarGrade } from '../actions';
+import { novaVersao, publicar, salvarGrade, type EstadoOtimizacao } from '../actions';
+import { PainelOtimizador } from './PainelOtimizador';
 
 const classeSeveridade = { bloqueio: 'ring-2 ring-risco-fg', alerta: 'ring-2 ring-atencao-fg', info: 'ring-1 ring-marca' } as const;
 const rotuloSeveridade = { bloqueio: 'Impede a publicação', alerta: 'Atenção', info: 'Informação' } as const;
 const tomSeveridade = { bloqueio: 'vermelho', alerta: 'amarelo', info: 'azul' } as const;
 
-export function EditorEscala({ empresaId, entrada, modelos }: { empresaId: string; entrada: EntradaEscala; modelos: Modelo[] }) {
+export function EditorEscala({ empresaId, entrada, modelos, otimizacao = null }: { empresaId: string; entrada: EntradaEscala; modelos: Modelo[]; otimizacao?: EstadoOtimizacao | null }) {
   const router = useRouter();
   const somenteLeitura = entrada.escala.status !== 'rascunho';
   const [alocs, setAlocs] = useState<Celula[]>(entrada.alocacoes);
@@ -125,6 +126,8 @@ export function EditorEscala({ empresaId, entrada, modelos }: { empresaId: strin
           </div>
         </Cartao>
       ) : null}
+
+      {!somenteLeitura ? <PainelOtimizador escalaId={entrada.escala.id} inicial={otimizacao} bloqueado={sujo} onAplicada={() => router.refresh()} /> : null}
 
       {!somenteLeitura ? (
         <Cartao>
