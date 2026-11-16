@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@jc/connectors": "workspace:*",
+    "@jc/rules-engine": "workspace:*",
+    "@jc/servicos": "workspace:*",
     "@supabase/supabase-js": "^2.50.0",
     "pg": "^8.13.0",
     "pg-boss": "^10.1.0"
