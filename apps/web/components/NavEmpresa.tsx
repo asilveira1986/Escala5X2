@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { IconeEnviar, IconeGrafico, IconePessoas } from './icones';
+import { IconeCalendario, IconeEnviar, IconeGrafico, IconePessoas } from './icones';
 
 const abas = [
   { slug: 'diagnostico', rotulo: 'Diagnóstico', Icone: IconeGrafico },
+  { slug: 'escalas', rotulo: 'Escalas', Icone: IconeCalendario },
   { slug: 'colaboradores', rotulo: 'Equipe', Icone: IconePessoas },
   { slug: 'importar', rotulo: 'Importar', Icone: IconeEnviar },
 ] as const;
@@ -25,7 +26,7 @@ export function NavEmpresa({ empresaId }: { empresaId: string }) {
         ))}
       </nav>
       <nav aria-label="Seções da empresa" className="fixed inset-x-0 bottom-0 z-20 border-t border-linha bg-cartao pb-[env(safe-area-inset-bottom,0px)] sm:hidden">
-        <ul className="mx-auto grid max-w-md grid-cols-3">
+        <ul className="mx-auto grid max-w-md grid-cols-4">
           {abas.map(({ slug, rotulo, Icone }) => (
             <li key={slug}>
               <Link href={`/empresas/${empresaId}/${slug}`} aria-current={ativa(slug) ? 'page' : undefined}
