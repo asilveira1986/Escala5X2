@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { EstadoVazio } from '@/components/EstadoVazio';
+import { BotaoInstalar } from '@/components/BotaoInstalar';
 import { Aviso, Cartao } from '@/components/ui';
 import { exigirUsuario, linhas } from '@/lib/contexto';
 import { agruparPorEscala, proximoTurno, textoTurno, type LinhaMinhaEscala } from '@/lib/minha-escala';
@@ -41,6 +42,8 @@ export default async function MinhaEscala() {
         <h1 className="text-2xl font-bold leading-tight sm:text-3xl">Minha escala</h1>
         <p className="mt-1 text-suave">Olá, {nome.split(' ')[0]}. Aqui estão os seus horários publicados.</p>
       </div>
+
+      <BotaoInstalar />
 
       <div className="flex flex-wrap gap-2">
         <Link href="/minha-escala/pedidos" className="inline-flex min-h-11 items-center rounded-full border border-linha bg-cartao px-4 text-sm font-semibold text-marca hover:bg-marca-suave sm:min-h-9">Pedir troca, folga ou férias</Link>

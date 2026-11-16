@@ -34,5 +34,8 @@ Livro-razão **imutável** (só se acrescenta; correção = **estorno** com moti
 
 **Ainda não feito no banco de horas:** alimentação automática pelo ponto (depende da importação AFD) e pela escala (horas extras programadas), compensação pedida pelo colaborador como solicitação, e exportação do pagamento para a folha.
 
+## PWA do colaborador
+Veja `docs/pwa.md`: instalável no celular, escala/pedidos/banco de horas abrem sem internet (cópia guardada por usuário e apagada ao sair).
+
 ### Ainda não feito (próximas fatias)
-Notificações (e-mail/WhatsApp) de pedido novo e de decisão; ciência apenas dos afetados em versões geradas por troca; ajuste de ponto; PWA; exportação para folha; WhatsApp; cobrança.
+Notificações (e-mail/WhatsApp) de pedido novo e de decisão; ciência apenas dos afetados em versões geradas por troca; ajuste de ponto; exportação para folha; WhatsApp; cobrança.
