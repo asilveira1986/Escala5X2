@@ -96,6 +96,7 @@ describe('isolamento de cadastros', () => {
       `insert into diagnostico (organizacao_id, empresa_id, data_referencia, resumo) values ($1,$2,'2026-10-28','{}')`, [orgB, empA]))
     ).resolves.toBeDefined(); // gatilho sobrescreve com a org da empresa
     const d = await db.query(`select organizacao_id from diagnostico where empresa_id=$1`, [empA]);
+    expect(d.rows.length).toBeGreaterThan(0);
     expect(d.rows.every((x) => x.organizacao_id === orgA)).toBe(true);
   });
 });
