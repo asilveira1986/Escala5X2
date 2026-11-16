@@ -3,9 +3,14 @@ import type { ReactNode } from 'react';
 import { MarcaLogo } from './icones';
 
 /** Estrutura geral do aplicativo: barra superior leve e conteúdo centralizado. */
-export function Casca({ email, children }: { email: string; children: ReactNode }) {
+export function Casca({ email, children, mfaDesligado = false }: { email: string; children: ReactNode; mfaDesligado?: boolean }) {
   return (
     <>
+      {mfaDesligado ? (
+        <div role="status" className="bg-atencao-bg px-4 py-2 text-center text-sm font-semibold text-atencao-fg">
+          Modo de teste: a verificação em duas etapas está <strong>desativada</strong> neste ambiente. Não use dados reais.
+        </div>
+      ) : null}
       <header className="sticky top-0 z-20 border-b border-linha bg-cartao/90 backdrop-blur">
         <nav aria-label="Principal" className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-1.5 sm:px-6">
           <Link href="/empresas" className="flex items-center gap-2.5 rounded-lg" aria-label="JornadaCerta, ir para empresas">

@@ -1,6 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { decidirAcesso } from './lib/acesso';
+import { decidirAcesso, PAPEIS_COM_MFA } from './lib/acesso';
 import { env } from './lib/env';
 
 export async function middleware(req: NextRequest) {
@@ -26,12 +26,20 @@ export async function middleware(req: NextRequest) {
     papeis = (data ?? []).map((m) => m.papel as string);
   }
 
+  // Interruptor de MFA: só consulta quando algum papel sensível está em jogo. Qualquer falha = exigir (padrão seguro).
+  let mfaObrigatorio = true;
+  if (user && papeis.some((p) => (PAPEIS_COM_MFA as readonly string[]).includes(p))) {
+    const { data, error } = await supabase.rpc('mfa_obrigatorio');
+    if (!error && data === false) mfaObrigatorio = false;
+  }
+
   const destino = decidirAcesso({
     caminho: req.nextUrl.pathname,
     autenticado: !!user,
     nivelAtual: aal?.currentLevel === 'aal2' ? 'aal2' : aal?.currentLevel === 'aal1' ? 'aal1' : null,
     papeis,
     mfaCadastrado: aal?.nextLevel === 'aal2',
+    mfaObrigatorio,
   });
   if (destino) return NextResponse.redirect(new URL(destino, req.url));
   return res;
