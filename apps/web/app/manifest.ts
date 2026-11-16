@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'JornadaCerta', short_name: 'JornadaCerta', lang: 'pt-BR', dir: 'ltr',
     description: 'Sua escala, seus pedidos e seu banco de horas, no celular.',
     id: '/minha-escala', start_url: '/minha-escala', scope: '/', display: 'standalone', orientation: 'portrait',
-    background_color: '#f1f5f4', theme_color: '#0f6b63', categories: ['business', 'productivity'],
+    background_color: '#f6f7fb', theme_color: '#4f46e5', categories: ['business', 'productivity'],
     icons: [
       { src: '/icons/192', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: '/icons/512', sizes: '512x512', type: 'image/png', purpose: 'any' },
