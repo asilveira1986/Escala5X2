@@ -8,13 +8,15 @@
 
 - **Minha escala** (`/minha-escala`): o colaborador vê o próximo turno, o calendário e o dia a dia das escalas publicadas, e confirma a ciência (fica registrada com data, hora e o código de verificação da escala). Quem só tem papel de colaborador ou líder entra direto nessa tela; gestores que também são colaboradores ganham o atalho no topo.
 
+- **Cobertura mínima** (`/empresas/:id/escalas/cobertura`): faixas por dia da semana (várias de uma vez), com mínimo e ideal, para a empresa toda ou por setor; aceita faixa que vira a noite. O editor destaca os dias abaixo do mínimo.
+- **Férias e afastamentos** (`/empresas/:id/escalas/ausencias`): lançamento por colaborador e período (sem sobreposição). Aparecem na grade como "Fér"/"Afa" e escalar trabalho nesses dias impede a publicação.
+
 ## Para publicar escalas no seu ambiente
 1. Rode `packages/db/setup/supabase_atualizar_escalas.sql` no SQL Editor do Supabase (uma vez; contém as migrations 0006 a 0008).
 2. No serviço **web** do Railway, adicione a variável `SUPABASE_SERVICE_ROLE_KEY` (chave *secret* do Supabase, Settings → API Keys). Sem prefixo `NEXT_PUBLIC_`; nunca no navegador. Sem ela, o botão Publicar avisa que a publicação não está habilitada. Salvar rascunhos funciona sem ela.
 
 ## Ainda não feito (próximas etapas)
 
-- Cadastro de demanda de cobertura e de ausências pela tela (hoje só no banco).
 - Painel da carteira contábil; importação AFD.
 - Prorrogação do trabalho noturno (depende de definição jurídica).
 
@@ -31,3 +33,6 @@ Na aba **Equipe**, a coluna "Acesso ao app" permite **Convidar** (informando o e
 
 ### Ativação no banco
 Rode `packages/db/setup/supabase_atualizar_convite.sql` (uma vez) depois dos arquivos das escalas.
+
+### Ativação (cobertura)
+Rode `packages/db/setup/supabase_atualizar_cobertura.sql` (uma vez): valida que a demanda de um setor pertence à empresa.

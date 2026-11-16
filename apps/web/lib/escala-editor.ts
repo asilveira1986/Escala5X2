@@ -91,3 +91,15 @@ export function paraGravacao(alocacoes: Celula[]) {
 }
 
 export const NOMES_DIA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'] as const;
+
+/** Dias (por colaborador) em que há férias/afastamento dentro do período mostrado. */
+export function ausenciasPorCelula(ausencias: Array<{ colaboradorId: string; inicio: DataISO; fim: DataISO; tipo: 'ferias' | 'afastamento' }>, dias: DataISO[]): Map<string, 'ferias' | 'afastamento'> {
+  const m = new Map<string, 'ferias' | 'afastamento'>();
+  for (const a of ausencias) for (const d of dias) if (d >= a.inicio && d <= a.fim) m.set(chave(a.colaboradorId, d), a.tipo);
+  return m;
+}
+
+/** Dias com cobertura abaixo do mínimo (alerta COBERTURA_MINIMA), para destacar na linha "Pessoas trabalhando". */
+export function diasComCoberturaBaixa(violacoes: Violacao[]): Set<DataISO> {
+  return new Set(violacoes.filter((v) => v.codigo === 'COBERTURA_MINIMA' && v.data).map((v) => v.data!));
+}

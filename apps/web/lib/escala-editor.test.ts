@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Violacao } from '@jc/rules-engine';
-import { aplicarPincel, chave, contarTrabalhando, diasDoPeriodo, indexar, paraGravacao, repetirPrimeiraSemana, rotuloCelula, severidadePorCelula, type Celula, type Modelo } from './escala-editor';
+import { ausenciasPorCelula, diasComCoberturaBaixa, aplicarPincel, chave, contarTrabalhando, diasDoPeriodo, indexar, paraGravacao, repetirPrimeiraSemana, rotuloCelula, severidadePorCelula, type Celula, type Modelo } from './escala-editor';
 
 const manha: Modelo = { id: 'm1', nome: 'Manhã', inicioMin: 480, fimMin: 1020, intervaloMin: 60, cor: '#2563eb' };
 
@@ -66,5 +66,16 @@ describe('editor de escalas (lógica da grade)', () => {
       { colaboradorId: 'a', data: '2027-01-04', tipo: 'trabalho', inicioMin: 480, fimMin: 1020, intervaloMin: 60, turnoModeloId: 'm1' },
       { colaboradorId: 'a', data: '2027-01-05', tipo: 'folga', inicioMin: null, fimMin: null, intervaloMin: 0, turnoModeloId: null },
     ]);
+  });
+  it('marca os dias de férias/afastamento dentro do período mostrado', () => {
+    const m = ausenciasPorCelula([{ colaboradorId: 'a', inicio: '2027-01-02', fim: '2027-01-05', tipo: 'ferias' }, { colaboradorId: 'b', inicio: '2027-01-06', fim: '2027-02-10', tipo: 'afastamento' }], ['2027-01-04', '2027-01-05', '2027-01-06']);
+    expect(m.get(chave('a', '2027-01-04'))).toBe('ferias');
+    expect(m.get(chave('a', '2027-01-06'))).toBeUndefined();
+    expect(m.get(chave('b', '2027-01-06'))).toBe('afastamento');
+    expect(m.size).toBe(3);
+  });
+  it('destaca só os dias com cobertura abaixo do mínimo', () => {
+    const v = (codigo: Violacao['codigo'], data?: string): Violacao => ({ codigo, severidade: 'alerta', data, mensagem: 'x', detalhe: {} });
+    expect([...diasComCoberturaBaixa([v('COBERTURA_MINIMA', '2027-01-04'), v('COBERTURA_IDEAL', '2027-01-05'), v('COBERTURA_MINIMA')])]).toEqual(['2027-01-04']);
   });
 });

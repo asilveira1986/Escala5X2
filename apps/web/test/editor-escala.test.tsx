@@ -106,4 +106,19 @@ describe('EditorEscala', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Criar nova versão' }));
     await waitFor(() => expect(push).toHaveBeenCalledWith('/empresas/emp/escalas/e2'));
   });
+
+  it('mostra férias lançadas na grade, bloqueia trabalho nelas e destaca dia abaixo da cobertura mínima', () => {
+    const e = entrada();
+    e.ausencias = [{ colaboradorId: 'ana', inicio: '2027-01-06', fim: '2027-01-07', tipo: 'ferias' }];
+    e.cobertura = [{ diaSemana: 1, faixaInicioMin: 480, faixaFimMin: 720, minimo: 1 }]; // segunda 08–12
+    render(<EditorEscala empresaId="emp" entrada={e} modelos={[manha]} />);
+    expect(cel('06').textContent).toBe('Fér');
+    expect(cel('06').getAttribute('title')).toBe('Férias lançadas');
+    expect(screen.getByTitle('Abaixo da cobertura mínima')).toBeTruthy(); // segunda 04/01 sem ninguém
+    fireEvent.click(cel('04')); // cobre a segunda
+    expect(screen.queryByTitle('Abaixo da cobertura mínima')).toBeNull();
+    fireEvent.click(cel('06')); // trabalho em férias
+    expect(cel('06').getAttribute('aria-label')).toContain('Impede a publicação');
+    expect(screen.getAllByText(/férias/i).length).toBeGreaterThan(0);
+  });
 });
