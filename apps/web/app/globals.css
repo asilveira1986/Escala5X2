@@ -2,43 +2,43 @@
 
 /*
  * JornadaCerta — sistema visual.
- * Ideia: calma e clareza. Fundo frio com tom de pinho, uma cor de marca (verde-pinho), um único destaque amarelo
- * usado com parcimônia, cartões grandes e arredondados, números em destaque.
+ * Ideia: tecnologia de RH, limpa e confiável. Índigo como cor de marca (a mesma família dos softwares de gestão de pessoas),
+ * menta como destaque ("os dias de folga"), fundo frio quase branco, cartões grandes e arredondados, números em destaque.
  * Cores sempre por token; o tema escuro redefine só os valores.
  */
 :root {
-  --c-fundo: #f1f5f4;
+  --c-fundo: #f6f7fb;
   --c-cartao: #ffffff;
-  --c-tinta: #10201e;
-  --c-suave: #496360;
-  --c-linha: #d6e2df;
-  --c-marca: #0f6b63;
-  --c-marca-escuro: #0a4f49;
-  --c-marca-suave: #e0f1ee;
+  --c-tinta: #0f172a;
+  --c-suave: #5b6478;
+  --c-linha: #e3e6ef;
+  --c-marca: #4f46e5;
+  --c-marca-escuro: #3730a3;
+  --c-marca-suave: #eef0ff;
   --c-sobre-marca: #ffffff;
-  --c-destaque: #f2c230;
-  --c-ok-bg: #dcf3e6;   --c-ok-fg: #14532d;
-  --c-atencao-bg: #fdf0c9; --c-atencao-fg: #6b4a00;
-  --c-risco-bg: #fde3dc;  --c-risco-fg: #8a2a12;
-  --c-neutro-bg: #e6ecea; --c-neutro-fg: #34504c;
+  --c-destaque: #5eead4;
+  --c-ok-bg: #d9f7ea;   --c-ok-fg: #0b5a3a;
+  --c-atencao-bg: #fff1cc; --c-atencao-fg: #7a4b00;
+  --c-risco-bg: #ffe1e6;  --c-risco-fg: #9f1239;
+  --c-neutro-bg: #eaecf3; --c-neutro-fg: #3b4458;
   --font-titulo: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
   --font-texto: 'Public Sans', 'Segoe UI', system-ui, sans-serif;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --c-fundo: #0c1614; --c-cartao: #13211f; --c-tinta: #e5f0ee; --c-suave: #9db6b2; --c-linha: #26403c;
-    --c-marca: #5ec9ba; --c-marca-escuro: #86ddd0; --c-marca-suave: #123530; --c-sobre-marca: #06201c;
-    --c-ok-bg: #123a26; --c-ok-fg: #a6e8c0; --c-atencao-bg: #3d3008; --c-atencao-fg: #f6dc8c;
-    --c-risco-bg: #451c12; --c-risco-fg: #f7b9a6; --c-neutro-bg: #1d2e2b; --c-neutro-fg: #b4cbc7;
+    --c-fundo: #0b1020; --c-cartao: #131a2e; --c-tinta: #e8ecf8; --c-suave: #9aa5c0; --c-linha: #252e49;
+    --c-marca: #a5b4fc; --c-marca-escuro: #c7d2fe; --c-marca-suave: #1c2347; --c-sobre-marca: #0b1020;
+    --c-ok-bg: #0f3a2a; --c-ok-fg: #9bf0c8; --c-atencao-bg: #3d3008; --c-atencao-fg: #f6dc8c;
+    --c-risco-bg: #4a1a26; --c-risco-fg: #fdb4c1; --c-neutro-bg: #1d2640; --c-neutro-fg: #b8c2dd;
     color-scheme: dark;
   }
 }
 :root[data-theme='dark'] {
-  --c-fundo: #0c1614; --c-cartao: #13211f; --c-tinta: #e5f0ee; --c-suave: #9db6b2; --c-linha: #26403c;
-  --c-marca: #5ec9ba; --c-marca-escuro: #86ddd0; --c-marca-suave: #123530; --c-sobre-marca: #06201c;
-  --c-ok-bg: #123a26; --c-ok-fg: #a6e8c0; --c-atencao-bg: #3d3008; --c-atencao-fg: #f6dc8c;
-  --c-risco-bg: #451c12; --c-risco-fg: #f7b9a6; --c-neutro-bg: #1d2e2b; --c-neutro-fg: #b4cbc7;
+  --c-fundo: #0b1020; --c-cartao: #131a2e; --c-tinta: #e8ecf8; --c-suave: #9aa5c0; --c-linha: #252e49;
+  --c-marca: #a5b4fc; --c-marca-escuro: #c7d2fe; --c-marca-suave: #1c2347; --c-sobre-marca: #0b1020;
+  --c-ok-bg: #0f3a2a; --c-ok-fg: #9bf0c8; --c-atencao-bg: #3d3008; --c-atencao-fg: #f6dc8c;
+  --c-risco-bg: #4a1a26; --c-risco-fg: #fdb4c1; --c-neutro-bg: #1d2640; --c-neutro-fg: #b8c2dd;
   color-scheme: dark;
 }
 

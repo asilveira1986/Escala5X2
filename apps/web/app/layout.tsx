@@ -7,7 +7,7 @@ export const metadata = {
   applicationName: 'JornadaCerta', manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, title: 'JornadaCerta', statusBarStyle: 'default' as const },
 };
-export const viewport: Viewport = { themeColor: [{ media: '(prefers-color-scheme: light)', color: '#0f6b63' }, { media: '(prefers-color-scheme: dark)', color: '#0c1614' }], width: 'device-width', initialScale: 1 };
+export const viewport: Viewport = { themeColor: [{ media: '(prefers-color-scheme: light)', color: '#4f46e5' }, { media: '(prefers-color-scheme: dark)', color: '#0b1020' }], width: 'device-width', initialScale: 1 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

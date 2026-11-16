@@ -6,7 +6,7 @@ const pontos = ['Diagnóstico da nova escala em minutos, direto da sua planilha'
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1fr_minmax(420px,520px)]">
-      <aside className="hidden flex-col justify-between bg-marca p-10 text-sobre-marca lg:flex" aria-hidden="false">
+      <aside className="hidden flex-col justify-between bg-gradient-to-br from-marca to-marca-escuro p-10 text-sobre-marca lg:flex" aria-hidden="false">
         <div className="flex items-center gap-3">
           <span className="rounded-xl bg-cartao p-1"><MarcaLogo tamanho={32} /></span>
           <span className="font-[family-name:var(--font-titulo)] text-2xl font-bold">JornadaCerta</span>
@@ -16,7 +16,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <ul className="mt-8 max-w-md space-y-4">
             {pontos.map((p) => (
               <li key={p} className="flex items-start gap-3 text-lg">
-                <span className="mt-1 grid size-6 shrink-0 place-items-center rounded-full bg-destaque text-[#10201e]"><IconeCheck width={14} height={14} strokeWidth={3} /></span>{p}
+                <span className="mt-1 grid size-6 shrink-0 place-items-center rounded-full bg-destaque text-[#0f172a]"><IconeCheck width={14} height={14} strokeWidth={3} /></span>{p}
               </li>
             ))}
           </ul>
