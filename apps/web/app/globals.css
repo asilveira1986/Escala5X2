@@ -42,6 +42,13 @@
   color-scheme: dark;
 }
 
+/* Menu lateral: índigo profundo nos dois temas, para se destacar do conteúdo. Redefine os mesmos tokens só dentro dele. */
+.tema-menu {
+  --c-cartao: #1e1b4b; --c-fundo: #2b2778; --c-tinta: #e7eaff; --c-suave: #aeb6ee; --c-linha: #36318a;
+  --c-marca: #ffffff; --c-marca-escuro: #e7eaff; --c-marca-suave: #3b36a8; --c-sobre-marca: #1e1b4b;
+  color: var(--c-tinta); color-scheme: dark;
+}
+
 @theme inline {
   --color-fundo: var(--c-fundo);
   --color-cartao: var(--c-cartao);
