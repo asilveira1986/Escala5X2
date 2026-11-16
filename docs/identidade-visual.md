@@ -15,3 +15,7 @@ Conceito: **tecnologia de gestão de pessoas** — limpa, confiável e leve de u
 - Todos os pares de texto passam em contraste AA (mínimo 5,5:1 medido).
 - Tudo é token em `apps/web/app/globals.css`; trocar a marca é editar esse arquivo (mais `lib/pwa/icone.tsx` e `app/manifest.ts` para o ícone do app).
 - Logotipo: cinco barras (dias úteis) + uma menta (folga), em `MarcaLogo` e nos ícones do PWA.
+
+## Menu lateral
+
+O menu usa um **índigo profundo** (`#1E1B4B`) nos dois temas para se separar do conteúdo claro. Está na classe `.tema-menu` (`globals.css`), que só redefine os tokens dentro do menu; texto 13:1, texto suave 8:1 e item ativo 9:1 de contraste.

@@ -59,14 +59,14 @@ export function Shell({ email, empresas, ehGestor, temMinhaEscala, temCarteira, 
     <>
       {aviso}
       <div className="min-h-dvh lg:flex">
-        <aside aria-label="Menu lateral" className={`sticky top-0 hidden h-dvh shrink-0 border-r border-linha bg-cartao transition-[width] duration-200 lg:block ${recolhido ? 'w-[4.75rem]' : 'w-72'}`}>
+        <aside aria-label="Menu lateral" className={`sticky top-0 hidden h-dvh shrink-0 tema-menu border-r border-linha bg-cartao transition-[width] duration-200 lg:block ${recolhido ? 'w-[4.75rem]' : 'w-72'}`}>
           {painel(recolhido ? 'rail' : 'completo')}
         </aside>
 
         {gaveta ? (
           <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
             <button type="button" aria-label="Fechar o menu" className="absolute inset-0 bg-tinta/40" onClick={() => setGaveta(false)} />
-            <aside className="absolute inset-y-0 left-0 w-[min(20rem,88vw)] border-r border-linha bg-cartao shadow-2xl">{painel('completo', true)}</aside>
+            <aside className="absolute inset-y-0 left-0 tema-menu w-[min(20rem,88vw)] border-r border-linha bg-cartao shadow-2xl">{painel('completo', true)}</aside>
           </div>
         ) : null}
 
