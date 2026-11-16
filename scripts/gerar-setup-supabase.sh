@@ -102,4 +102,14 @@ INC10=$DB/setup/supabase_atualizar_cobertura.sql
   echo "commit;"
 } > "$INC10"
 echo "gerado: $INC10"
+# Atualização incremental do painel da carteira (migration 0011) para bancos que já têm as migrations 0001 a 0010.
+INC11=$DB/setup/supabase_atualizar_carteira.sql
+{
+  echo "-- JornadaCerta: painel da carteira (migration 0011) em um banco que já tem as migrations 0001 a 0010."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0011_painel_carteira.up.sql"
+  echo "commit;"
+} > "$INC11"
+echo "gerado: $INC11"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"

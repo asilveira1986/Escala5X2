@@ -11,13 +11,15 @@
 - **Cobertura mínima** (`/empresas/:id/escalas/cobertura`): faixas por dia da semana (várias de uma vez), com mínimo e ideal, para a empresa toda ou por setor; aceita faixa que vira a noite. O editor destaca os dias abaixo do mínimo.
 - **Férias e afastamentos** (`/empresas/:id/escalas/ausencias`): lançamento por colaborador e período (sem sobreposição). Aparecem na grade como "Fér"/"Afa" e escalar trabalho nesses dias impede a publicação.
 
+- **Painel da carteira** (`/carteira`, atalho "Carteira" no topo para quem gere empresas): uma linha por empresa (próprias e vinculadas ao escritório) com situação, pendências em ordem de gravidade (importação com erro, diagnóstico, pessoas a adequar, sem contrato, escala do mês, ciências pendentes), filtros, mês navegável, contagem regressiva para a 1ª fase da lei e planilha para Excel (`/api/v1/carteira`). Cada pendência leva à aba certa da empresa.
+
 ## Para publicar escalas no seu ambiente
 1. Rode `packages/db/setup/supabase_atualizar_escalas.sql` no SQL Editor do Supabase (uma vez; contém as migrations 0006 a 0008).
 2. No serviço **web** do Railway, adicione a variável `SUPABASE_SERVICE_ROLE_KEY` (chave *secret* do Supabase, Settings → API Keys). Sem prefixo `NEXT_PUBLIC_`; nunca no navegador. Sem ela, o botão Publicar avisa que a publicação não está habilitada. Salvar rascunhos funciona sem ela.
 
 ## Ainda não feito (próximas etapas)
 
-- Painel da carteira contábil; importação AFD.
+- Importação AFD (formato do arquivo a confirmar).
 - Prorrogação do trabalho noturno (depende de definição jurídica).
 
 ## Convite do colaborador (migration 0009)
@@ -36,3 +38,6 @@ Rode `packages/db/setup/supabase_atualizar_convite.sql` (uma vez) depois dos arq
 
 ### Ativação (cobertura)
 Rode `packages/db/setup/supabase_atualizar_cobertura.sql` (uma vez): valida que a demanda de um setor pertence à empresa.
+
+### Ativação (carteira)
+Rode `packages/db/setup/supabase_atualizar_carteira.sql` (uma vez). O painel não mostra o nome da organização-cliente (o RLS a esconde do escritório); mostra a razão social da empresa.
