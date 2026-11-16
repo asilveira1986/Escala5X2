@@ -37,5 +37,18 @@ Livro-razão **imutável** (só se acrescenta; correção = **estorno** com moti
 ## PWA do colaborador
 Veja `docs/pwa.md`: instalável no celular, escala/pedidos/banco de horas abrem sem internet (cópia guardada por usuário e apagada ao sair).
 
+## Fechamento mensal e exportação para a folha
+Em *Escalas → Fechamento para a folha* (por mês). O sistema calcula, para cada colaborador ativo no mês: dias e horas trabalhadas, normais e extras (limites e acordos já aplicados, inclusive 12x36), adicional noturno (hora reduzida), horas em domingos e feriados, faltas, dias de férias e afastamento, e o **banco de horas** (créditos, débitos e pagamentos do mês, saldo final, vencido a pagar e valor estimado com o adicional).
+
+**De onde vêm as horas:** da **escala publicada** (previstas), não do ponto: a integração do ponto (AFD) ainda não existe. O próprio sistema avisa isso na tela e no arquivo. Semana que atravessa o mês conta só os dias do mês.
+
+**Avisos antes de fechar:** sem escala publicada no mês (**bloqueia**), dias do mês fora de qualquer escala, colaboradores com horas e sem matrícula, sem contrato vigente e horas vencidas a pagar.
+
+**Fechar o mês** guarda um **retrato imutável** com hash SHA-256 (só mês encerrado). Reabrir exige motivo e cria uma nova versão; a anterior continua guardada e baixável. O download sai do retrato (não recalcula), confere a integridade, é registrado na auditoria (layout e formato) e só vale para quem gere a empresa.
+
+**Arquivos:** CSV (`;`, vírgula decimal, UTF-8 com BOM, proteção contra fórmulas) e Excel (abas *Folha* com números de verdade e totais em fórmula, *Fechamento* com versão e código de integridade, *Avisos*). Layout **genérico**; layouts de sistemas específicos (Domínio, Thomson Reuters, etc.) entram como novos itens de `LAYOUTS_FOLHA` quando você definir o sistema e me passar o modelo de importação dele.
+
+**Ativação:** `packages/db/setup/supabase_atualizar_folha.sql` (uma vez). Para a coluna Matrícula sair preenchida, cadastre a matrícula dos colaboradores (planilha de importação).
+
 ### Ainda não feito (próximas fatias)
 Notificações (e-mail/WhatsApp) de pedido novo e de decisão; ciência apenas dos afetados em versões geradas por troca; ajuste de ponto; exportação para folha; WhatsApp; cobrança.
