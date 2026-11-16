@@ -66,6 +66,7 @@ INC6=$DB/setup/supabase_atualizar_escalas.sql
   echo "begin;"
   cat "$DB/migrations/0006_escalas.up.sql"
   cat "$DB/migrations/0007_escala_entrada.up.sql"
+  cat "$DB/migrations/0008_salvar_alocacoes.up.sql"
   cat <<'SQL'
 
 -- conferência: deve listar as 7 tabelas novas
