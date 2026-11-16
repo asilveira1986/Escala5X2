@@ -7,6 +7,7 @@ const aloc = z.object({
   id: z.string().optional(), colaboradorId: z.string(), data,
   tipo: z.enum(['trabalho', 'folga', 'dsr', 'ferias', 'afastamento', 'feriado']),
   inicioMin: z.number().nullable().optional(), fimMin: z.number().nullable().optional(), intervaloMin: z.number().nullable().optional(),
+  turnoModeloId: z.string().nullable().optional(),
 });
 const entradaZ = z.object({
   escala: z.object({
@@ -36,22 +37,26 @@ const entradaZ = z.object({
   cobertura: z.array(z.object({ diaSemana: z.number().int(), faixaInicioMin: z.number().int(), faixaFimMin: z.number().int(), minimo: z.number().int(), ideal: z.number().int().nullable() })),
 });
 
+/** Alocação com o modelo de turno de onde veio (o motor ignora o campo). */
+export type AlocacaoComModelo = Alocacao & { modeloId?: string | null };
+
 export type EntradaEscala = {
   escala: { id: string; empresaId: string; setorId: string | null; nome: string; status: 'rascunho' | 'publicada' | 'substituida'; revisao: number; versao: number; inicio: string; fim: string };
   regras: Regra[];
   colaboradores: ContextoColaborador[];
   semContrato: Array<{ id: string; nome: string }>;
-  alocacoes: Alocacao[];
+  alocacoes: AlocacaoComModelo[];
   anteriores: Alocacao[];
   ausencias: Ausencia[];
   feriados: Feriado[];
   cobertura: DemandaCobertura[];
 };
 
-const limpar = (a: z.infer<typeof aloc>): Alocacao => ({
+const limpar = (a: z.infer<typeof aloc>): AlocacaoComModelo => ({
   colaboradorId: a.colaboradorId, data: a.data, tipo: a.tipo,
   ...(a.inicioMin != null ? { inicioMin: a.inicioMin } : {}), ...(a.fimMin != null ? { fimMin: a.fimMin } : {}),
   ...(a.intervaloMin != null ? { intervaloMin: a.intervaloMin } : {}),
+  ...(a.turnoModeloId ? { modeloId: a.turnoModeloId } : {}),
 });
 
 /** Valida o JSON de `escala_entrada` e converte para os tipos do motor. */
