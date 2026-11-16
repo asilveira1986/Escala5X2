@@ -142,4 +142,14 @@ INC14=$DB/setup/supabase_atualizar_banco_horas.sql
   echo "commit;"
 } > "$INC14"
 echo "gerado: $INC14"
+# Atualização incremental do fechamento para a folha (migration 0015) para bancos com as migrations 0001 a 0014.
+INC15=$DB/setup/supabase_atualizar_folha.sql
+{
+  echo "-- JornadaCerta: fechamento mensal para a folha (migration 0015) em um banco que já tem as migrations 0001 a 0014."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0015_fechamento_folha.up.sql"
+  echo "commit;"
+} > "$INC15"
+echo "gerado: $INC15"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"

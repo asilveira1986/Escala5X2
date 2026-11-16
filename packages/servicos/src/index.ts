@@ -6,3 +6,4 @@ export * from './escala';
 export * from './otimizador';
 export * from './solicitacoes';
 export * from './banco-horas';
+export * from './fechamento';

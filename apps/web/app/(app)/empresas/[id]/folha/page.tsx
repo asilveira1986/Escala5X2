@@ -1,0 +1,115 @@
+import Link from 'next/link';
+import { Aviso, Cartao, classeBotaoLink, Selo } from '@/components/ui';
+import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
+import { horasTexto } from '@/lib/banco-horas-ui';
+import { mesVizinho } from '@/lib/carteira';
+import { lerCompetencia, mesEncerrado, rotuloMes } from '@/lib/folha-ui';
+import { calcularFechamento, carregarBaseFechamento, podeFechar } from '@jc/servicos';
+import { dataBr, dataDeInstante } from '@jc/rules-engine';
+import { BotaoFechar } from './BotaoFechar';
+
+type FechamentoLinha = { id: string; versao: number; status: 'fechado' | 'substituido'; motivo: string | null; criado_em: string; dados_hash: string };
+const moeda = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const tomAviso = { bloqueio: 'erro', alerta: 'info', info: 'info' } as const;
+
+export default async function Folha({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mes?: string }> }) {
+  const empresaId = idOu404((await params).id);
+  const hoje = dataDeInstante(new Date());
+  const { mes, dia } = lerCompetencia((await searchParams).mes, hoje);
+  const { supabase } = await exigirUsuario();
+  const [{ data: fech }, { data: ger }, calculo] = await Promise.all([
+    supabase.from('fechamento_folha').select('id, versao, status, motivo, criado_em, dados_hash').eq('empresa_id', empresaId).eq('competencia', dia).order('versao', { ascending: false }),
+    supabase.rpc('pode_gerir_empresa', { p_empresa: empresaId }),
+    carregarBaseFechamento(supabase, empresaId, dia).then((r) => ({ ok: true as const, ...r }), (e: unknown) => ({ ok: false as const, erro: e instanceof Error ? e.message : 'erro' })),
+  ]);
+  const versoes = linhas<FechamentoLinha>(fech);
+  const vigente = versoes.find((v) => v.status === 'fechado');
+  const podeGerir = ger === true;
+  const encerrado = mesEncerrado(mes, hoje);
+  const f = calculo.ok ? calcularFechamento(calculo.base, calculo.entradas) : null;
+  const href = (m: string) => `/empresas/${empresaId}/folha?mes=${m}`;
+
+  return (
+    <>
+      <Link href={`/empresas/${empresaId}/escalas`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Escalas</Link>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-xl font-bold">Fechamento para a folha</h2>
+        <div className="flex items-center gap-1 text-sm font-semibold">
+          <Link href={href(mesVizinho(mes, -1))} aria-label="Mês anterior" className="grid size-9 place-items-center rounded-full hover:bg-marca-suave">‹</Link>
+          <span className="min-w-40 text-center">{rotuloMes(mes)}</span>
+          <Link href={href(mesVizinho(mes, 1))} aria-label="Próximo mês" className="grid size-9 place-items-center rounded-full hover:bg-marca-suave">›</Link>
+        </div>
+      </div>
+
+      {vigente ? (
+        <Cartao titulo={`Mês fechado · versão ${vigente.versao}`} subtitulo={`Fechado em ${dataBr(vigente.criado_em.slice(0, 10))}. Código de integridade ${vigente.dados_hash.slice(0, 16)}…`}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Selo tom="verde">Fechado</Selo>
+            <a href={`/api/v1/folha/${vigente.id}?formato=xlsx`} className={classeBotaoLink}>Baixar Excel</a>
+            <a href={`/api/v1/folha/${vigente.id}?formato=csv`} className={classeBotaoLink}>Baixar CSV</a>
+          </div>
+          <p className="mt-2 text-xs text-suave">O arquivo sai do retrato fechado (não muda se a escala ou o banco de horas mudarem depois) e cada download fica registrado.</p>
+        </Cartao>
+      ) : null}
+
+      {!calculo.ok ? <Aviso tipo="erro">Não foi possível calcular este mês agora. {/permiss/i.test(calculo.erro) ? 'Você não tem permissão para ver a folha desta empresa.' : 'Tente recarregar a página.'}</Aviso> : null}
+      {f ? (
+        <>
+          {!encerrado ? <Aviso tipo="info">{rotuloMes(mes)} ainda não terminou: os números abaixo são uma prévia e o mês só pode ser fechado depois que acabar.</Aviso> : null}
+          {f.avisos.map((a) => <Aviso key={a.codigo} tipo={tomAviso[a.severidade]}>{a.mensagem}</Aviso>)}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Numero rotulo="Colaboradores" valor={String(f.totais.colaboradores)} />
+            <Numero rotulo="Horas trabalhadas" valor={horasTexto(f.totais.trabalhadasMin)} />
+            <Numero rotulo="Horas extras" valor={horasTexto(f.totais.extrasMin)} />
+            <Numero rotulo="Vencido a pagar (banco)" valor={horasTexto(f.totais.bancoVencidoMin)} sub={f.totais.valorVencidoCentavos > 0 ? `≈ ${moeda(f.totais.valorVencidoCentavos)}` : undefined} />
+          </div>
+          {podeGerir && encerrado ? <BotaoFechar empresaId={empresaId} mes={mes} reabrir={!!vigente} podeFechar={podeFechar(f)} motivoBloqueio={f.avisos.find((a) => a.severidade === 'bloqueio')?.mensagem} /> : null}
+          <Cartao titulo={`Prévia: ${rotuloMes(mes)}`} subtitulo="Calculada pela escala publicada e pelo banco de horas; é o que o fechamento guardaria agora.">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="py-1.5 pr-3">Colaborador</th><th className="pr-3">Matrícula</th><th className="pr-3 text-right">Trabalhadas</th><th className="pr-3 text-right">Extras</th><th className="pr-3 text-right">Noturno</th><th className="pr-3 text-right">Faltas</th><th className="pr-3 text-right">Férias/afast.</th><th className="pr-3 text-right">Banco</th></tr></thead>
+                <tbody className="divide-y divide-linha">
+                  {f.linhas.map((l) => (
+                    <tr key={l.colaboradorId}>
+                      <td className="py-1.5 pr-3 font-semibold">{l.nome}</td>
+                      <td className="pr-3">{l.matricula ?? <span className="text-atencao-fg">sem matrícula</span>}</td>
+                      <td className="pr-3 text-right">{horasTexto(l.trabalhadasMin)}</td>
+                      <td className="pr-3 text-right">{horasTexto(l.extrasMin)}</td>
+                      <td className="pr-3 text-right">{horasTexto(l.noturnasComputadasMin)}</td>
+                      <td className="pr-3 text-right">{horasTexto(l.faltasMin)}</td>
+                      <td className="pr-3 text-right">{l.diasFerias + l.diasAfastamento} d</td>
+                      <td className="pr-3 text-right">{horasTexto(l.bancoSaldoFinalMin)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Cartao>
+        </>
+      ) : null}
+
+      {versoes.length > 1 || (versoes.length === 1 && !vigente) ? (
+        <Cartao titulo="Versões anteriores">
+          <ul className="divide-y divide-linha">
+            {versoes.filter((v) => v.status === 'substituido').map((v) => (
+              <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5 text-sm">
+                <span>Versão {v.versao} · {dataBr(v.criado_em.slice(0, 10))}{v.motivo ? ` · ${v.motivo}` : ''} <Selo tom="cinza">substituída</Selo></span>
+                <span className="flex gap-2"><a href={`/api/v1/folha/${v.id}?formato=xlsx`} className="font-semibold text-marca hover:underline">Excel</a><a href={`/api/v1/folha/${v.id}?formato=csv`} className="font-semibold text-marca hover:underline">CSV</a></span>
+              </li>
+            ))}
+          </ul>
+        </Cartao>
+      ) : null}
+    </>
+  );
+}
+
+function Numero({ rotulo, valor, sub }: { rotulo: string; valor: string; sub?: string }) {
+  return (
+    <div className="rounded-2xl border border-linha bg-cartao px-4 py-2.5">
+      <p className="text-xs font-semibold text-suave">{rotulo}</p>
+      <p className="text-2xl font-bold">{valor}</p>
+      {sub ? <p className="text-xs text-suave">{sub}</p> : null}
+    </div>
+  );
+}
