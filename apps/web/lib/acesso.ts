@@ -19,7 +19,7 @@ export type EntradaAcesso = {
 export const exigeMfaPara = (papeis: string[], mfaObrigatorio: boolean | undefined): boolean =>
   mfaObrigatorio !== false && papeis.some((p) => (PAPEIS_COM_MFA as readonly string[]).includes(p));
 
-const PUBLICAS = ['/login', '/auth/callback'];
+const PUBLICAS = ['/login', '/auth/callback', '/auth/confirmar'];
 
 export function decidirAcesso(e: EntradaAcesso): string | null {
   const publica = PUBLICAS.some((p) => e.caminho === p || e.caminho.startsWith(`${p}/`));

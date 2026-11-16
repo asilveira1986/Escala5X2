@@ -4,9 +4,10 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Selo } from '@/components/ui';
 import { TabelaDados } from '@/components/TabelaDados';
 import { decimal, horasMin, moeda, moedaHora } from '@jc/documents/formatar';
-import type { ColaboradorVigenteRow } from '@/lib/tipos-db';
+import type { LinhaEquipe } from '@/lib/tipos-db';
+import { CelulaAcesso } from './CelulaAcesso';
 
-const colunas: ColumnDef<ColaboradorVigenteRow, unknown>[] = [
+const colunasBase: ColumnDef<LinhaEquipe, unknown>[] = [
   { accessorKey: 'nome', header: 'Nome' },
   { accessorKey: 'setor_nome', header: 'Setor', cell: (c) => (c.getValue() as string | null) ?? '—' },
   { accessorKey: 'cargo', header: 'Cargo', cell: (c) => (c.getValue() as string | null) ?? '—' },
@@ -18,6 +19,13 @@ const colunas: ColumnDef<ColaboradorVigenteRow, unknown>[] = [
   { accessorKey: 'hipersuficiente', header: 'Alta renda', enableSorting: false, cell: (c) => (c.getValue() ? <Selo tom="azul">Alta renda</Selo> : null) },
 ];
 
-export function TabelaColaboradores({ dados }: { dados: ColaboradorVigenteRow[] }) {
+export function TabelaColaboradores({ dados, empresaId, podeGerir }: { dados: LinhaEquipe[]; empresaId: string; podeGerir: boolean }) {
+  const colunas: ColumnDef<LinhaEquipe, unknown>[] = [
+    ...colunasBase,
+    {
+      id: 'acesso', header: 'Acesso ao app', enableSorting: false,
+      cell: (c) => <CelulaAcesso empresaId={empresaId} colaboradorId={c.row.original.colaborador_id} nome={c.row.original.nome} acesso={c.row.original.acesso} podeGerir={podeGerir} />,
+    },
+  ];
   return <TabelaDados colunas={colunas} dados={dados} rotuloBusca="Buscar colaborador" vazio="Nenhum colaborador com contrato vigente. Importe uma planilha." />;
 }

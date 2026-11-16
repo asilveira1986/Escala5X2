@@ -13,7 +13,21 @@
 2. No serviço **web** do Railway, adicione a variável `SUPABASE_SERVICE_ROLE_KEY` (chave *secret* do Supabase, Settings → API Keys). Sem prefixo `NEXT_PUBLIC_`; nunca no navegador. Sem ela, o botão Publicar avisa que a publicação não está habilitada. Salvar rascunhos funciona sem ela.
 
 ## Ainda não feito (próximas etapas)
-- Convite por e-mail para o colaborador acessar (hoje o vínculo do acesso ao cadastro é feito pelo RH/administrador).
+
 - Cadastro de demanda de cobertura e de ausências pela tela (hoje só no banco).
 - Painel da carteira contábil; importação AFD.
 - Prorrogação do trabalho noturno (depende de definição jurídica).
+
+## Convite do colaborador (migration 0009)
+Na aba **Equipe**, a coluna "Acesso ao app" permite **Convidar** (informando o e-mail), **Reenviar**, **Cancelar** o convite e **Remover** o acesso. A pessoa abre o link do e-mail e passa a ver "Minha escala". O vínculo só acontece com o e-mail **confirmado** (link, Google): digitar o e-mail de outra pessoa não dá acesso ao cadastro. Convites valem 14 dias. Quem já tem outro papel (RH, admin) não é rebaixado.
+
+### Configuração única no Supabase (Authentication)
+1. **Modelos de e-mail** (Authentication → Emails → Templates): nos modelos **Magic Link** e **Confirm signup**, troque o link por
+   `{{ .SiteURL }}/auth/confirmar?token_hash={{ .TokenHash }}&type=email`
+   (isso faz o link funcionar em qualquer aparelho; o convite é enviado de um navegador e aberto em outro).
+2. **URL Configuration**: Site URL = endereço do app no Railway; em Redirect URLs inclua `<endereço do app>/auth/confirmar` e `<endereço do app>/auth/callback`.
+3. **Envio de e-mail**: o envio padrão do Supabase é limitado a poucos e-mails por hora. Para uso real, configure um SMTP próprio (Authentication → Emails → SMTP Settings; Resend, SendGrid etc.).
+4. No Railway (serviço web), confira `NEXT_PUBLIC_APP_URL` com o endereço real do app (é usado no link do convite).
+
+### Ativação no banco
+Rode `packages/db/setup/supabase_atualizar_convite.sql` (uma vez) depois dos arquivos das escalas.
