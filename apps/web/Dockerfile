@@ -24,6 +24,10 @@ ARG NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
     NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+# Falha cedo e com mensagem clara se faltar variável (senão o app sobe e dá "Internal Server Error").
+RUN for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY; do \
+      eval "val=\$$v"; [ -n "$val" ] || { echo "ERRO: a variável $v está vazia no build. Defina-a no serviço (aba Variables) e refaça o deploy."; exit 1; }; \
+    done
 COPY tsconfig.base.json ./
 COPY apps/web apps/web
 COPY packages packages
