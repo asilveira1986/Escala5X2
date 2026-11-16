@@ -83,7 +83,7 @@ describe('EditorEscala', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
     expect(await screen.findByText(/alterada por outra pessoa/)).toBeTruthy();
     expect(cel('04').textContent).toBe('08:00');
-    expect((screen.getByRole('button', { name: 'Salvar' }) as HTMLButtonElement).disabled).toBe(false);
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Salvar' }) as HTMLButtonElement).disabled).toBe(false));
   });
 
   it('"Repetir 1ª semana" copia o padrão para as semanas seguintes', () => {

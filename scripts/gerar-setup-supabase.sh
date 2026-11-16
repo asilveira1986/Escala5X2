@@ -77,4 +77,19 @@ commit;
 SQL
 } > "$INC6"
 echo "gerado: $INC6"
+# Atualização incremental do convite de colaborador (para bancos que já têm as migrations 0001 a 0008).
+INC9=$DB/setup/supabase_atualizar_convite.sql
+{
+  echo "-- JornadaCerta: convite do colaborador (migration 0009) em um banco que já tem as migrations 0001 a 0008."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0009_convite_colaborador.up.sql"
+  cat <<'SQL'
+
+-- conferência: deve listar a tabela nova
+select table_name from information_schema.tables where table_schema = 'public' and table_name = 'convite_colaborador';
+commit;
+SQL
+} > "$INC9"
+echo "gerado: $INC9"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"
