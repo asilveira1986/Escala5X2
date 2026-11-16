@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { EstadoVazio } from '@/components/EstadoVazio';
-import { Cartao, Selo } from '@/components/ui';
+import { Cartao, classeBotaoLink, Selo } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
 import { dataBr, dataDeInstante, duracao, hhmm } from '@jc/rules-engine';
 import { FormModeloTurno } from './FormModeloTurno';
@@ -36,6 +36,10 @@ export default async function Escalas({ params }: { params: Promise<{ id: string
         {modelos.length === 0 ? <p className="mb-3 rounded-2xl bg-atencao-bg px-3.5 py-2 text-sm font-medium text-atencao-fg">Cadastre pelo menos um turno abaixo para poder montar a escala.</p> : null}
         <FormNovaEscala empresaId={empresaId} mesPadrao={hoje.slice(0, 7)} setores={setores} />
       </Cartao>
+      <div className="flex flex-wrap gap-2">
+        <Link href={`/empresas/${empresaId}/escalas/cobertura`} className={classeBotaoLink}>Cobertura mínima</Link>
+        <Link href={`/empresas/${empresaId}/escalas/ausencias`} className={classeBotaoLink}>Férias e afastamentos</Link>
+      </div>
       <Cartao titulo="Escalas">
         {escalas.length === 0 ? <EstadoVazio titulo="Nenhuma escala ainda">Crie a primeira acima. Os turnos que você cadastrar ficam disponíveis para pintar na grade.</EstadoVazio> : (
           <ul className="divide-y divide-linha">

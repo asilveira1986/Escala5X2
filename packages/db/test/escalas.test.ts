@@ -196,3 +196,17 @@ describe('cadastros de apoio e isolamento', () => {
     expect(r.rows.map((x) => x.tabela).sort()).toEqual(['alocacao', 'ausencia', 'ciencia', 'escala', 'turno_modelo', 'violacao']);
   });
 });
+
+describe('demanda de cobertura: coerência', () => {
+  it('recusa setor de outra empresa e faixa sem duração; aceita faixa que cruza a meia-noite', async () => {
+    const outraEmp = empB;
+    const un = (await db.query(`insert into unidade (empresa_id, nome, municipio_ibge) values ($1,'Outra','3550308') returning id`, [outraEmp])).rows[0].id;
+    const setorOutra = (await db.query(`insert into setor (unidade_id, nome) values ($1,'S','x') returning id`.replace(",'x'", ''), [un])).rows[0].id;
+    const ins = (setorId: string | null, ini: number, fim: number) => comoUsuario(db, admA, (c) => c.query(
+      `insert into demanda_cobertura (empresa_id, setor_id, dia_semana, faixa_inicio_min, faixa_fim_min, minimo) values ($1,$2,2,$3,$4,1)`, [empA, setorId, ini, fim]));
+    await expect(ins(setorOutra, 480, 720)).rejects.toThrow(/setor não pertence/);
+    await expect(ins(null, 480, 480)).rejects.toThrow(/duração zero/);
+    await ins(setorA, 1320, 360); // 22:00 → 06:00
+    await ins(null, 480, 1440);   // até o fim do dia
+  });
+});
