@@ -38,3 +38,20 @@ export function IlustracaoVazia({ tamanho = 96 }: { tamanho?: number }) {
     </svg>
   );
 }
+
+// ---- ícones do menu lateral
+export const IconeChevron = (p: P) => <svg {...base} {...p}><path d="M9 6l6 6-6 6" /></svg>;
+export const IconeMenu = (p: P) => <svg {...base} {...p}><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
+export const IconeFechar = (p: P) => <svg {...base} {...p}><path d="M6 6l12 12M18 6L6 18" /></svg>;
+export const IconeRecolher = (p: P) => <svg {...base} {...p}><rect x="3.5" y="4.5" width="17" height="15" rx="3" /><path d="M9.5 4.5v15M15.5 9.5L13 12l2.5 2.5" /></svg>;
+export const IconeExpandir = (p: P) => <svg {...base} {...p}><rect x="3.5" y="4.5" width="17" height="15" rx="3" /><path d="M9.5 4.5v15M13 9.5l2.5 2.5-2.5 2.5" /></svg>;
+export const IconeInicio = (p: P) => <svg {...base} {...p}><path d="M4 11l8-6.5 8 6.5v8a1.5 1.5 0 01-1.5 1.5H15v-5.5H9V20H5.5A1.5 1.5 0 014 18.5V11z" /></svg>;
+export const IconeCarteira = (p: P) => <svg {...base} {...p}><rect x="3.5" y="7.5" width="17" height="12" rx="3" /><path d="M9 7.5V6a2 2 0 012-2h2a2 2 0 012 2v1.5M3.5 12.5h17" /></svg>;
+export const IconeTurnos = (p: P) => <svg {...base} {...p}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>;
+export const IconeCobertura = (p: P) => <svg {...base} {...p}><path d="M12 4l8 4-8 4-8-4 8-4z" /><path d="M4 12l8 4 8-4M4 16l8 4 8-4" /></svg>;
+export const IconeFerias = (p: P) => <svg {...base} {...p}><circle cx="12" cy="12" r="3.6" /><path d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M17.7 6.3l-1.4 1.4M7.7 16.3l-1.4 1.4" /></svg>;
+export const IconePedidos = (p: P) => <svg {...base} {...p}><path d="M4 13l2.2-6.6A2 2 0 018.1 5h7.8a2 2 0 011.9 1.4L20 13v4.5A1.5 1.5 0 0118.5 19h-13A1.5 1.5 0 014 17.5V13z" /><path d="M4 13h4.2a1.5 1.5 0 011.3.8l.5.9a1.5 1.5 0 001.3.8h1.4a1.5 1.5 0 001.3-.8l.5-.9a1.5 1.5 0 011.3-.8H20" /></svg>;
+export const IconeRelogio = (p: P) => <svg {...base} {...p}><circle cx="12" cy="13" r="7.5" /><path d="M12 9v4l2.5 1.5M9.5 3.5h5" /></svg>;
+export const IconeBanco = (p: P) => <svg {...base} {...p}><path d="M4 9.5l8-5 8 5M5.5 10v7.5M10 10v7.5M14 10v7.5M18.5 10v7.5M3.5 19.5h17" /></svg>;
+export const IconeFolha = (p: P) => <svg {...base} {...p}><path d="M7 3.5h7l4.5 4.5v11A1.5 1.5 0 0117 20.5H7A1.5 1.5 0 015.5 19V5A1.5 1.5 0 017 3.5z" /><path d="M14 3.5V8h4.5M9 12.5h6M9 16h6" /></svg>;
+export const IconeSair = (p: P) => <svg {...base} {...p}><path d="M14 4.5h3.5A1.5 1.5 0 0119 6v12a1.5 1.5 0 01-1.5 1.5H14M10.5 8L6.5 12l4 4M6.5 12H16" /></svg>;

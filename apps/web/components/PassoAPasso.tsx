@@ -12,7 +12,7 @@ export function PassoAPasso({ passos }: { passos: Passo[] }) {
         const atual = i === proximo;
         const conteudo = (
           <>
-            <span className={`grid size-7 shrink-0 place-items-center rounded-full text-sm font-bold ${p.feito ? 'bg-marca text-sobre-marca' : atual ? 'bg-destaque text-[#10201e]' : 'bg-neutro-bg text-neutro-fg'}`}>
+            <span className={`grid size-7 shrink-0 place-items-center rounded-full text-sm font-bold ${p.feito ? 'bg-marca text-sobre-marca' : atual ? 'bg-destaque text-[#0f172a]' : 'bg-neutro-bg text-neutro-fg'}`}>
               {p.feito ? <IconeCheck width={18} height={18} /> : i + 1}
             </span>
             <span className="min-w-0">

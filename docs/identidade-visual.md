@@ -1,0 +1,21 @@
+# Identidade visual
+
+Conceito: **tecnologia de gestão de pessoas** — limpa, confiável e leve de usar. Índigo é a família de cor mais associada a software de RH/SaaS; a menta marca os "dias de folga" do logotipo.
+
+| Papel | Claro | Escuro | Uso |
+|---|---|---|---|
+| Marca (índigo) | `#4F46E5` | `#A5B4FC` | botões, item ativo, links |
+| Marca escura | `#3730A3` | `#C7D2FE` | hover, degradê do login |
+| Marca suave | `#EEF0FF` | `#1C2347` | fundo do item ativo, ícones |
+| Destaque (menta) | `#5EEAD4` | `#5EEAD4` | dias de folga no logo, marcadores |
+| Fundo / cartão | `#F6F7FB` / `#FFFFFF` | `#0B1020` / `#131A2E` | páginas / cartões |
+| Texto / texto suave | `#0F172A` / `#5B6478` | `#E8ECF8` / `#9AA5C0` | |
+| OK / Atenção / Risco | verde `#0B5A3A`, âmbar `#7A4B00`, rosa `#9F1239` sobre tons claros | versões claras sobre tons escuros | status |
+
+- Todos os pares de texto passam em contraste AA (mínimo 5,5:1 medido).
+- Tudo é token em `apps/web/app/globals.css`; trocar a marca é editar esse arquivo (mais `lib/pwa/icone.tsx` e `app/manifest.ts` para o ícone do app).
+- Logotipo: cinco barras (dias úteis) + uma menta (folga), em `MarcaLogo` e nos ícones do PWA.
+
+## Menu lateral
+
+O menu usa um **índigo profundo** (`#1E1B4B`) nos dois temas para se separar do conteúdo claro. Está na classe `.tema-menu` (`globals.css`), que só redefine os tokens dentro do menu; texto 13:1, texto suave 8:1 e item ativo 9:1 de contraste.

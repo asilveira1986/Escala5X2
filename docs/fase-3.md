@@ -55,3 +55,14 @@ Veja `docs/ponto-afd.md`: leitor dos leiautes 1.510 (PIS) e 671 (CPF), marcaçõ
 
 ### Ainda não feito (próximas fatias)
 Usar as horas apuradas pelo ponto no fechamento da folha e no banco de horas; notificações (e-mail/WhatsApp) de pedido novo e de decisão; ciência apenas dos afetados em versões geradas por troca; ajuste de ponto; exportação para folha; WhatsApp; cobrança.
+
+## Layout: menu lateral
+
+O aplicativo agora tem **menu lateral esquerdo recolhível** (`apps/web/components/Shell.tsx`, modelo puro em `lib/menu.ts`):
+
+- Grupos com subitens (Equipe, Escalas, Ponto e folha); o grupo da página atual abre sozinho.
+- Recolhido vira uma faixa de ícones; os subitens aparecem ao passar o mouse ou focar com o teclado.
+- No celular o menu é uma gaveta (botão de menu, Esc ou toque fora fecha); quem é só colaborador também tem barra de atalhos embaixo.
+- Seletor de empresa no topo do menu (mantém a seção ao trocar) e caminho (migalhas) na barra superior.
+- O estado (recolhido/grupos abertos) fica no cookie `jc-menu`, lido no servidor, sem "piscar".
+- Novas páginas: **Visão geral** da empresa (`/empresas/[id]`) e **Turnos** (`/escalas/turnos`); as abas antigas e a fileira de botões saíram.
