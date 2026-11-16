@@ -1,0 +1,1 @@
+drop function if exists lancar_banco_horas(uuid, date, int, text, text), estornar_banco_horas(bigint, text), banco_horas_clausula(uuid, date), banco_horas_saldo(uuid); drop table if exists banco_horas_lancamento cascade; drop function if exists banco_horas_imutavel();

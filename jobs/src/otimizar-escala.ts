@@ -25,6 +25,7 @@ export async function processarOtimizacao(pool: Pool, id: string, cfg: ConfigOti
       linha = (await cx.query<Linha>(`select id, status, entrada, opcoes, criado_por from otimizacao where id = $1 for update`, [id])).rows[0];
       if (!linha) throw new Error(`Otimização ${id} não encontrada`);
       if (linha.status !== 'pendente') { await cx.query('rollback'); return null; }
+      await cx.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: linha.criado_por })]);   // auditoria atribuída a quem pediu
       await cx.query(`update otimizacao set status = 'processando', iniciado_em = now() where id = $1`, [id]);
       await cx.query('commit');
     } catch (e) {
