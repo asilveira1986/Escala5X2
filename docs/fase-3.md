@@ -70,3 +70,13 @@ O aplicativo agora tem **menu lateral esquerdo recolhível** (`apps/web/componen
 ## Cadastro manual de colaborador
 
 Em **Equipe › Novo colaborador** (ou o botão na lista de colaboradores) o RH cadastra uma pessoa sem planilha: dados pessoais, cargo/setor e contrato (salário, jornada, escala). A validação é a mesma da importação (CPF com dígito verificador, datas, divisor) e a gravação é uma só função do banco (`cadastrar_colaborador`, migration 0017): cria o setor se for novo, a pessoa e o contrato vigente desde a admissão, tudo auditado. Instalador incremental: `packages/db/setup/supabase_atualizar_colaborador.sql`.
+
+## Edição e desligamento de colaborador
+
+Na lista de colaboradores, **Editar** abre a ficha (`/empresas/[id]/colaboradores/[colaboradorId]`) com três blocos:
+
+- **Dados da pessoa:** nome, matrícula, telefone, escolaridade, setor, CBO e cargo. O CPF não muda (é a identidade). Abrir a ficha revela CPF/telefone e fica registrado na auditoria (`revelar_pii`).
+- **Contrato e escala:** mudança de salário, jornada, escala, turno etc. **a partir de uma data**: o contrato anterior termina na véspera e o histórico é mantido (lista abaixo do formulário). Mesma data de início = corrige a versão em vez de criar outra.
+- **Desligamento:** informa o último dia de trabalho (com confirmação). Encerra o contrato nesse dia, remove o acesso ao aplicativo e avisa quantos dias de trabalho ainda estão em escalas depois da data. **Reativar** reabre o contrato.
+
+Desligados saem da lista principal e aparecem em "Desligados". As regras de validação são as da importação. Migration 0018; instalador incremental: `packages/db/setup/supabase_atualizar_edicao_colaborador.sql`.

@@ -172,4 +172,14 @@ INC17=$DB/setup/supabase_atualizar_colaborador.sql
   echo "commit;"
 } > "$INC17"
 echo "gerado: $INC17"
+# Edição e desligamento de colaborador (migration 0018) para bancos com as migrations 0001 a 0017.
+INC18=$DB/setup/supabase_atualizar_edicao_colaborador.sql
+{
+  echo "-- JornadaCerta: edição, mudança de contrato e desligamento de colaborador (migration 0018) em um banco que já tem as migrations 0001 a 0017."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0018_editar_desligar_colaborador.up.sql"
+  echo "commit;"
+} > "$INC18"
+echo "gerado: $INC18"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"
