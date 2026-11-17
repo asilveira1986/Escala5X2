@@ -1,4 +1,5 @@
 /** Auxiliares puros da tela do Adequador de escala (horários, carga semanal, sugestão de cobertura). */
+export type TurnoBase = { chave: string; nome: string; inicio: string; fim: string; intervalo: number; modeloId: string | null };
 export type TurnoForm = { chave: string; nome: string; inicio: string; fim: string; intervalo: number; modeloId: string | null; minimo: number[] };
 
 /** Ordem dos dias na tela (segunda a domingo) → índice usado pelo motor (0 = domingo). */
@@ -38,3 +39,13 @@ export function sugerirCobertura(pessoas: number, nTurnos: number, diasPorSemana
 /** Cor de cada turno na grade (índice do turno → classes). */
 export const CORES_TURNO = ['bg-azul-bg text-azul-fg', 'bg-violeta-bg text-violeta-fg', 'bg-verde-bg text-verde-fg', 'bg-ambar-bg text-ambar-fg', 'bg-rosa-bg text-rosa-fg', 'bg-neutro-bg text-neutro-fg'] as const;
 export const inicialDoTurno = (nome: string, i: number): string => (nome.trim()[0] ?? String(i + 1)).toUpperCase();
+
+/** Texto do balanço de um setor: quantas pessoas a cobertura exige e a equipe que ele tem. */
+export function frasePessoas(b: { posicoesSemana: number; pessoasNecessarias: number; sobra: number }, equipe: number, dias: number): string {
+  if (b.posicoesSemana === 0) return 'Informe quantas pessoas cada turno precisa.';
+  const base = `A cobertura pede ${b.posicoesSemana} posições por semana: cerca de ${b.pessoasNecessarias} pessoa(s) a ${dias} dias, para ${equipe} na equipe.`;
+  return b.sobra < 0 ? `${base} Faltam ~${-b.sobra}.` : b.sobra > 0 ? `${base} Sobram ~${b.sobra}.` : `${base} Fecha na medida.`;
+}
+
+/** Dias de funcionamento padrão: segunda a sábado abertos (índice 0 = domingo). */
+export const FUNCIONAMENTO_PADRAO = [false, true, true, true, true, true, true];

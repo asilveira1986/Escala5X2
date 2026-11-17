@@ -23,12 +23,26 @@ export type ParametrosAdequacao = {
   diasPorSemana?: number;
   /** Máximo de dias seguidos de trabalho (padrão 6). */
   maxDiasSeguidos?: number;
+  /**
+   * Dias de funcionamento: índice 0 = domingo … 6 = sábado; `false` = fechado (ninguém é escalado). Sem valor, vale o que a cobertura
+   * pede: dia da semana em que nenhum turno precisa de ninguém é tratado como fechado.
+   */
+  diasFuncionamento?: boolean[];
+  /** A empresa não abre nos feriados do calendário (ninguém é escalado). */
+  fecharNosFeriados?: boolean;
+  /** Folgas fixas por pessoa: dias da semana (0 = domingo … 6 = sábado) em que ela não trabalha, quando a equipe permitir. */
+  folgasFixas?: Record<string, number[]>;
 };
 
 export type CoberturaDia = { data: DataISO; turnoId: string; necessario: number; alocado: number; falta: number };
 export type ResumoPessoa = { colaboradorId: string; nome: string; turnoId: string | null; diasTrabalhados: number; horasSemanaMediaMin: number; domingosTrabalhados: number; feriadosTrabalhados: number };
+export type FeriasNoPeriodo = { colaboradorId: string; nome: string; inicio: DataISO; fim: DataISO; tipo: 'ferias' | 'afastamento'; dias: number };
 export type ResultadoAdequacao = {
   alocacoes: AlocacaoComModelo[];
+  /** Dias do período em que a empresa não funciona (ninguém escalado). */
+  diasFechados: DataISO[];
+  /** Férias e afastamentos que caem no período (a equipe cobre sem essas pessoas). */
+  ausencias: FeriasNoPeriodo[];
   turnoDe: Record<string, string>;
   cobertura: CoberturaDia[];
   pessoas: ResumoPessoa[];
@@ -65,6 +79,7 @@ function gerador(semente: number) {
 type Pessoa = {
   ctx: ContextoColaborador; turno: number;                      // índice do turno
   disp: boolean[];                                              // dia disponível (vínculo ativo e sem ausência)
+  pode: boolean[];                                              // pode ser escalado: disponível, empresa aberta e fora das folgas fixas
   trabalha: boolean[];
   runInicial: number;                                           // dias seguidos de trabalho que já vinham antes do período
   domingosAntes: number;                                        // domingos seguidos trabalhados que já vinham
@@ -80,6 +95,12 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
   const feriados = new Set(entrada.feriados.map((f) => f.data));
   const maxSeguidos = Math.max(1, Math.min(13, params.maxDiasSeguidos ?? 6));
   const avisos: string[] = [];
+  // dias de funcionamento: pelo que foi informado; sem informação, pelo que a cobertura pede
+  const abreNoDia = Array.from({ length: 7 }, (_, d) => (params.diasFuncionamento && params.diasFuncionamento.length === 7 ? params.diasFuncionamento[d] !== false : turnos.some((t) => t.minimo[d]! > 0)));
+  const aberto = Array.from({ length: nDias }, (_, i) => abreNoDia[dow[i]!]! && !(params.fecharNosFeriados && feriados.has(dia(i))));
+  const diasFechados = Array.from({ length: nDias }, (_, i) => i).filter((i) => !aberto[i]).map(dia);
+  const pedeEmDiaFechado = turnos.some((t) => t.minimo.some((m, d) => m > 0 && !abreNoDia[d]));
+  if (pedeEmDiaFechado) avisos.push('Há cobertura pedida em dia da semana marcado como fechado: o dia fechado prevalece e essa cobertura foi ignorada.');
 
   // ---- equipe disponível
   const ausentes = (id: string, d: DataISO) => entrada.ausencias.some((a) => a.colaboradorId === id && d >= a.inicio && d <= a.fim);
@@ -115,7 +136,9 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
     const trab = new Set(ate(c.colaboradorId).filter((a) => a.tipo === 'trabalho').map((a) => a.data));
     let run = 0; for (let d = nIni - 1; trab.has(dataDoNumero(d)); d--) run++;
     let dom = 0; for (let d = nIni - 1; d >= nIni - 70; d--) { if (diaDaSemana(dataDoNumero(d)) !== 0) continue; if (trab.has(dataDoNumero(d))) dom++; else break; }
-    return { ctx: c, turno: escolha.get(c.colaboradorId) ?? 0, disp, trabalha: Array(nDias).fill(false), runInicial: run, domingosAntes: dom };
+    const fixas = new Set(params.folgasFixas?.[c.colaboradorId] ?? []);
+    const pode = disp.map((ok, i) => ok && aberto[i]! && !fixas.has(dow[i]!));
+    return { ctx: c, turno: escolha.get(c.colaboradorId) ?? 0, disp, pode, trabalha: Array(nDias).fill(false), runInicial: run, domingosAntes: dom };
   });
 
   // ---- semanas (segunda a domingo) e a cota de dias de trabalho de cada pessoa em cada uma
@@ -137,7 +160,7 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
     let q = Math.min(pedida, lei);
     const k = s.dias.length;
     if (k < 7) q = Math.min(q, k - Math.floor((folgas * k) / 7));                      // semana parcial no começo/fim do mês: folgas proporcionais (o resto fica para o outro mês)
-    return Math.max(0, Math.min(q, s.dias.filter((i) => p.disp[i]).length));
+    return Math.max(0, Math.min(q, s.dias.filter((i) => p.pode[i]).length));
   };
   const cotas = pessoas.map((p) => semanas.map((s) => cotaSemana(p, s)));
   pessoas.forEach((p, pi) => {
@@ -157,7 +180,7 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
       const posDia = new Map(s.dias.map((i) => [(dow[i]! + 6) % 7, i]));                 // 0 = segunda … 6 = domingo
       const inicioTrab = (base + wi + (7 - Math.min(q, 7))) % 7;
       let feitos = 0;
-      for (let k = 0; k < 7 && feitos < q; k++) { const i = posDia.get((inicioTrab + k) % 7); if (i !== undefined && p.disp[i]) { p.trabalha[i] = true; feitos++; } }
+      for (let k = 0; k < 7 && feitos < q; k++) { const i = posDia.get((inicioTrab + k) % 7); if (i !== undefined && p.pode[i]) { p.trabalha[i] = true; feitos++; } }
     });
   }));
 
@@ -168,7 +191,7 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
   const regrasRodizio = pessoas.map((p) => resolverRegras(p.ctx, inicio, entrada.regras).domingoRodizio?.aCadaNSemanas ?? 0);
   const somaDom = grupos.map((g) => g.reduce((s, p) => s + dom[pessoas.indexOf(p)]!, 0));
   const custoCelula = (i: number, t: number, n: number) => {
-    const m = turnos[t]!.minimo[dow[i]!]!;
+    const m = aberto[i] ? turnos[t]!.minimo[dow[i]!]! : 0;
     const falta = Math.max(0, m - n), sobra = Math.max(0, n - m);
     return falta * falta * 100 + sobra * sobra + (feriados.has(dia(i)) ? n * 3 : 0);
   };
@@ -197,7 +220,7 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
     const pi = Math.floor(rnd() * pessoas.length), p = pessoas[pi]!;
     const { s } = semanasMultiplas[Math.floor(rnd() * semanasMultiplas.length)]!;
     const trabalhando = s.dias.filter((i) => p.trabalha[i]);
-    const folgando = s.dias.filter((i) => !p.trabalha[i] && p.disp[i]);
+    const folgando = s.dias.filter((i) => !p.trabalha[i] && p.pode[i]);
     if (trabalhando.length === 0 || folgando.length === 0) continue;
     const a = trabalhando[Math.floor(rnd() * trabalhando.length)]!, b = folgando[Math.floor(rnd() * folgando.length)]!;
     const t = p.turno;
@@ -230,7 +253,7 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
   // ---- 5) cobertura, resumo e conferência pelo motor de regras
   const coberturaDias: CoberturaDia[] = [];
   for (let i = 0; i < nDias; i++) for (let t = 0; t < turnos.length; t++) {
-    const necessario = turnos[t]!.minimo[dow[i]!]!;
+    const necessario = aberto[i] ? turnos[t]!.minimo[dow[i]!]! : 0;
     if (necessario === 0) continue;
     const alocado = cobre[i]![t]!;
     coberturaDias.push({ data: dia(i), turnoId: turnos[t]!.id, necessario, alocado, falta: Math.max(0, necessario - alocado) });
@@ -255,12 +278,18 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
   }).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
   const coberturaMotor: DemandaCobertura[] = turnos.flatMap((t) => t.minimo.map((m, d) => ({ diaSemana: d, faixaInicioMin: t.inicioMin % MIN_DIA, faixaFimMin: t.fimMin > MIN_DIA ? t.fimMin - MIN_DIA : t.fimMin, minimo: m })).filter((c) => c.minimo > 0));
-  const violacoes = validarEscala({ periodo: { inicio, fim }, alocacoes: alocacoes as Alocacao[], anteriores: entrada.anteriores, ausencias: entrada.ausencias, feriados: entrada.feriados, cobertura: coberturaMotor }, equipe, entrada.regras);
+  const fechados = new Set(diasFechados);
+  const violacoesBrutas = validarEscala({ periodo: { inicio, fim }, alocacoes: alocacoes as Alocacao[], anteriores: entrada.anteriores, ausencias: entrada.ausencias, feriados: entrada.feriados, cobertura: coberturaMotor }, equipe, entrada.regras);
+  const violacoes = violacoesBrutas.filter((v) => !((v.codigo === 'COBERTURA_MINIMA' || v.codigo === 'COBERTURA_IDEAL') && v.data && fechados.has(v.data)));
   if (faltaTotal > 0) {
     avisos.push(`Faltam ${faltaTotal} posição(ões) de cobertura no mês com a equipe atual (${equipe.length} pessoa(s)). Ajuste os horários, reduza a cobertura pedida ou reforce a equipe.`);
   }
+  const ausenciasPeriodo: FeriasNoPeriodo[] = entrada.ausencias
+    .filter((a) => a.inicio <= fim && a.fim >= inicio && equipe.some((c) => c.colaboradorId === a.colaboradorId))
+    .map((a) => ({ colaboradorId: a.colaboradorId, nome: equipe.find((c) => c.colaboradorId === a.colaboradorId)!.nome, inicio: a.inicio < inicio ? inicio : a.inicio, fim: a.fim > fim ? fim : a.fim, tipo: a.tipo, dias: Math.min(numeroDoDia(a.fim), numeroDoDia(fim)) - Math.max(numeroDoDia(a.inicio), nIni) + 1 }))
+    .sort((a, b) => a.inicio.localeCompare(b.inicio) || a.nome.localeCompare(b.nome, 'pt-BR'));
   return {
-    alocacoes, turnoDe, cobertura: coberturaDias, pessoas: resumoPessoas,
+    alocacoes, diasFechados, ausencias: ausenciasPeriodo, turnoDe, cobertura: coberturaDias, pessoas: resumoPessoas,
     resumo: { necessarioTotal, alocadoTotal, faltaTotal, percentualAtendido: necessarioTotal === 0 ? 100 : Math.round((alocadoTotal / necessarioTotal) * 1000) / 10, diasComFalta: coberturaDias.filter((c) => c.falta > 0).length, pessoasAlocadas: pessoas.length },
     violacoes, avisos,
   };
