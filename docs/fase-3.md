@@ -80,3 +80,7 @@ Na lista de colaboradores, **Editar** abre a ficha (`/empresas/[id]/colaboradore
 - **Desligamento:** informa o último dia de trabalho (com confirmação). Encerra o contrato nesse dia, remove o acesso ao aplicativo e avisa quantos dias de trabalho ainda estão em escalas depois da data. **Reativar** reabre o contrato.
 
 Desligados saem da lista principal e aparecem em "Desligados". As regras de validação são as da importação. Migration 0018; instalador incremental: `packages/db/setup/supabase_atualizar_edicao_colaborador.sql`.
+
+## Editar e remover turno
+
+Em **Escalas › Turnos**, cada turno tem **Editar** (nome, entrada, saída — saída antes da entrada = dia seguinte — e intervalo, com as mesmas regras do cadastro) e **Remover** (com confirmação). A edição vale para as próximas escalas e adequações: cada alocação guarda os próprios horários e escalas publicadas são imutáveis, então o que já foi escalado não muda. **Remover arquiva** o turno (`ativo = false`): ele sai das listas, mas as escalas que o usaram continuam ligadas a ele. Alterações ficam na auditoria.
