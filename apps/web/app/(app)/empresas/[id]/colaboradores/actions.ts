@@ -4,6 +4,7 @@ import { CAMPOS_COLABORADOR, validarColaboradores, type CampoColaborador, type M
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { formatarCbo, type OcupacaoCbo } from '@/lib/cbo';
 import { exigirUsuario } from '@/lib/contexto';
 import { enviarLinkDeAcesso } from '@/lib/supabase/envio-link';
 
@@ -47,7 +48,11 @@ export async function cadastrarColaborador(empresaId: string, _: EstadoNovoColab
   if (!id.success) return { erroGeral: 'Empresa inválida.' };
   const valores = Object.fromEntries(CHAVES.map((c) => [c, String(form.get(c) ?? '').trim()]));
   const mapeamento: Mapeamento = Object.fromEntries(CHAVES.map((c) => [c, c]));
-  const { validas, erros } = validarColaboradores([valores], mapeamento);
+  const cbo = valores.cbo ? formatarCbo(valores.cbo) : '';
+  const lista = valores.cbo ? ((await import('@/lib/cbo-dados.json')).default as unknown as OcupacaoCbo[]) : [];
+  const cboInvalido = valores.cbo && (!cbo || !lista.some(([c]) => c === cbo));
+  const { validas, erros } = validarColaboradores([{ ...valores, cbo: cbo || '' }], mapeamento);
+  if (cboInvalido) erros.push({ linha: 2, campo: 'cbo', valor: valores.cbo!, mensagem: 'Escolha uma ocupação da lista.' });
   if (erros.length > 0 || !validas[0]) {
     return { valores, erros: Object.fromEntries(erros.filter((e) => e.campo !== 'geral').map((e) => [e.campo, e.mensagem])) as EstadoNovoColaborador['erros'], erroGeral: erros.find((e) => e.campo === 'geral')?.mensagem };
   }
