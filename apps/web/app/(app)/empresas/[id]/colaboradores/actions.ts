@@ -1,6 +1,8 @@
 'use server';
 
+import { CAMPOS_COLABORADOR, validarColaboradores, type CampoColaborador, type Mapeamento } from '@jc/connectors';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { exigirUsuario } from '@/lib/contexto';
 import { enviarLinkDeAcesso } from '@/lib/supabase/envio-link';
@@ -34,4 +36,32 @@ export async function revogarAcesso(empresaId: string, colaboradorId: string): P
   if (error) return { ok: false, erro: traduzir(error.message) };
   revalidatePath(`/empresas/${p.data.empresaId}/colaboradores`);
   return { ok: true, mensagem: 'Acesso removido.' };
+}
+
+export type EstadoNovoColaborador = { erros?: Partial<Record<CampoColaborador, string>>; erroGeral?: string; valores?: Record<string, string> };
+const CHAVES = CAMPOS_COLABORADOR.map((c) => c.chave).filter((c) => c !== 'desligamento');
+
+/** Cadastro manual: valida com as mesmas regras da importação por planilha e grava pessoa + contrato de uma vez. */
+export async function cadastrarColaborador(empresaId: string, _: EstadoNovoColaborador, form: FormData): Promise<EstadoNovoColaborador> {
+  const id = z.string().uuid().safeParse(empresaId);
+  if (!id.success) return { erroGeral: 'Empresa inválida.' };
+  const valores = Object.fromEntries(CHAVES.map((c) => [c, String(form.get(c) ?? '').trim()]));
+  const mapeamento: Mapeamento = Object.fromEntries(CHAVES.map((c) => [c, c]));
+  const { validas, erros } = validarColaboradores([valores], mapeamento);
+  if (erros.length > 0 || !validas[0]) {
+    return { valores, erros: Object.fromEntries(erros.filter((e) => e.campo !== 'geral').map((e) => [e.campo, e.mensagem])) as EstadoNovoColaborador['erros'], erroGeral: erros.find((e) => e.campo === 'geral')?.mensagem };
+  }
+  const c = validas[0];
+  const { supabase } = await exigirUsuario();
+  const { error } = await supabase.rpc('cadastrar_colaborador', {
+    p_empresa: id.data, p_nome: c.nome, p_cpf: c.cpf, p_admissao: c.admissao, p_salario: c.salarioCentavos / 100, p_jornada_min: c.jornadaSemanalMin,
+    p_divisor: c.divisor, p_tipo_escala: c.tipoEscala, p_setor_nome: c.setor, p_matricula: c.matricula, p_cargo: c.cargo, p_cbo: c.cbo,
+    p_escolaridade: c.escolaridade, p_telefone: c.telefone, p_turno: c.turno, p_folgas: c.folgasSemana, p_horas_extras_min: c.horasExtrasMensaisMin,
+  });
+  if (error) {
+    if (/CPF já cadastrado/i.test(error.message)) return { valores, erros: { cpf: 'Já existe um colaborador com este CPF nesta empresa.' } };
+    return { valores, erroGeral: traduzir(error.message).slice(0, 200) || 'Não foi possível cadastrar o colaborador.' };
+  }
+  revalidatePath(`/empresas/${id.data}/colaboradores`);
+  redirect(`/empresas/${id.data}/colaboradores`);
 }

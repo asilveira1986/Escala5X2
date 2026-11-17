@@ -66,3 +66,7 @@ O aplicativo agora tem **menu lateral esquerdo recolhível** (`apps/web/componen
 - Seletor de empresa no topo do menu (mantém a seção ao trocar) e caminho (migalhas) na barra superior.
 - O estado (recolhido/grupos abertos) fica no cookie `jc-menu`, lido no servidor, sem "piscar".
 - Novas páginas: **Visão geral** da empresa (`/empresas/[id]`) e **Turnos** (`/escalas/turnos`); as abas antigas e a fileira de botões saíram.
+
+## Cadastro manual de colaborador
+
+Em **Equipe › Novo colaborador** (ou o botão na lista de colaboradores) o RH cadastra uma pessoa sem planilha: dados pessoais, cargo/setor e contrato (salário, jornada, escala). A validação é a mesma da importação (CPF com dígito verificador, datas, divisor) e a gravação é uma só função do banco (`cadastrar_colaborador`, migration 0017): cria o setor se for novo, a pessoa e o contrato vigente desde a admissão, tudo auditado. Instalador incremental: `packages/db/setup/supabase_atualizar_colaborador.sql`.

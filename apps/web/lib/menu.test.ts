@@ -15,7 +15,7 @@ describe('montarMenu', () => {
     expect(emp.map((g) => g.id)).toEqual(['visao', 'diagnostico', 'equipe', 'escalas', 'pedidos', 'ponto-folha']);
     expect(emp.find((g) => g.id === 'escalas')!.itens!.map((i) => i.rotulo)).toEqual(['Escalas do mês', 'Turnos', 'Cobertura mínima', 'Férias e afastamentos']);
     expect(emp.find((g) => g.id === 'ponto-folha')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/ponto`, `/empresas/${E}/banco-horas`, `/empresas/${E}/folha`]);
-    expect(emp.find((g) => g.id === 'equipe')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/colaboradores`, `/empresas/${E}/importar`]);
+    expect(emp.find((g) => g.id === 'equipe')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/colaboradores`, `/empresas/${E}/colaboradores/novo`, `/empresas/${E}/importar`]);
   });
   it('Configurações reúne a lista de empresas e o cadastro de nova empresa', () => {
     const cfg = montarMenu(ctx()).find((s) => s.id === 'configuracoes')!;
@@ -65,6 +65,8 @@ describe('posicaoAtual', () => {
     expect(posicaoAtual(m, `/empresas/${E}/banco-horas/abc`)).toMatchObject({ itemId: 'banco-horas' });
     expect(posicaoAtual(m, `/empresas/${E}/diagnostico/abc`)).toMatchObject({ grupoId: 'diagnostico' });
     expect(posicaoAtual(m, `/empresas/${E}/importar/xyz`)).toMatchObject({ itemId: 'importar' });
+    expect(posicaoAtual(m, `/empresas/${E}/colaboradores/novo`)).toMatchObject({ itemId: 'novo-colaborador' });
+    expect(posicaoAtual(m, `/empresas/${E}/colaboradores`)).toMatchObject({ itemId: 'colaboradores' });
   });
   it('o destino mais específico vence (Turnos não acende Escalas do mês)', () => {
     expect(posicaoAtual(m, `/empresas/${E}/escalas/turnos`)).toMatchObject({ itemId: 'turnos' });
