@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { resumirHoras, validarEntrada, type EntradaEscala } from '@jc/servicos';
 import { dataBr, diaDaSemana, duracao, type Violacao } from '@jc/rules-engine';
-import { Aviso, Botao, Cartao, Selo } from '@/components/ui';
+import { Aviso, Botao, Cartao, classeBotaoLink, Selo } from '@/components/ui';
 import {
   aplicarPincel, ausenciasPorCelula, chave, contarTrabalhando, diasComCoberturaBaixa, diasDoPeriodo, faixaHoras, indexar, NOMES_DIA, repetirPrimeiraSemana, rotuloCelula,
   severidadePorCelula, type Celula, type Modelo, type Pincel,
@@ -95,6 +95,10 @@ export function EditorEscala({ empresaId, entrada, modelos, otimizacao = null }:
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Selo tom={status === 'rascunho' ? 'amarelo' : status === 'publicada' ? 'verde' : 'cinza'}>{status === 'rascunho' ? 'Rascunho' : status === 'publicada' ? 'Publicada' : 'Substituída'}</Selo>
+          <span className="flex gap-1" role="group" aria-label="Baixar a escala" title={sujo ? 'Baixa a última versão salva (há alterações não salvas)' : 'Baixa a escala para afixar ou abrir no Excel'}>
+            <a href={`/api/v1/escalas/${entrada.escala.id}?formato=pdf`} className={classeBotaoLink}>PDF</a>
+            <a href={`/api/v1/escalas/${entrada.escala.id}?formato=xlsx`} className={classeBotaoLink}>Excel</a>
+          </span>
           {somenteLeitura ? (status === 'publicada' ? <Botao variante="secundario" onClick={criarNovaVersao} disabled={pendente}>Criar nova versão</Botao> : null) : (
             <>
               <Botao variante="secundario" onClick={() => { setAlocs((a) => repetirPrimeiraSemana(a, entrada.escala.inicio, entrada.escala.fim)); setConfirmando(false); }} disabled={pendente}>Repetir 1ª semana</Botao>

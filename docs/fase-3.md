@@ -84,3 +84,12 @@ Desligados saem da lista principal e aparecem em "Desligados". As regras de vali
 ## Editar e remover turno
 
 Em **Escalas › Turnos**, cada turno tem **Editar** (nome, entrada, saída — saída antes da entrada = dia seguinte — e intervalo, com as mesmas regras do cadastro) e **Remover** (com confirmação). A edição vale para as próximas escalas e adequações: cada alocação guarda os próprios horários e escalas publicadas são imutáveis, então o que já foi escalado não muda. **Remover arquiva** o turno (`ativo = false`): ele sai das listas, mas as escalas que o usaram continuam ligadas a ele. Alterações ficam na auditoria.
+
+## Baixar a escala (PDF e Excel)
+
+No editor de escalas, os botões **PDF** e **Excel** baixam a escala (a última versão salva) de qualquer situação — rascunho, publicada ou substituída:
+
+- **PDF** em A4 paisagem, pronto para afixar: pessoas × dias com um código por horário de turno (A, B…) e cores, "F" folga, "FÉR" férias, "AFA" afastamento, feriados em destaque, totais de dias e horas por pessoa, linha de "pessoas trabalhando" por dia, legenda e rodapé com a situação, a versão e o código de integridade (escala publicada) ou o aviso "ainda não publicada". Equipes grandes continuam nas páginas seguintes com o cabeçalho repetido.
+- **Excel** com a mesma grade (cores, totais e linha de cobertura, colunas congeladas e configurado para imprimir em uma página de largura) e uma aba **Informações** com empresa, período, situação, versão, integridade e legenda.
+
+Rota: `GET /api/v1/escalas/[id]?formato=pdf|xlsx` (usa o acesso do usuário: quem não pode ver a escala recebe 404).
