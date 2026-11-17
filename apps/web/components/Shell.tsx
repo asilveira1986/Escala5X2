@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { caminhoParaEmpresa, COOKIE_MENU, empresaDoCaminho, gravarEstadoMenu, migalhas, montarMenu, posicaoAtual, type EstadoMenu, type GrupoMenu, type ItemMenu, type PosicaoMenu, type SecaoMenu } from '@/lib/menu';
+import { caminhoParaEmpresa, COOKIE_EMPRESA, COOKIE_MENU, empresaDoCaminho, gravarEstadoMenu, migalhas, montarMenu, posicaoAtual, type EstadoMenu, type GrupoMenu, type ItemMenu, type PosicaoMenu, type SecaoMenu } from '@/lib/menu';
 import { BotaoSair } from './BotaoSair';
 import { IconeChevron, IconeEmpresa, IconeExpandir, IconeFechar, IconeMenu, IconeRecolher, MarcaLogo } from './icones';
 import { ICONES_MENU } from './menu-icones';
@@ -37,6 +37,11 @@ export function Shell({ email, empresas, ehGestor, temMinhaEscala, temCarteira, 
 
   const alternarRecolhido = useCallback(() => setRecolhido((r) => { const n = !r; gravar({ recolhido: n, abertos }); return n; }), [abertos]);
   const alternarGrupo = useCallback((id: string) => setAbertos((a) => { const n = a.includes(id) ? a.filter((x) => x !== id) : [...a, id]; gravar({ recolhido, abertos: n }); return n; }), [recolhido]);
+
+  // lembra a última empresa aberta: é nela que o sistema abre da próxima vez
+  useEffect(() => {
+    if (empresaId) { try { document.cookie = `${COOKIE_EMPRESA}=${empresaId}; path=/; max-age=31536000; samesite=lax`; } catch { /* sem cookie: abre na primeira da lista */ } }
+  }, [empresaId]);
 
   // a gaveta fecha ao navegar, com Esc, e trava a rolagem da página
   useEffect(() => { setGaveta(false); }, [pathname]);

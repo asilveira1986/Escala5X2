@@ -4,12 +4,12 @@
  */
 export type IconeId =
   | 'inicio' | 'carteira' | 'empresas' | 'diagnostico' | 'equipe' | 'pessoas' | 'importar' | 'escalas' | 'calendario' | 'turnos' | 'cobertura'
-  | 'ferias' | 'pedidos' | 'ponto' | 'relogio' | 'banco' | 'folha' | 'minha-escala';
+  | 'ferias' | 'pedidos' | 'ponto' | 'relogio' | 'banco' | 'folha' | 'minha-escala' | 'config' | 'mais';
 
 export type ItemMenu = { id: string; rotulo: string; href: string; icone: IconeId };
 /** Grupo com subitens (accordion) ou, sem `itens`, um link direto. */
 export type GrupoMenu = { id: string; rotulo: string; icone: IconeId; href?: string; itens?: ItemMenu[] };
-export type SecaoMenu = { id: 'geral' | 'empresa' | 'colaborador'; titulo: string; grupos: GrupoMenu[] };
+export type SecaoMenu = { id: 'geral' | 'empresa' | 'configuracoes' | 'colaborador'; titulo: string; grupos: GrupoMenu[] };
 
 export type ContextoMenu = {
   /** Empresa aberta no momento (da URL); null fora de uma empresa. */
@@ -25,10 +25,7 @@ export function montarMenu(c: ContextoMenu): SecaoMenu[] {
   const secoes: SecaoMenu[] = [];
   const mostrarGeral = c.ehGestor || !c.temMinhaEscala;
   if (mostrarGeral) {
-    const grupos: GrupoMenu[] = [];
-    if (c.temCarteira) grupos.push({ id: 'carteira', rotulo: 'Carteira', icone: 'carteira', href: '/carteira' });
-    grupos.push({ id: 'empresas', rotulo: 'Empresas', icone: 'empresas', href: '/empresas' });
-    secoes.push({ id: 'geral', titulo: 'Geral', grupos });
+    if (c.temCarteira) secoes.push({ id: 'geral', titulo: 'Geral', grupos: [{ id: 'carteira', rotulo: 'Carteira', icone: 'carteira', href: '/carteira' }] });
   }
   if (c.empresaId && mostrarGeral) {
     const e = `/empresas/${c.empresaId}`;
@@ -54,6 +51,15 @@ export function montarMenu(c: ContextoMenu): SecaoMenu[] {
           { id: 'folha', rotulo: 'Fechamento da folha', href: `${e}/folha`, icone: 'folha' },
         ] },
       ],
+    });
+  }
+  if (mostrarGeral) {
+    secoes.push({
+      id: 'configuracoes', titulo: 'Sistema',
+      grupos: [{ id: 'config', rotulo: 'Configurações', icone: 'config', itens: [
+        { id: 'config-empresas', rotulo: 'Empresas', href: '/empresas', icone: 'empresas' },
+        { id: 'config-nova-empresa', rotulo: 'Nova empresa', href: '/empresas/nova', icone: 'mais' },
+      ] }],
     });
   }
   if (c.temMinhaEscala) {
@@ -123,6 +129,8 @@ export function migalhas(secoes: SecaoMenu[], caminho: string, nomeEmpresa: stri
 
 /** Cookie que guarda o estado do menu: recolhido e grupos abertos. */
 export const COOKIE_MENU = 'jc-menu';
+/** Última empresa aberta: é a "empresa principal" em que o sistema abre. */
+export const COOKIE_EMPRESA = 'jc-empresa';
 export type EstadoMenu = { recolhido: boolean; abertos: string[] };
 export function lerEstadoMenu(valor: string | undefined | null): EstadoMenu {
   try {
