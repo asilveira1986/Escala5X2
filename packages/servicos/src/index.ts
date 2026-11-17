@@ -7,5 +7,6 @@ export * from './otimizador';
 export * from './solicitacoes';
 export * from './banco-horas';
 export * from './banco-ponto';
+export * from './adequador';
 export * from './fechamento';
 export * from './conciliacao';
