@@ -188,7 +188,7 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
                         </div>
                         {ex.excedeDiaria && ex.alternativaHoras ? (
                           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-ambar-bg px-3 py-2 text-xs text-ambar-fg">
-                            <p className="min-w-0 flex-1 basis-56">{f.horas.toLocaleString('pt-BR')}h em {f.dias} dias passa de {horasTexto(f.maxDiariaMin)} por dia: exige acordo coletivo de jornada diária estendida.</p>
+                            <p className="min-w-0 flex-1 basis-56">{f.horas.toLocaleString('pt-BR')}h em {f.dias} dias passa de {horasTexto(f.maxDiariaMin)} por dia ({horasTexto(ex.liquidaDiariaMin)}). Na fase de transição só vale com convenção ou acordo coletivo que amplie a jornada diária, mantidos os dois dias de repouso.</p>
                             <button type="button" onClick={() => { setJornada(String(ex.alternativaHoras)); setDias(String(f.dias)); }} aria-label={`Adequar a ${ex.alternativaHoras} horas em ${f.dias} dias`} className="shrink-0 rounded-lg bg-cartao px-2.5 py-1.5 text-xs font-semibold text-marca hover:bg-marca-suave">Sem acordo: usar {ex.alternativaHoras}h</button>
                           </div>
                         ) : null}

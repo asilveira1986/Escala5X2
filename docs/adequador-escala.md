@@ -46,7 +46,7 @@ Na etapa "Jornada de trabalho" há o painel **Adequar ao fim da escala 6x1**:
 - Mostra quantos colaboradores ainda estão cadastrados em 6x1 (`tipo_escala`) e qual fase vale hoje.
 - "Adequar a Nh" preenche jornada e dias; o quadro "Impacto da jornada" mostra quantas pessoas a mais a cobertura exige.
 - Se a jornada escolhida passa do teto da fase vigente no mês da escala, aparece um alerta.
-- Fase 1: 42h em 5 dias dá mais de 8h por dia; a tela avisa que isso exige acordo coletivo de jornada diária estendida e oferece 40h (8h por dia) como alternativa sem acordo.
+- Fase 1: 42h em 5 dias dá mais de 8h por dia; a tela avisa que isso só vale, na fase de transição, com convenção ou acordo coletivo que amplie a jornada diária (conferir o texto oficial da EC 141) e oferece 40h (8h por dia) como alternativa sem acordo.
 - Exceções (terceirizada pública, regime compensatório, alta renda) não são calculadas aqui: confirmar com o jurídico. A data de início da fase 2 segue a confirmar.
 
 ## Cobertura por faixa de horário
