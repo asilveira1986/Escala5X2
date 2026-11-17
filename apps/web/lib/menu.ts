@@ -41,6 +41,7 @@ export function montarMenu(c: ContextoMenu): SecaoMenu[] {
         ] },
         { id: 'escalas', rotulo: 'Escalas', icone: 'escalas', itens: [
           { id: 'escalas-lista', rotulo: 'Escalas do mês', href: `${e}/escalas`, icone: 'calendario', descricao: 'Monte, confira com a lei e publique a escala.' },
+          { id: 'adequador', rotulo: 'Adequador de escala', href: `${e}/escalas/adequador`, icone: 'escalas', descricao: 'Ajuste as horas e a cobertura e veja a equipe alocada.' },
           { id: 'turnos', rotulo: 'Turnos', href: `${e}/escalas/turnos`, icone: 'turnos', descricao: 'Modelos de horário para pintar na grade.' },
           { id: 'cobertura', rotulo: 'Cobertura mínima', href: `${e}/escalas/cobertura`, icone: 'cobertura', descricao: 'Quantas pessoas cada setor precisa por turno.' },
           { id: 'ausencias', rotulo: 'Férias e afastamentos', href: `${e}/escalas/ausencias`, icone: 'ferias', descricao: 'Dias em que a pessoa não pode ser escalada.' },
@@ -117,7 +118,7 @@ export function caminhoParaEmpresa(caminho: string, novaEmpresaId: string): stri
   const atual = empresaDoCaminho(caminho);
   if (!atual) return `/empresas/${novaEmpresaId}`;
   const resto = caminho.slice(`/empresas/${atual}`.length).split('?')[0]!;
-  const base = ['/escalas/cobertura', '/escalas/ausencias', '/escalas/turnos', '/escalas', '/colaboradores', '/importar', '/diagnostico', '/solicitacoes', '/ponto', '/banco-horas/ponto', '/banco-horas', '/folha']
+  const base = ['/escalas/adequador', '/escalas/cobertura', '/escalas/ausencias', '/escalas/turnos', '/escalas', '/colaboradores', '/importar', '/diagnostico', '/solicitacoes', '/ponto', '/banco-horas/ponto', '/banco-horas', '/folha']
     .find((b) => resto === b || resto.startsWith(`${b}/`));
   return `/empresas/${novaEmpresaId}${base ?? ''}`;
 }
