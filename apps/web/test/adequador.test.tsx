@@ -216,3 +216,46 @@ describe('Gerar escala: fim da 6x1', () => {
     expect(screen.queryByLabelText('Fim da escala 6x1')).toBeNull();
   });
 });
+
+describe('Gerar escala: cobertura por faixa de horário', () => {
+  it('alterna para faixas sugeridas pelos turnos, edita a cobertura e envia as faixas ao gerar', async () => {
+    await montar();
+    fireEvent.click(screen.getByRole('radio', { name: 'Por faixa de horário' }));
+    // turnos 08–17 e 14–23 → faixas 08:00–14:00, 14:00–17:00 e 17:00–23:00
+    expect(screen.getByLabelText('Início da faixa 1')).toHaveProperty('value', '08:00');
+    expect(screen.getByLabelText('Fim da faixa 2')).toHaveProperty('value', '17:00');
+    expect(screen.getByLabelText('Início da faixa 3')).toHaveProperty('value', '17:00');
+    fireEvent.change(screen.getByLabelText('Loja, faixa 14:00–17:00: pessoas na Seg'), { target: { value: '5' } });
+    fireEvent.click(botaoGerar());
+    await waitFor(() => expect(gerar).toHaveBeenCalled());
+    const pedido = gerar.mock.calls[0]![0];
+    expect(pedido.faixas.map((f: { inicio: string; fim: string }) => [f.inicio, f.fim])).toEqual([['08:00', '14:00'], ['14:00', '17:00'], ['17:00', '23:00']]);
+    const loja = pedido.setores.find((s: { nome: string }) => s.nome === 'Loja');
+    const chave = pedido.faixas[1].chave;
+    expect(loja.minimosFaixas[chave][1]).toBe(5);
+  });
+
+  it('no modo padrão (por turno) nenhuma faixa é enviada', async () => {
+    await montar();
+    fireEvent.click(botaoGerar());
+    await waitFor(() => expect(gerar).toHaveBeenCalled());
+    expect(gerar.mock.calls[0]![0].faixas).toBeUndefined();
+  });
+
+  it('mostra o horário da faixa onde falta gente', async () => {
+    gerar.mockResolvedValue({ ok: true, setores: [{ setorId: S1, setorNome: 'Loja', ok: true, ...dados({ faltas: [{ data: '2027-03-03', turnoId: 'f', necessario: 6, alocado: 4, falta: 2, faixaInicioMin: 720, faixaFimMin: 840 }] }) }] });
+    await montar();
+    fireEvent.click(botaoGerar());
+    expect(await screen.findByText(/12:00–14:00/)).toBeTruthy();
+  });
+
+  it('sem faixa válida, não deixa gerar', async () => {
+    await montar();
+    fireEvent.click(screen.getByRole('radio', { name: 'Por faixa de horário' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remover a faixa 3' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remover a faixa 2' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remover a faixa 1' }));
+    expect(screen.getByText('Adicione ao menos uma faixa.')).toBeTruthy();
+    expect(botaoGerar()).toHaveProperty('disabled', true);
+  });
+});

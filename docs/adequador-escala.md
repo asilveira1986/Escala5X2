@@ -48,3 +48,12 @@ Na etapa "Jornada de trabalho" há o painel **Adequar ao fim da escala 6x1**:
 - Se a jornada escolhida passa do teto da fase vigente no mês da escala, aparece um alerta.
 - Fase 1: 42h em 5 dias dá mais de 8h por dia; a tela avisa que isso exige acordo coletivo de jornada diária estendida e oferece 40h (8h por dia) como alternativa sem acordo.
 - Exceções (terceirizada pública, regime compensatório, alta renda) não são calculadas aqui: confirmar com o jurídico. A data de início da fase 2 segue a confirmar.
+
+## Cobertura por faixa de horário
+
+Na etapa 4 dá para escolher **Por faixa de horário** em vez de "Por turno": em vez de pedir pessoas por turno, a gestão informa quantas pessoas precisam estar presentes em cada faixa do dia (ex.: 08–12, 12–14 no pico do almoço, 14–18), por dia da semana e por setor.
+
+- "Sugerir pelos turnos" cria as faixas a partir das entradas e saídas dos turnos; faixas podem ser adicionadas, editadas e removidas (até 8).
+- O motor (`adequarEscala`, parâmetro `faixas`) passa a ignorar o mínimo por turno. A equipe é distribuída entre os turnos pela demanda de cada faixa, e a busca local troca dias de trabalho/folga para fechar a presença de cada faixa. Presença na faixa = o menor número de pessoas de turno em qualquer trecho dela; por isso turnos parciais (manhã + tarde) cobrem juntos uma faixa longa.
+- O resultado mostra "onde falta gente" por faixa e dia, e o motor de regras confere a cobertura mínima nas mesmas faixas.
+- Limites: o intervalo de refeição não é descontado da presença (todos contam presentes durante o turno, incluindo o intervalo); cada pessoa continua fixa em um único turno no mês. Faixa que nenhum turno cobre inteira gera aviso.

@@ -77,4 +77,26 @@ describe('gerarEscalas (ação)', () => {
     const r = await gerarEscalas(pedido());
     expect(r.ok && !r.setores[0]!.ok && (r.setores[0] as { erro: string }).erro).toMatch(/permissão/);
   });
+
+  it('cobertura por faixa: as faixas vão ao motor e as faltas voltam com o horário da faixa', async () => {
+    const { gerarEscalas } = await import('@/app/(app)/empresas/[id]/escalas/adequador/actions');
+    const r = await gerarEscalas(pedido({
+      faixas: [{ chave: 'almoco', inicio: '12:00', fim: '14:00' }, { chave: 'manha', inicio: '08:00', fim: '12:00' }],
+      setores: [{ setorId: S1, nome: 'Loja', minimos: { m: [0, 0, 0, 0, 0, 0, 0] }, minimosFaixas: { almoco: [0, 9, 9, 9, 9, 9, 0], manha: [0, 2, 2, 2, 2, 2, 0] } }],
+    }));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const loja = r.setores[0]!;
+    expect(loja.ok).toBe(true);
+    if (loja.ok) {
+      expect(loja.faltas.length).toBeGreaterThan(0);
+      expect(loja.faltas.every((f) => f.turnoId === 'almoco' && f.faixaInicioMin === 720 && f.faixaFimMin === 840)).toBe(true);      // 9 no almoço: a equipe (7, com férias) não fecha
+    }
+  });
+
+  it('faixa com horário inválido é recusada', async () => {
+    const { gerarEscalas } = await import('@/app/(app)/empresas/[id]/escalas/adequador/actions');
+    const r = await gerarEscalas(pedido({ faixas: [{ chave: 'x', inicio: '12:00', fim: '12:00' }] }));
+    expect(r).toEqual({ ok: false, erro: 'Horário inválido em uma faixa de horário.' });
+  });
 });

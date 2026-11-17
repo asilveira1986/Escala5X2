@@ -17,8 +17,15 @@ export type TurnoAdequacao = {
   /** Modelo de turno de onde veio (opcional): vai na alocação para o editor reconhecer. */
   modeloId?: string | null;
 };
+/** Faixa de horário com demanda própria: quantas pessoas precisam estar presentes DURANTE toda a faixa, por dia da semana (0 = domingo … 6 = sábado). */
+export type FaixaAdequacao = { id: string; inicioMin: number; fimMin: number; minimo: number[] };
 export type ParametrosAdequacao = {
   turnos: TurnoAdequacao[];
+  /**
+   * Cobertura por faixa de horário. Com faixas, o `minimo` dos turnos é ignorado: a equipe é distribuída entre os turnos e os dias para que,
+   * em cada faixa, haja o número de pessoas pedido (conta quem está de turno em todos os minutos da faixa; o intervalo de refeição não é descontado).
+   */
+  faixas?: FaixaAdequacao[];
   /** Dias de trabalho por semana (5 = escala 5x2, 6 = 6x1). Sem valor: o que a regra de cada pessoa permite. Nunca passa do que a lei permite. */
   diasPorSemana?: number;
   /** Máximo de dias seguidos de trabalho (padrão 6). */
@@ -34,7 +41,7 @@ export type ParametrosAdequacao = {
   folgasFixas?: Record<string, number[]>;
 };
 
-export type CoberturaDia = { data: DataISO; turnoId: string; necessario: number; alocado: number; falta: number };
+export type CoberturaDia = { data: DataISO; turnoId: string; necessario: number; alocado: number; falta: number; /** Só na cobertura por faixa: `turnoId` é o id da faixa e estes são seus limites. */ faixaInicioMin?: number; faixaFimMin?: number };
 export type ResumoPessoa = { colaboradorId: string; nome: string; turnoId: string | null; diasTrabalhados: number; horasSemanaMediaMin: number; domingosTrabalhados: number; feriadosTrabalhados: number };
 export type FeriasNoPeriodo = { colaboradorId: string; nome: string; inicio: DataISO; fim: DataISO; tipo: 'ferias' | 'afastamento'; dias: number };
 export type ResultadoAdequacao = {
@@ -52,12 +59,13 @@ export type ResultadoAdequacao = {
 };
 
 const MIN_DIA = 1440;
+const hm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
 const liquido = (t: Pick<TurnoAdequacao, 'inicioMin' | 'fimMin' | 'intervaloMin'>) => t.fimMin - t.inicioMin - t.intervaloMin;
 
 /** Erro de entrada (o que o usuário informou não dá para alocar). */
 export class ErroAdequacao extends Error { constructor(m: string) { super(m); this.name = 'ErroAdequacao'; } }
 
-export function validarTurnosAdequacao(turnos: TurnoAdequacao[]): void {
+export function validarTurnosAdequacao(turnos: TurnoAdequacao[], faixas?: FaixaAdequacao[]): void {
   if (turnos.length === 0) throw new ErroAdequacao('Informe pelo menos um turno.');
   const ids = new Set<string>();
   for (const t of turnos) {
@@ -66,7 +74,18 @@ export function validarTurnosAdequacao(turnos: TurnoAdequacao[]): void {
     if (!Number.isInteger(t.inicioMin) || !Number.isInteger(t.fimMin) || t.inicioMin < 0 || t.inicioMin >= MIN_DIA) throw new ErroAdequacao(`Horário inválido no turno ${t.nome}.`);
     if (t.fimMin <= t.inicioMin || t.fimMin - t.inicioMin > MIN_DIA) throw new ErroAdequacao(`O turno ${t.nome} precisa terminar depois de começar e durar no máximo 24 horas.`);
     if (!Number.isInteger(t.intervaloMin) || t.intervaloMin < 0 || t.intervaloMin >= t.fimMin - t.inicioMin) throw new ErroAdequacao(`O intervalo do turno ${t.nome} precisa ser menor que o turno.`);
-    if (!Array.isArray(t.minimo) || t.minimo.length !== 7 || t.minimo.some((m) => !Number.isInteger(m) || m < 0 || m > 500)) throw new ErroAdequacao(`A cobertura do turno ${t.nome} precisa ter 7 números (domingo a sábado).`);
+    if (!faixas && (!Array.isArray(t.minimo) || t.minimo.length !== 7 || t.minimo.some((m) => !Number.isInteger(m) || m < 0 || m > 500))) throw new ErroAdequacao(`A cobertura do turno ${t.nome} precisa ter 7 números (domingo a sábado).`);
+  }
+  if (faixas) {
+    const fids = new Set<string>();
+    for (const f of faixas) {
+      if (fids.has(f.id)) throw new ErroAdequacao('Há faixas de horário repetidas.');
+      fids.add(f.id);
+      if (!Number.isInteger(f.inicioMin) || !Number.isInteger(f.fimMin) || f.inicioMin < 0 || f.inicioMin >= MIN_DIA || f.fimMin <= f.inicioMin || f.fimMin - f.inicioMin > MIN_DIA) throw new ErroAdequacao('Horário inválido em uma faixa: ela precisa terminar depois de começar.');
+      if (!Array.isArray(f.minimo) || f.minimo.length !== 7 || f.minimo.some((m) => !Number.isInteger(m) || m < 0 || m > 500)) throw new ErroAdequacao('A cobertura de cada faixa precisa ter 7 números (domingo a sábado).');
+    }
+    if (faixas.length === 0 || faixas.every((f) => f.minimo.every((m) => m === 0))) throw new ErroAdequacao('Informe quantas pessoas cada faixa de horário precisa em pelo menos um dia da semana.');
+    return;
   }
   if (turnos.every((t) => t.minimo.every((m) => m === 0))) throw new ErroAdequacao('Informe quantas pessoas cada turno precisa em pelo menos um dia da semana.');
 }
@@ -87,7 +106,8 @@ type Pessoa = {
 
 export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequacao): ResultadoAdequacao {
   const turnos = params.turnos;
-  validarTurnosAdequacao(turnos);
+  const faixas = params.faixas && params.faixas.length > 0 ? params.faixas : null;
+  validarTurnosAdequacao(turnos, faixas ?? undefined);
   const { inicio, fim } = entrada.escala;
   const nIni = numeroDoDia(inicio), nDias = numeroDoDia(fim) - nIni + 1;
   const dia = (i: number): DataISO => dataDoNumero(nIni + i);
@@ -96,10 +116,10 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
   const maxSeguidos = Math.max(1, Math.min(13, params.maxDiasSeguidos ?? 6));
   const avisos: string[] = [];
   // dias de funcionamento: pelo que foi informado; sem informação, pelo que a cobertura pede
-  const abreNoDia = Array.from({ length: 7 }, (_, d) => (params.diasFuncionamento && params.diasFuncionamento.length === 7 ? params.diasFuncionamento[d] !== false : turnos.some((t) => t.minimo[d]! > 0)));
+  const abreNoDia = Array.from({ length: 7 }, (_, d) => (params.diasFuncionamento && params.diasFuncionamento.length === 7 ? params.diasFuncionamento[d] !== false : faixas ? faixas.some((f) => f.minimo[d]! > 0) : turnos.some((t) => t.minimo[d]! > 0)));
   const aberto = Array.from({ length: nDias }, (_, i) => abreNoDia[dow[i]!]! && !(params.fecharNosFeriados && feriados.has(dia(i))));
   const diasFechados = Array.from({ length: nDias }, (_, i) => i).filter((i) => !aberto[i]).map(dia);
-  const pedeEmDiaFechado = turnos.some((t) => t.minimo.some((m, d) => m > 0 && !abreNoDia[d]));
+  const pedeEmDiaFechado = (faixas ?? turnos).some((t) => t.minimo.some((m, d) => m > 0 && !abreNoDia[d]));
   if (pedeEmDiaFechado) avisos.push('Há cobertura pedida em dia da semana marcado como fechado: o dia fechado prevalece e essa cobertura foi ignorada.');
 
   // ---- equipe disponível
@@ -109,7 +129,19 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
   if (entrada.semContrato.length > 0) avisos.push(`${entrada.semContrato.length} colaborador(es) sem contrato vigente ficaram de fora: ${entrada.semContrato.slice(0, 5).map((c) => c.nome).join(', ')}${entrada.semContrato.length > 5 ? '…' : ''}.`);
 
   // ---- 1) cada pessoa fica num turno (reparte a equipe pela necessidade de cada turno; quem já tem turno com o mesmo nome fica nele)
-  const necessidade = turnos.map((t) => t.minimo.reduce((s, m) => s + m, 0));
+  // com faixas: segmentos de cada faixa (trechos em que o conjunto de turnos presentes é fixo) e peso de cada turno na demanda
+  const sobreposicao = (t: TurnoAdequacao, f: FaixaAdequacao) => Math.max(0, Math.min(t.fimMin, f.fimMin) - Math.max(t.inicioMin, f.inicioMin));
+  const segmentos: number[][][] = (faixas ?? []).map((f) => {
+    const cortes = [...new Set([f.inicioMin, f.fimMin, ...turnos.flatMap((t) => [t.inicioMin, t.fimMin]).filter((x) => x > f.inicioMin && x < f.fimMin)])].sort((a, b) => a - b);
+    return cortes.slice(0, -1).map((c, k) => turnos.flatMap((t, ti) => (t.inicioMin <= c && t.fimMin >= cortes[k + 1]! ? [ti] : [])));
+  });
+  if (faixas) {
+    faixas.forEach((f) => { if (f.minimo.some((m) => m > 0) && segmentos[faixas.indexOf(f)]!.some((seg) => seg.length === 0)) avisos.push(`Nenhum turno cobre toda a faixa ${hm(f.inicioMin)}–${hm(f.fimMin % MIN_DIA)}: nos trechos descobertos a falta aparece na cobertura. Ajuste os horários dos turnos ou da faixa.`); });
+  }
+  const necessidade: number[] = turnos.map((t, ti) => (faixas
+    ? faixas.reduce<number>((acc, f) => { const tot = turnos.reduce((x, o) => x + sobreposicao(o, f), 0); return tot === 0 ? acc : acc + (f.minimo.reduce((a, m) => a + m, 0) * sobreposicao(t, f)) / tot; }, 0)
+    : t.minimo.reduce((s, m) => s + m, 0)));
+  if (!necessidade.some((n) => n > 0)) necessidade.fill(1);                         // faixas que nenhum turno alcança: reparte por igual (o aviso já foi dado)
   const totalNec = necessidade.reduce((s, n) => s + n, 0);
   const vagas = turnos.map(() => 0);
   const turnoPorNome = new Map(turnos.map((t, i) => [t.nome.trim().toLowerCase(), i]));
@@ -195,6 +227,15 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
     const falta = Math.max(0, m - n), sobra = Math.max(0, n - m);
     return falta * falta * 100 + sobra * sobra + (feriados.has(dia(i)) ? n * 3 : 0);
   };
+  /** Pessoas presentes durante toda a faixa `fi` no dia `i`: o mínimo, entre os trechos da faixa, de quem está de turno em cada trecho. */
+  const presencaFaixa = (i: number, fi: number): number => segmentos[fi]!.reduce((mn, seg) => Math.min(mn, seg.reduce((a, ti) => a + cobre[i]![ti]!, 0)), Infinity);
+  /** Custo de um dia: por turno (pedido por turno) ou por faixa de horário (pedido por faixa). */
+  const custoDia = (i: number): number => {
+    if (!faixas) return cobre[i]!.reduce((c, n, t) => c + custoCelula(i, t, n), 0);
+    let c = 0;
+    faixas.forEach((f, fi) => { const m = aberto[i] ? f.minimo[dow[i]!]! : 0, n = presencaFaixa(i, fi); c += Math.max(0, m - n) ** 2 * 100 + Math.max(0, n - m) ** 2; });
+    return c + (feriados.has(dia(i)) ? cobre[i]!.reduce((a, n) => a + n, 0) * 3 : 0);
+  };
   const violacoesPessoa = (pi: number): number => {
     const p = pessoas[pi]!, rod = regrasRodizio[pi]!;
     let run = p.runInicial, sobra = 0, domSeg = p.domingosAntes;
@@ -224,17 +265,19 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
     if (trabalhando.length === 0 || folgando.length === 0) continue;
     const a = trabalhando[Math.floor(rnd() * trabalhando.length)]!, b = folgando[Math.floor(rnd() * folgando.length)]!;
     const t = p.turno;
-    const antesCusto = custoCelula(a, t, cobre[a]![t]!) + custoCelula(b, t, cobre[b]![t]!);
+    const antesCusto = custoDia(a) + custoDia(b);
     const antesViol = viol[pi]!;
     p.trabalha[a] = false; p.trabalha[b] = true;
+    cobre[a]![t]!--; cobre[b]![t]!++;
     const domNovo = dom[pi]! - (dow[a] === 0 ? 1 : 0) + (dow[b] === 0 ? 1 : 0);
-    const depoisCusto = custoCelula(a, t, cobre[a]![t]! - 1) + custoCelula(b, t, cobre[b]![t]! + 1) + (domNovo !== dom[pi]! ? variacaoDom(pi, domNovo) : 0);
+    const coberturaDelta = custoDia(a) + custoDia(b) - antesCusto;
+    const depoisCusto = antesCusto + coberturaDelta + (domNovo !== dom[pi]! ? variacaoDom(pi, domNovo) : 0);
     const depoisViol = violacoesPessoa(pi);
-    const coberturaDelta = custoCelula(a, t, cobre[a]![t]! - 1) + custoCelula(b, t, cobre[b]![t]! + 1) - custoCelula(a, t, cobre[a]![t]!) - custoCelula(b, t, cobre[b]![t]!);
     const delta = depoisCusto - antesCusto + (depoisViol - antesViol) * 100_000;
-    if (it >= fase2 && coberturaDelta > 0) { p.trabalha[a] = true; p.trabalha[b] = false; continue; }      // 2ª fase: não vale piorar a cobertura
-    if (delta < 0 || (delta === 0 && rnd() < 0.2)) { cobre[a]![t]!--; cobre[b]![t]!++; somaDom[t] = somaDom[t]! + domNovo - dom[pi]!; dom[pi] = domNovo; viol[pi] = depoisViol; }
-    else { p.trabalha[a] = true; p.trabalha[b] = false; }
+    const desfazer = () => { p.trabalha[a] = true; p.trabalha[b] = false; cobre[a]![t]!++; cobre[b]![t]!--; };
+    if (it >= fase2 && coberturaDelta > 0) { desfazer(); continue; }      // 2ª fase: não vale piorar a cobertura
+    if (delta < 0 || (delta === 0 && rnd() < 0.2)) { somaDom[t] = somaDom[t]! + domNovo - dom[pi]!; dom[pi] = domNovo; viol[pi] = depoisViol; }
+    else desfazer();
   }
 
   // ---- 4) alocações
@@ -252,11 +295,20 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
 
   // ---- 5) cobertura, resumo e conferência pelo motor de regras
   const coberturaDias: CoberturaDia[] = [];
-  for (let i = 0; i < nDias; i++) for (let t = 0; t < turnos.length; t++) {
-    const necessario = aberto[i] ? turnos[t]!.minimo[dow[i]!]! : 0;
-    if (necessario === 0) continue;
-    const alocado = cobre[i]![t]!;
-    coberturaDias.push({ data: dia(i), turnoId: turnos[t]!.id, necessario, alocado, falta: Math.max(0, necessario - alocado) });
+  if (faixas) {
+    for (let i = 0; i < nDias; i++) faixas.forEach((f, fi) => {
+      const necessario = aberto[i] ? f.minimo[dow[i]!]! : 0;
+      if (necessario === 0) return;
+      const alocado = presencaFaixa(i, fi);
+      coberturaDias.push({ data: dia(i), turnoId: f.id, necessario, alocado, falta: Math.max(0, necessario - alocado), faixaInicioMin: f.inicioMin, faixaFimMin: f.fimMin });
+    });
+  } else {
+    for (let i = 0; i < nDias; i++) for (let t = 0; t < turnos.length; t++) {
+      const necessario = aberto[i] ? turnos[t]!.minimo[dow[i]!]! : 0;
+      if (necessario === 0) continue;
+      const alocado = cobre[i]![t]!;
+      coberturaDias.push({ data: dia(i), turnoId: turnos[t]!.id, necessario, alocado, falta: Math.max(0, necessario - alocado) });
+    }
   }
   const necessarioTotal = coberturaDias.reduce((s, c) => s + c.necessario, 0);
   const faltaTotal = coberturaDias.reduce((s, c) => s + c.falta, 0);
@@ -277,7 +329,9 @@ export function adequarEscala(entrada: EntradaEscala, params: ParametrosAdequaca
     };
   }).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
-  const coberturaMotor: DemandaCobertura[] = turnos.flatMap((t) => t.minimo.map((m, d) => ({ diaSemana: d, faixaInicioMin: t.inicioMin % MIN_DIA, faixaFimMin: t.fimMin > MIN_DIA ? t.fimMin - MIN_DIA : t.fimMin, minimo: m })).filter((c) => c.minimo > 0));
+  const coberturaMotor: DemandaCobertura[] = faixas
+    ? faixas.flatMap((f) => f.minimo.map((m, d) => ({ diaSemana: d, faixaInicioMin: f.inicioMin % MIN_DIA, faixaFimMin: f.fimMin > MIN_DIA ? f.fimMin - MIN_DIA : f.fimMin, minimo: m })).filter((c) => c.minimo > 0))
+    : turnos.flatMap((t) => t.minimo.map((m, d) => ({ diaSemana: d, faixaInicioMin: t.inicioMin % MIN_DIA, faixaFimMin: t.fimMin > MIN_DIA ? t.fimMin - MIN_DIA : t.fimMin, minimo: m })).filter((c) => c.minimo > 0));
   const fechados = new Set(diasFechados);
   const violacoesBrutas = validarEscala({ periodo: { inicio, fim }, alocacoes: alocacoes as Alocacao[], anteriores: entrada.anteriores, ausencias: entrada.ausencias, feriados: entrada.feriados, cobertura: coberturaMotor }, equipe, entrada.regras);
   const violacoes = violacoesBrutas.filter((v) => !((v.codigo === 'COBERTURA_MINIMA' || v.codigo === 'COBERTURA_IDEAL') && v.data && fechados.has(v.data)));

@@ -1,6 +1,6 @@
 'use server';
 
-import { adequarEscala, carregarEntradaEscala, ErroAdequacao, ErroServico, type CoberturaDia, type FeriasNoPeriodo, type ResumoPessoa, type TurnoAdequacao } from '@jc/servicos';
+import { adequarEscala, carregarEntradaEscala, ErroAdequacao, ErroServico, type CoberturaDia, type FaixaAdequacao, type FeriasNoPeriodo, type ResumoPessoa, type TurnoAdequacao } from '@jc/servicos';
 import type { Violacao } from '@jc/rules-engine';
 import { z } from 'zod';
 import { exigirUsuario } from '@/lib/contexto';
@@ -14,12 +14,16 @@ const turnoZ = z.object({
 const setorZ = z.object({
   setorId: z.string().uuid().nullable(), nome: z.string().trim().min(1).max(60),
   minimos: z.record(z.string(), z.array(z.coerce.number().int().min(0).max(500)).length(7)),
+  /** Cobertura por faixa de horário (quando o pedido traz `faixas`): pessoas por dia da semana de cada faixa. */
+  minimosFaixas: z.record(z.string(), z.array(z.coerce.number().int().min(0).max(500)).length(7)).optional(),
 });
+const faixaZ = z.object({ chave: z.string().min(1).max(40), inicio: z.string(), fim: z.string() });
 const pedidoZ = z.object({
   empresaId: z.string().uuid(), mes: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
   diasPorSemana: z.number().int().min(1).max(6).nullable(),
   funcionamento: z.array(z.boolean()).length(7), fecharNosFeriados: z.boolean(),
   turnos: z.array(turnoZ).min(1, 'Informe pelo menos um turno.').max(6, 'No máximo 6 turnos.'),
+  faixas: z.array(faixaZ).max(8, 'No máximo 8 faixas de horário.').optional(),
   setores: z.array(setorZ).min(1, 'Escolha pelo menos um setor.').max(30),
   folgasFixas: z.record(z.string().uuid(), z.array(z.number().int().min(0).max(6)).max(3)),
 });
@@ -53,6 +57,12 @@ export async function gerarEscalas(pedido: PedidoGeracao): Promise<ResultadoGera
     if (ini === null || f === null) return { ok: false, erro: `Horário inválido no turno ${t.nome}.` };
     base.push({ id: t.chave || `t${i + 1}`, nome: t.nome, inicioMin: ini, fimMin: f <= ini ? f + 1440 : f, intervaloMin: t.intervalo, modeloId: t.modeloId });
   }
+  const faixasBase: Omit<FaixaAdequacao, 'minimo'>[] = [];
+  for (const f of d.faixas ?? []) {
+    const ini = minutosDeHora(f.inicio), fi = minutosDeHora(f.fim);
+    if (ini === null || fi === null || ini === fi) return { ok: false, erro: 'Horário inválido em uma faixa de horário.' };
+    faixasBase.push({ id: f.chave, inicioMin: ini, fimMin: fi <= ini ? fi + 1440 : fi });
+  }
   const { supabase, user } = await exigirUsuario();
   const [ano, m] = d.mes.split('-').map(Number) as [number, number];
   const proximo = m === 12 ? `${ano + 1}-01-01` : `${ano}-${String(m + 1).padStart(2, '0')}-01`;
@@ -62,6 +72,7 @@ export async function gerarEscalas(pedido: PedidoGeracao): Promise<ResultadoGera
     const id = { setorId: setor.setorId, setorNome: setor.nome };
     try {
       const turnos: TurnoAdequacao[] = base.map((t) => ({ ...t, minimo: setor.minimos[t.id] ?? Array(7).fill(0) }));
+      const faixas: FaixaAdequacao[] = faixasBase.map((f) => ({ ...f, minimo: setor.minimosFaixas?.[f.id] ?? Array(7).fill(0) }));
       const nome = `Adequação ${d.mes}${setor.setorId ? ` · ${setor.nome}` : ''}`.slice(0, 80);
       let q = supabase.from('escala').select('id').eq('empresa_id', d.empresaId).eq('status', 'rascunho').eq('nome', nome);
       q = setor.setorId ? q.eq('setor_id', setor.setorId) : q.is('setor_id', null);
@@ -76,7 +87,7 @@ export async function gerarEscalas(pedido: PedidoGeracao): Promise<ResultadoGera
       const entrada = await carregarEntradaEscala(supabase, escalaId);
       if (entrada.escala.empresaId !== d.empresaId) { saida.push({ ...id, ok: false, erro: 'Escala não encontrada.' }); continue; }
       const r = adequarEscala(entrada, {
-        turnos, ...(d.diasPorSemana ? { diasPorSemana: d.diasPorSemana } : {}), diasFuncionamento: d.funcionamento, fecharNosFeriados: d.fecharNosFeriados, folgasFixas: d.folgasFixas,
+        turnos, ...(faixas.length > 0 ? { faixas } : {}), ...(d.diasPorSemana ? { diasPorSemana: d.diasPorSemana } : {}), diasFuncionamento: d.funcionamento, fecharNosFeriados: d.fecharNosFeriados, folgasFixas: d.folgasFixas,
       });
       const { data: rev, error: e2 } = await supabase.rpc('salvar_alocacoes', { p_escala: escalaId, p_revisao: entrada.escala.revisao, p_alocacoes: paraGravacao(r.alocacoes) });
       if (e2) { saida.push({ ...id, ok: false, erro: /permission|row-level/i.test(e2.message) ? 'Você não tem permissão para alterar esta escala.' : 'A alocação foi calculada, mas não foi possível gravá-la no rascunho. Tente de novo.' }); continue; }
