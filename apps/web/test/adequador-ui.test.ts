@@ -63,3 +63,32 @@ describe('jornada de trabalho', () => {
     expect(PRESETS_JORNADA.length).toBeGreaterThanOrEqual(5);
   });
 });
+
+import { exigenciaDaFase, faseNaData, fasesDaJornada } from '@/lib/adequador-ui';
+import { parseDaterange } from '@jc/rules-engine';
+
+describe('fim da 6x1: fases da jornada', () => {
+  const regras = [
+    { codigo: 'EC141_F2', vigencia: '[2027-12-15,)', parametros: { max_semanal_min: 2400, max_diaria_min: 480, folgas_semana: 2 } },
+    { codigo: 'LEGADO_44H', vigencia: '[1970-01-01,2026-12-15)', parametros: { max_semanal_min: 2640, max_diaria_min: 480, folgas_semana: 1 } },
+    { codigo: 'EC141_F1', vigencia: '[2026-12-15,2027-12-15)', parametros: { max_semanal_min: 2520, max_diaria_min: 480, folgas_semana: 2 } },
+    { codigo: 'OUTRA', vigencia: '[2026-12-15,)', parametros: {} },
+  ];
+  const fases = fasesDaJornada(regras, parseDaterange);
+
+  it('ordena do legado à fase 2 e deriva horas, dias e datas das regras', () => {
+    expect(fases.map((f) => [f.codigo, f.horas, f.dias, f.inicio])).toEqual([['LEGADO_44H', 44, 6, null], ['EC141_F1', 42, 5, '2026-12-15'], ['EC141_F2', 40, 5, '2027-12-15']]);
+  });
+  it('acha a fase de uma data', () => {
+    expect(faseNaData(fases, '2026-11-17')?.codigo).toBe('LEGADO_44H');
+    expect(faseNaData(fases, '2026-12-15')?.codigo).toBe('EC141_F1');
+    expect(faseNaData(fases, '2028-01-01')?.codigo).toBe('EC141_F2');
+  });
+  it('avisa quando a fase 1 passa de 8h por dia e sugere 40h', () => {
+    expect(exigenciaDaFase(fases[1]!)).toEqual({ liquidaDiariaMin: 505, excedeDiaria: true, alternativaHoras: 40 });
+    expect(exigenciaDaFase(fases[2]!).excedeDiaria).toBe(false);
+  });
+  it('ignora regra sem parâmetros ou com vigência inválida', () => {
+    expect(fasesDaJornada([{ codigo: 'EC141_F1', vigencia: 'lixo', parametros: { max_semanal_min: 2520 } }, { codigo: 'EC141_F2', vigencia: null, parametros: null }], parseDaterange)).toEqual([]);
+  });
+});

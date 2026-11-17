@@ -187,3 +187,32 @@ describe('Gerar escala (tela)', () => {
     expect((botaoGerar() as HTMLButtonElement).disabled).toBe(true);
   });
 });
+
+describe('Gerar escala: fim da 6x1', () => {
+  const fases = [
+    { codigo: 'LEGADO_44H', nome: 'Hoje: 6x1', inicio: null, fim: '2026-12-15', horas: 44, dias: 6, folgas: 1, maxDiariaMin: 480 },
+    { codigo: 'EC141_F1', nome: 'Fase 1: 5x2 com 42h', inicio: '2026-12-15', fim: '2027-12-15', horas: 42, dias: 5, folgas: 2, maxDiariaMin: 480 },
+    { codigo: 'EC141_F2', nome: 'Fase 2: 5x2 com 40h', inicio: '2027-12-15', fim: null, horas: 40, dias: 5, folgas: 2, maxDiariaMin: 480 },
+  ];
+  it('mostra as fases, quantos estão em 6x1 e preenche jornada e dias ao adequar', async () => {
+    await montar({ fases, em6x1: 5, totalEquipe: 8, hoje: '2026-11-17', mesPadrao: '2027-01' });
+    expect(screen.getByText(/5 de 8/)).toBeTruthy();
+    expect(screen.getByText('vigente hoje')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Adequar à Fase 2: 5x2 com 40h' }));
+    expect(screen.getByLabelText('Jornada semanal (horas)')).toHaveProperty('value', '40');
+    expect(screen.getByLabelText('Dias de trabalho por semana')).toHaveProperty('value', '5');
+  });
+  it('avisa se a jornada passa do teto da fase do mês e oferece 40h na fase 1 (acima de 8h por dia)', async () => {
+    await montar({ fases, em6x1: 0, totalEquipe: 8, hoje: '2026-11-17', mesPadrao: '2027-01' });
+    expect(screen.getByText(/acordo coletivo de jornada diária estendida/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Jornada semanal (horas)'), { target: { value: '44' } });
+    expect(screen.getByRole('alert').textContent).toMatch(/teto de 42h/);
+    fireEvent.click(screen.getByRole('button', { name: 'Adequar a 40 horas em 5 dias' }));
+    expect(screen.getByLabelText('Jornada semanal (horas)')).toHaveProperty('value', '40');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+  it('sem fases cadastradas, o painel não aparece', async () => {
+    await montar();
+    expect(screen.queryByLabelText('Fim da escala 6x1')).toBeNull();
+  });
+});

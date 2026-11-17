@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { Aviso, Botao, Cartao, classeCampo, Metrica } from '@/components/ui';
-import { balancoDaEquipe, compararJornadas, CORES_TURNO, DIAS_TELA, diasDaJornada, frasePessoas, FUNCIONAMENTO_PADRAO, horasTexto, inicialDoTurno, liquidaDiariaMin, liquidoDoTurno, PRESETS_JORNADA, sugerirCobertura, turnoEfetivo, type TurnoBase } from '@/lib/adequador-ui';
+import { exigenciaDaFase, faseNaData, type FaseJornada, balancoDaEquipe, compararJornadas, CORES_TURNO, DIAS_TELA, diasDaJornada, frasePessoas, FUNCIONAMENTO_PADRAO, horasTexto, inicialDoTurno, liquidaDiariaMin, liquidoDoTurno, PRESETS_JORNADA, sugerirCobertura, turnoEfetivo, type TurnoBase } from '@/lib/adequador-ui';
 import { dataBr, diaDaSemana } from '@jc/rules-engine';
 import { gerarEscalas, type DadosSetor, type ResultadoGeracao } from './actions';
 
@@ -11,7 +11,7 @@ export type ModeloBase = { id: string; nome: string; inicio: string; fim: string
 type Pessoa = { id: string; nome: string };
 type SetorProp = { id: string; nome: string; pessoas: Pessoa[] };
 type Ausencia = { colaboradorId: string; inicio: string; fim: string; tipo: 'ferias' | 'afastamento' };
-type Props = { empresaId: string; mesPadrao: string; modelos: ModeloBase[]; setores: SetorProp[]; semSetor: number; todos: Pessoa[]; ausencias: Ausencia[] };
+type Props = { empresaId: string; mesPadrao: string; modelos: ModeloBase[]; setores: SetorProp[]; semSetor: number; todos: Pessoa[]; ausencias: Ausencia[]; fases?: FaseJornada[]; em6x1?: number; totalEquipe?: number; hoje?: string };
 
 const DIAS_OPCOES = [{ v: '', t: 'Automático (o que a lei permite)' }, { v: '5', t: '5 dias (escala 5x2)' }, { v: '6', t: '6 dias (escala 6x1)' }, { v: '4', t: '4 dias' }];
 let seq = 0;
@@ -29,7 +29,7 @@ const limitesMes = (mes: string) => { const [a, m] = mes.split('-').map(Number) 
  * "Gerar escala": a gestão informa o mês, os dias de funcionamento, os turnos, quantas pessoas cada setor precisa em cada turno e dia,
  * as folgas fixas e vê as férias; o sistema aloca cada setor e grava um rascunho por setor.
  */
-export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, todos, ausencias }: Props) {
+export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, todos, ausencias, fases = [], em6x1 = 0, totalEquipe = 0, hoje }: Props) {
   const grupos: SetorProp[] = useMemo(() => (setores.length > 0 ? setores : [{ id: CHAVE_TODOS, nome: 'Empresa toda', pessoas: todos }]), [setores, todos]);
   const [mes, setMes] = useState(mesPadrao);
   const [dias, setDias] = useState('');
@@ -46,6 +46,8 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
   const diasNum = dias ? Number(dias) : jornadaNum ? diasDaJornada(jornadaNum) : 5;
   // turnos como serão usados: com a jornada informada, os que seguem a jornada têm a saída ajustada
   const turnosEf = turnos.map((t) => turnoEfetivo(t, jornadaNum, diasNum));
+  const faseDoMes = faseNaData(fases, `${mes}-01`);
+  const foraDoTeto = !!faseDoMes && !!jornadaNum && jornadaNum > faseDoMes.horas;
   const originais = useMemo(() => new Map(modelos.map((m) => [m.id, m])), [modelos]);
   const { ini: mesIni, fim: mesFim } = limitesMes(mes);
 
@@ -132,6 +134,36 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
           </Etapa>
 
           <Etapa n={2} titulo="Jornada de trabalho" texto="Aumente ou reduza a jornada e veja na hora quantas pessoas cada uma exige. Os turnos que seguem a jornada têm a saída ajustada sozinha.">
+            {fases.length > 1 ? (
+              <section aria-label="Fim da escala 6x1" className="mb-5 rounded-2xl border border-borda bg-marca-suave/40 p-4">
+                <h3 className="text-sm font-semibold">Adequar ao fim da escala 6x1 (Emenda Constitucional 141/2026)</h3>
+                <p className="mt-1 text-sm text-suave">
+                  {em6x1 > 0 ? <><strong className="text-tinta">{em6x1} de {totalEquipe}</strong> colaboradores estão cadastrados na escala 6x1. </> : null}
+                  Escolha a fase para a qual quer adequar a escala: a jornada e os dias de trabalho são preenchidos e o quadro abaixo mostra quantas pessoas a mais a cobertura passa a exigir.
+                </p>
+                <ol className="mt-3 grid gap-3 sm:grid-cols-3">
+                  {fases.map((f) => {
+                    const ex = exigenciaDaFase(f);
+                    const vigente = !!hoje && faseNaData(fases, hoje)?.codigo === f.codigo;
+                    const emUso = jornadaNum === f.horas && diasNum === f.dias;
+                    const periodo = f.inicio ? `a partir de ${f.inicio.split('-').reverse().join('/')}` : f.fim ? `até ${f.fim.split('-').reverse().join('/')}` : '';
+                    return (
+                      <li key={f.codigo} className={`rounded-xl border p-3 ${vigente ? 'border-marca bg-cartao' : 'border-borda bg-cartao'}`}>
+                        <p className="text-sm font-semibold">{f.nome}{vigente ? <span className="ml-2 rounded-full bg-marca-suave px-2 py-0.5 text-[10px] font-semibold uppercase text-marca">vigente hoje</span> : null}</p>
+                        <p className="mt-0.5 text-xs text-suave">{periodo} · {f.horas.toLocaleString('pt-BR')}h por semana · {f.dias} dias de trabalho e {7 - f.dias} de folga</p>
+                        {ex.excedeDiaria ? <p className="mt-1 text-xs text-ambar-fg">{f.horas}h em {f.dias} dias dá {horasTexto(ex.liquidaDiariaMin)} por dia, acima de {horasTexto(f.maxDiariaMin)}: exige acordo coletivo de jornada diária estendida.</p> : null}
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <button type="button" onClick={() => { setJornada(String(f.horas)); setDias(String(f.dias)); }} aria-label={`Adequar à ${f.nome}`} className="rounded-lg bg-marca px-2.5 py-1.5 text-xs font-semibold text-white hover:opacity-90">{emUso ? 'Em uso' : `Adequar a ${f.horas.toLocaleString('pt-BR')}h`}</button>
+                          {ex.alternativaHoras ? <button type="button" onClick={() => { setJornada(String(ex.alternativaHoras)); setDias(String(f.dias)); }} aria-label={`Adequar a ${ex.alternativaHoras} horas em ${f.dias} dias`} className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-marca hover:bg-marca-suave">Usar {ex.alternativaHoras}h (sem acordo)</button> : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+                {foraDoTeto && faseDoMes ? <p role="alert" className="mt-3 text-sm text-ambar-fg">Em {mes.split('-').reverse().join('/')} vale a “{faseDoMes.nome}”, com teto de {faseDoMes.horas.toLocaleString('pt-BR')}h por semana: a jornada escolhida ({jornadaNum?.toLocaleString('pt-BR')}h) passa do limite desse mês.</p> : null}
+                <p className="mt-3 text-xs text-suave">Datas e limites vêm das regras cadastradas no sistema. Exceções (terceirizada da administração pública, regime compensatório por acordo ou convenção, alta renda) seguem regras próprias: confirme com o jurídico antes de adotar. A data de início da fase 2 deve ser confirmada.</p>
+              </section>
+            ) : null}
             <div className="flex flex-wrap items-end gap-4">
               <Rotulo t="Jornada semanal (horas)"><input type="number" min={10} max={60} step={0.5} inputMode="decimal" value={jornada} placeholder="manter os turnos" onChange={(e) => setJornada(e.target.value)} aria-label="Jornada semanal (horas)" className={`${campo} w-44`} /></Rotulo>
               <Rotulo t="Dias de trabalho por semana"><select value={dias} onChange={(e) => setDias(e.target.value)} aria-label="Dias de trabalho por semana" className={`${campo} w-64`}>{DIAS_OPCOES.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</select></Rotulo>
