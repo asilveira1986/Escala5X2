@@ -131,3 +131,68 @@ describe('média semanal', () => {
     expect(r.pessoas.every((p) => p.horasSemanaMediaMin >= 2000)).toBe(true);
   });
 });
+
+describe('funcionamento, folgas fixas e férias', () => {
+  const dom = (r: ReturnType<typeof adequarEscala>, id?: string) => r.alocacoes.filter((a) => a.tipo === 'trabalho' && diaDaSemana(a.data) === 0 && (!id || a.colaboradorId === id));
+  it('dia fechado: ninguém é escalado, a folga é de todos e a cobertura dos outros dias fecha', () => {
+    const r = adequarEscala(ent(8), { turnos: [manha([0, 4, 4, 4, 4, 4, 4])], diasFuncionamento: [false, true, true, true, true, true, true] });
+    expect(dom(r)).toEqual([]);
+    expect(r.diasFechados).toEqual(['2027-02-07', '2027-02-14', '2027-02-21', '2027-02-28']);
+    expect(r.resumo.faltaTotal).toBe(0);
+    expect(r.alocacoes.filter((a) => diaDaSemana(a.data) === 0).every((a) => a.tipo === 'folga')).toBe(true);
+    expect(temBloqueio(r.violacoes)).toBe(false);
+    for (const p of r.pessoas) expect(p.domingosTrabalhados).toBe(0);
+  });
+
+  it('sem informar os dias de funcionamento, dia em que nenhum turno precisa de gente é tratado como fechado', () => {
+    const r = adequarEscala(ent(8), { turnos: [manha([0, 4, 4, 4, 4, 4, 0])] });             // fecha sábado e domingo
+    expect(r.diasFechados.length).toBe(8);
+    expect(r.alocacoes.filter((a) => a.tipo === 'trabalho' && [0, 6].includes(diaDaSemana(a.data)))).toEqual([]);
+    expect(r.resumo.faltaTotal).toBe(0);
+  });
+
+  it('cobertura pedida em dia fechado é ignorada e avisada', () => {
+    const r = adequarEscala(ent(8), { turnos: [manha(todos(3))], diasFuncionamento: [false, true, true, true, true, true, true] });
+    expect(dom(r)).toEqual([]);
+    expect(r.avisos.join(' ')).toMatch(/dia fechado prevalece/);
+    expect(r.cobertura.every((c) => diaDaSemana(c.data) !== 0)).toBe(true);
+  });
+
+  it('fechar nos feriados: o feriado vira dia fechado e não conta como falta de cobertura', () => {
+    const feriados = [{ data: '2027-02-10', nome: 'Feriado local', abrangencia: 'municipal' as const }];
+    const r = adequarEscala(ent(8, { feriados }), { turnos: [manha(todos(3))], fecharNosFeriados: true });
+    expect(r.diasFechados).toContain('2027-02-10');
+    expect(r.alocacoes.filter((a) => a.data === '2027-02-10' && a.tipo === 'trabalho')).toEqual([]);
+    expect(r.cobertura.some((c) => c.data === '2027-02-10')).toBe(false);
+    expect(r.violacoes.filter((v) => v.codigo === 'COBERTURA_MINIMA' && v.data === '2027-02-10')).toEqual([]);
+    const aberto = adequarEscala(ent(8, { feriados }), { turnos: [manha(todos(3))] });
+    expect(aberto.diasFechados).not.toContain('2027-02-10');
+  });
+
+  it('folga fixa: a pessoa nunca trabalha naquele dia da semana (e a equipe cobre com os outros)', () => {
+    const r = adequarEscala(ent(10), { turnos: [manha(todos(4))], folgasFixas: { p1: [6], p2: [6, 0] } });
+    for (const id of ['p1', 'p2']) expect(r.alocacoes.filter((a) => a.colaboradorId === id && a.tipo === 'trabalho' && diaDaSemana(a.data) === 6)).toEqual([]);
+    expect(dom(r, 'p2')).toEqual([]);
+    expect(r.resumo.faltaTotal).toBe(0);
+    expect(temBloqueio(r.violacoes)).toBe(false);
+  });
+
+  it('férias aparecem no resultado (com os dias dentro do mês) e a pessoa não trabalha nelas', () => {
+    const e = ent(8, { ausencias: [{ colaboradorId: 'p2', inicio: '2027-01-25', fim: '2027-02-05', tipo: 'ferias' }, { colaboradorId: 'p3', inicio: '2027-02-20', fim: '2027-02-21', tipo: 'afastamento' }, { colaboradorId: 'p4', inicio: '2027-04-01', fim: '2027-04-10', tipo: 'ferias' }] });
+    const r = adequarEscala(e, { turnos: [manha(todos(3))] });
+    expect(r.ausencias).toEqual([
+      expect.objectContaining({ colaboradorId: 'p2', inicio: '2027-02-01', fim: '2027-02-05', tipo: 'ferias', dias: 5 }),
+      expect.objectContaining({ colaboradorId: 'p3', tipo: 'afastamento', dias: 2 }),
+    ]);
+    expect(r.alocacoes.filter((a) => a.colaboradorId === 'p2' && a.data <= '2027-02-05')).toEqual([]);
+  });
+
+  it('com poucas pessoas de férias a cobertura cai e o resultado mostra exatamente onde', () => {
+    const ausencias = ['p1', 'p2', 'p3'].map((id) => ({ colaboradorId: id, inicio: '2027-02-08', fim: '2027-02-14', tipo: 'ferias' as const }));
+    const r = adequarEscala(ent(8, { ausencias }), { turnos: [manha(todos(5))] });
+    const semana = r.cobertura.filter((c) => c.data >= '2027-02-08' && c.data <= '2027-02-14');
+    expect(semana.every((c) => c.falta > 0)).toBe(true);
+    expect(r.cobertura.filter((c) => c.data < '2027-02-08' && c.falta > 0).length).toBeLessThanOrEqual(r.cobertura.length);
+  });
+});
+

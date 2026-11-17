@@ -41,7 +41,7 @@ export function montarMenu(c: ContextoMenu): SecaoMenu[] {
         ] },
         { id: 'escalas', rotulo: 'Escalas', icone: 'escalas', itens: [
           { id: 'escalas-lista', rotulo: 'Escalas do mês', href: `${e}/escalas`, icone: 'calendario', descricao: 'Monte, confira com a lei e publique a escala.' },
-          { id: 'adequador', rotulo: 'Adequador de escala', href: `${e}/escalas/adequador`, icone: 'escalas', descricao: 'Ajuste as horas e a cobertura e veja a equipe alocada.' },
+          { id: 'adequador', rotulo: 'Gerar escala', href: `${e}/escalas/adequador`, icone: 'escalas', descricao: 'Informe turnos, setores e pessoas e o sistema monta a escala do mês, com folgas e férias.' },
           { id: 'turnos', rotulo: 'Turnos', href: `${e}/escalas/turnos`, icone: 'turnos', descricao: 'Modelos de horário para pintar na grade.' },
           { id: 'cobertura', rotulo: 'Cobertura mínima', href: `${e}/escalas/cobertura`, icone: 'cobertura', descricao: 'Quantas pessoas cada setor precisa por turno.' },
           { id: 'ausencias', rotulo: 'Férias e afastamentos', href: `${e}/escalas/ausencias`, icone: 'ferias', descricao: 'Dias em que a pessoa não pode ser escalada.' },
