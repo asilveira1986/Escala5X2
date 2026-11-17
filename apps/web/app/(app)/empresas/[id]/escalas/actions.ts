@@ -38,21 +38,64 @@ export async function criarEscala(_: EstadoForm, form: FormData): Promise<Estado
   redirect(`/empresas/${empresaId.data}/escalas/${(data as { id: string }).id}`);
 }
 
-export async function criarModelo(_: EstadoForm, form: FormData): Promise<EstadoForm> {
-  const empresaId = id.safeParse(form.get('empresaId'));
+/** Lê e confere os campos de um turno (criação e edição usam as mesmas regras). */
+function lerDadosTurno(form: FormData): { erro: string } | { nome: string; inicio: number; fim: number; intervalo: number } {
   const nome = z.string().trim().min(1, 'Dê um nome ao turno.').max(40).safeParse(form.get('nome'));
   const ini = hora.safeParse(form.get('inicio')), fim = hora.safeParse(form.get('fim'));
   const intervalo = z.coerce.number().int().min(0).max(240).safeParse(form.get('intervalo') || 0);
-  if (!empresaId.success || !nome.success || !ini.success || !fim.success || !intervalo.success) return { erro: 'Confira o nome, os horários e o intervalo.' };
-  let i = minutos(ini.data), f = minutos(fim.data);
+  if (!nome.success || !ini.success || !fim.success || !intervalo.success) return { erro: 'Confira o nome, os horários e o intervalo.' };
+  const i = minutos(ini.data);
+  let f = minutos(fim.data);
   if (f <= i) f += 1440; // termina no dia seguinte (turno noturno)
   if (f - i > 1440) return { erro: 'O turno não pode passar de 24 horas.' };
   if (intervalo.data >= f - i) return { erro: 'O intervalo precisa ser menor que o turno.' };
+  return { nome: nome.data, inicio: i, fim: f, intervalo: intervalo.data };
+}
+const erroTurno = (m: string) => (/duplicate|unique/i.test(m) ? 'Já existe um turno com esse nome.' : /row-level|permission/i.test(m) ? 'Você não tem permissão para alterar os turnos desta empresa.' : 'Não foi possível salvar o turno.');
+
+export async function criarModelo(_: EstadoForm, form: FormData): Promise<EstadoForm> {
+  const empresaId = id.safeParse(form.get('empresaId'));
+  const d = lerDadosTurno(form);
+  if (!empresaId.success) return { erro: 'Pedido inválido.' };
+  if ('erro' in d) return d;
   const { supabase } = await exigirUsuario();
-  const { error } = await supabase.from('turno_modelo').insert({ empresa_id: empresaId.data, nome: nome.data, inicio_min: i, fim_min: f, intervalo_min: intervalo.data });
-  if (error) return { erro: /duplicate|unique/i.test(error.message) ? 'Já existe um turno com esse nome.' : 'Não foi possível salvar o turno.' };
+  const { error } = await supabase.from('turno_modelo').insert({ empresa_id: empresaId.data, nome: d.nome, inicio_min: d.inicio, fim_min: d.fim, intervalo_min: d.intervalo });
+  if (error) return { erro: erroTurno(error.message) };
   revalidatePath(`/empresas/${empresaId.data}/escalas`);
+  revalidatePath(`/empresas/${empresaId.data}/escalas/turnos`);
   return {};
+}
+
+/**
+ * Edita um turno cadastrado. Vale daqui para frente: escalas já montadas guardam os próprios horários em cada
+ * alocação (e as publicadas são imutáveis), então nada do que já foi escalado muda. O banco registra a alteração na auditoria.
+ */
+export async function editarModelo(_: EstadoForm & { ok?: boolean }, form: FormData): Promise<EstadoForm & { ok?: boolean }> {
+  const empresaId = id.safeParse(form.get('empresaId')), modeloId = id.safeParse(form.get('modeloId'));
+  const d = lerDadosTurno(form);
+  if (!empresaId.success || !modeloId.success) return { erro: 'Pedido inválido.' };
+  if ('erro' in d) return d;
+  const { supabase } = await exigirUsuario();
+  const { data, error } = await supabase.from('turno_modelo').update({ nome: d.nome, inicio_min: d.inicio, fim_min: d.fim, intervalo_min: d.intervalo })
+    .eq('id', modeloId.data).eq('empresa_id', empresaId.data).select('id');
+  if (error) return { erro: erroTurno(error.message) };
+  if (!Array.isArray(data) || data.length === 0) return { erro: 'Turno não encontrado ou sem permissão para alterá-lo.' };
+  revalidatePath(`/empresas/${empresaId.data}/escalas`);
+  revalidatePath(`/empresas/${empresaId.data}/escalas/turnos`);
+  return { ok: true };
+}
+
+/** Tira o turno da lista (arquiva). Não apaga: escalas que o usaram continuam ligadas a ele. */
+export async function arquivarModelo(empresaId: string, modeloId: string): Promise<{ ok: true } | { ok: false; erro: string }> {
+  const e = id.safeParse(empresaId), m = id.safeParse(modeloId);
+  if (!e.success || !m.success) return { ok: false, erro: 'Pedido inválido.' };
+  const { supabase } = await exigirUsuario();
+  const { data, error } = await supabase.from('turno_modelo').update({ ativo: false }).eq('id', m.data).eq('empresa_id', e.data).select('id');
+  if (error) return { ok: false, erro: erroTurno(error.message) };
+  if (!Array.isArray(data) || data.length === 0) return { ok: false, erro: 'Turno não encontrado ou sem permissão para removê-lo.' };
+  revalidatePath(`/empresas/${e.data}/escalas`);
+  revalidatePath(`/empresas/${e.data}/escalas/turnos`);
+  return { ok: true };
 }
 
 export type ResultadoGravacao = { ok: true; revisao: number } | { ok: false; erro: string };
