@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Selo } from '@/components/ui';
 import { TabelaDados } from '@/components/TabelaDados';
@@ -26,6 +27,10 @@ export function TabelaColaboradores({ dados, empresaId, podeGerir }: { dados: Li
       id: 'acesso', header: 'Acesso ao app', enableSorting: false,
       cell: (c) => <CelulaAcesso empresaId={empresaId} colaboradorId={c.row.original.colaborador_id} nome={c.row.original.nome} acesso={c.row.original.acesso} podeGerir={podeGerir} />,
     },
+    ...(podeGerir ? [{
+      id: 'editar', header: '', enableSorting: false,
+      cell: (c) => <Link href={`/empresas/${empresaId}/colaboradores/${c.row.original.colaborador_id}`} className="font-semibold text-marca hover:underline" aria-label={`Editar ${c.row.original.nome}`}>Editar</Link>,
+    } satisfies ColumnDef<LinhaEquipe, unknown>] : []),
   ];
   return <TabelaDados colunas={colunas} dados={dados} rotuloBusca="Buscar colaborador" vazio="Nenhum colaborador com contrato vigente. Importe uma planilha." />;
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Aviso, Cartao, classeBotaoLinkPrimario } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
+import { dataBr, dataDeInstante } from '@jc/rules-engine';
 import { todasAsLinhas } from '@/lib/paginar';
 import type { ColaboradorVigenteRow, LinhaEquipe } from '@/lib/tipos-db';
 import { TabelaColaboradores } from './TabelaColaboradores';
@@ -28,7 +29,12 @@ export default async function Colaboradores({ params }: { params: Promise<{ id: 
     ...c,
     acesso: com.has(c.colaborador_id) ? { estado: 'com' } : pendentes.has(c.colaborador_id) ? { estado: 'pendente', email: pendentes.get(c.colaborador_id) } : { estado: 'sem' },
   }));
+  // Desligados: já saíram do contrato vigente, então não estão na visão acima.
+  const { data: deslig } = await supabase.from('colaborador').select('id, nome, cargo, desligamento').eq('empresa_id', empresaId)
+    .lt('desligamento', dataDeInstante(new Date())).order('desligamento', { ascending: false }).limit(200);
+  const desligados = linhas<{ id: string; nome: string; cargo: string | null; desligamento: string }>(deslig);
   return (
+    <>
     <Cartao titulo={`Colaboradores (${dados.length})`}>
       {error ? <Aviso tipo="erro">Não foi possível carregar os colaboradores.</Aviso> : null}
       {dados.length >= LIMITE ? <Aviso>Exibindo os primeiros {LIMITE} colaboradores.</Aviso> : null}
@@ -38,5 +44,18 @@ export default async function Colaboradores({ params }: { params: Promise<{ id: 
       </div>
       <TabelaColaboradores dados={dados} empresaId={empresaId} podeGerir={podeGerirRpc === true} />
     </Cartao>
+    {desligados.length > 0 ? (
+      <Cartao titulo={`Desligados (${desligados.length})`}>
+        <ul className="divide-y divide-linha text-sm">
+          {desligados.map((d) => (
+            <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+              <span><span className="font-semibold">{d.nome}</span>{d.cargo ? <span className="text-suave"> · {d.cargo}</span> : null}</span>
+              <span className="flex items-center gap-3 text-suave">Saiu em {dataBr(d.desligamento)}{podeGerirRpc === true ? <Link className="font-semibold text-marca hover:underline" href={`/empresas/${empresaId}/colaboradores/${d.id}`}>Abrir</Link> : null}</span>
+            </li>
+          ))}
+        </ul>
+      </Cartao>
+    ) : null}
+    </>
   );
 }

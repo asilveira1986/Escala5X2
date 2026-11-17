@@ -1,10 +1,11 @@
 'use server';
 
-import { CAMPOS_COLABORADOR, validarColaboradores, type CampoColaborador, type Mapeamento } from '@jc/connectors';
+import { CAMPOS_COLABORADOR, parseEscolaridade, parseTelefone, validarColaboradores, type CampoColaborador, type Mapeamento } from '@jc/connectors';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { formatarCbo, type OcupacaoCbo } from '@/lib/cbo';
+import { validarContrato } from '@/lib/colaborador-form';
 import { exigirUsuario } from '@/lib/contexto';
 import { enviarLinkDeAcesso } from '@/lib/supabase/envio-link';
 
@@ -69,4 +70,87 @@ export async function cadastrarColaborador(empresaId: string, _: EstadoNovoColab
   }
   revalidatePath(`/empresas/${id.data}/colaboradores`);
   redirect(`/empresas/${id.data}/colaboradores`);
+}
+
+// ===== Edição, mudança de contrato, desligamento e reativação =====
+const DATA_ISO = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Informe uma data válida.').refine((d) => !Number.isNaN(Date.parse(`${d}T00:00:00Z`)) && new Date(`${d}T00:00:00Z`).toISOString().startsWith(d), 'Informe uma data válida.');
+const ids2 = z.object({ empresaId: z.string().uuid(), colaboradorId: z.string().uuid() });
+export type EstadoEdicao = { erros?: Record<string, string>; erroGeral?: string; ok?: string; valores?: Record<string, string> };
+const lerForm = (form: FormData, chaves: string[]) => Object.fromEntries(chaves.map((c) => [c, String(form.get(c) ?? '').trim()]));
+
+async function cboValido(bruto: string): Promise<{ ok: true; cbo: string | null } | { ok: false }> {
+  if (!bruto) return { ok: true, cbo: null };
+  const f = formatarCbo(bruto);
+  const lista = (await import('@/lib/cbo-dados.json')).default as unknown as OcupacaoCbo[];
+  return f && lista.some(([c]) => c === f) ? { ok: true, cbo: f.replace('-', '') } : { ok: false };
+}
+
+export async function atualizarDadosColaborador(empresaId: string, colaboradorId: string, _: EstadoEdicao, form: FormData): Promise<EstadoEdicao> {
+  const p = ids2.safeParse({ empresaId, colaboradorId });
+  if (!p.success) return { erroGeral: 'Pedido inválido.' };
+  const v = lerForm(form, ['nome', 'setor', 'matricula', 'cargo', 'cbo', 'escolaridade', 'telefone']);
+  const erros: Record<string, string> = {};
+  if (v.nome!.length < 2) erros.nome = 'Nome obrigatório.';
+  const cbo = await cboValido(v.cbo!);
+  if (!cbo.ok) erros.cbo = 'Escolha uma ocupação da lista.';
+  const tel = v.telefone ? parseTelefone(v.telefone) : null;
+  if (v.telefone && !tel) erros.telefone = 'Telefone inválido: use DDD e número.';
+  const esc = v.escolaridade ? parseEscolaridade(v.escolaridade) : null;
+  if (v.escolaridade && !esc) erros.escolaridade = 'Escolaridade inválida.';
+  if (Object.keys(erros).length > 0) return { erros, valores: v };
+  const { supabase } = await exigirUsuario();
+  const { error } = await supabase.rpc('atualizar_colaborador', {
+    p_colaborador: p.data.colaboradorId, p_nome: v.nome, p_setor_nome: v.setor || null, p_matricula: v.matricula || null, p_cargo: v.cargo || null,
+    p_cbo: cbo.ok ? cbo.cbo : null, p_escolaridade: esc, p_telefone: tel,
+  });
+  if (error) return { valores: v, erroGeral: traduzir(error.message).slice(0, 200) };
+  revalidatePath(`/empresas/${p.data.empresaId}/colaboradores`);
+  return { ok: 'Dados salvos.', valores: v };
+}
+
+export async function mudarContrato(empresaId: string, colaboradorId: string, _: EstadoEdicao, form: FormData): Promise<EstadoEdicao> {
+  const p = ids2.safeParse({ empresaId, colaboradorId });
+  if (!p.success) return { erroGeral: 'Pedido inválido.' };
+  const v = lerForm(form, ['a_partir_de', 'salario', 'jornada_semanal', 'tipo_escala', 'turno', 'divisor', 'folgas_semana', 'horas_extras_mensais']);
+  const data = DATA_ISO.safeParse(v.a_partir_de);
+  const c = validarContrato(v);
+  const erros: Record<string, string> = c.ok ? {} : { ...c.erros } as Record<string, string>;
+  if (!data.success) erros.a_partir_de = 'Informe a data em que a mudança passa a valer.';
+  if (Object.keys(erros).length > 0 || !c.ok || !data.success) return { erros, valores: v };
+  const { supabase } = await exigirUsuario();
+  const { error } = await supabase.rpc('alterar_contrato', {
+    p_colaborador: p.data.colaboradorId, p_a_partir_de: data.data, p_salario: c.contrato.salarioCentavos / 100, p_jornada_min: c.contrato.jornadaSemanalMin,
+    p_divisor: c.contrato.divisor, p_tipo_escala: c.contrato.tipoEscala, p_turno: c.contrato.turno, p_folgas: c.contrato.folgasSemana, p_horas_extras_min: c.contrato.horasExtrasMensaisMin,
+  });
+  if (error) return { valores: v, erros: /data|admiss|contrato/i.test(error.message) ? { a_partir_de: traduzir(error.message).slice(0, 160) } : undefined, erroGeral: /data|admiss|contrato/i.test(error.message) ? undefined : traduzir(error.message).slice(0, 200) };
+  revalidatePath(`/empresas/${p.data.empresaId}/colaboradores`);
+  revalidatePath(`/empresas/${p.data.empresaId}/colaboradores/${p.data.colaboradorId}`);
+  return { ok: 'Contrato atualizado. O histórico foi mantido.' };
+}
+
+export type ResultadoDesligamento = { ok: true; mensagem: string } | { ok: false; erro: string };
+
+export async function desligarColaborador(empresaId: string, colaboradorId: string, data: string): Promise<ResultadoDesligamento> {
+  const p = ids2.safeParse({ empresaId, colaboradorId });
+  const d = DATA_ISO.safeParse(data);
+  if (!p.success) return { ok: false, erro: 'Pedido inválido.' };
+  if (!d.success) return { ok: false, erro: 'Informe o último dia de trabalho.' };
+  const { supabase } = await exigirUsuario();
+  const { data: r, error } = await supabase.rpc('desligar_colaborador', { p_colaborador: p.data.colaboradorId, p_data: d.data });
+  if (error) return { ok: false, erro: traduzir(error.message).slice(0, 200) };
+  revalidatePath(`/empresas/${p.data.empresaId}/colaboradores`);
+  revalidatePath(`/empresas/${p.data.empresaId}/colaboradores/${p.data.colaboradorId}`);
+  const dias = Number((r as { dias_em_escala?: number } | null)?.dias_em_escala ?? 0);
+  return { ok: true, mensagem: dias > 0 ? `Desligamento registrado. Atenção: ainda há ${dias} dia(s) de trabalho em escalas depois dessa data; ajuste as escalas.` : 'Desligamento registrado.' };
+}
+
+export async function reativarColaborador(empresaId: string, colaboradorId: string): Promise<ResultadoDesligamento> {
+  const p = ids2.safeParse({ empresaId, colaboradorId });
+  if (!p.success) return { ok: false, erro: 'Pedido inválido.' };
+  const { supabase } = await exigirUsuario();
+  const { error } = await supabase.rpc('reativar_colaborador', { p_colaborador: p.data.colaboradorId });
+  if (error) return { ok: false, erro: traduzir(error.message).slice(0, 200) };
+  revalidatePath(`/empresas/${p.data.empresaId}/colaboradores`);
+  revalidatePath(`/empresas/${p.data.empresaId}/colaboradores/${p.data.colaboradorId}`);
+  return { ok: true, mensagem: 'Colaborador reativado.' };
 }
