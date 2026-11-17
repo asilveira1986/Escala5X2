@@ -2,6 +2,7 @@ import type { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { comoUsuario, novoUsuario, prepararBanco } from '../../db/test/helpers';
 import { acordo, colab } from '../../rules-engine/test/util';
+import { gerarFolhaCsv } from '../../documents/src';
 import { calcularFechamento, carregarBaseFechamento, fecharFolha, lerBaseFechamento, podeFechar, publicarEscala, type BaseFechamento, type EntradaEscala, type Lancamento } from '../src';
 import { entrada } from './otimizador-util';
 import { rpcPg, rpcPgServidor } from './pg-rpc';
@@ -188,7 +189,108 @@ describe('fechamento de ponta a ponta (banco real)', () => {
     const { base: b2, entradas: e2 } = await carregarBaseFechamento(cliente(), emp, atual);
     await expect(fecharFolha(cliente(), emp, { ...calcularFechamento(b2, e2), linhas: calcularFechamento(base, [entradaMes(mesCheio('a'))]).linhas })).rejects.toThrow(/bloqueios|mês já encerrado/);
   });
+  it('fecha pelo ponto: lê as marcações do banco, calcula, guarda a origem no retrato e o arquivo traz as colunas do ponto', async () => {
+    const { base, entradas } = await carregarBaseFechamento(cliente(), emp, ini());
+    const dias = Array.from({ length: nDias() }, (_, i) => new Date(Date.parse(`${ini()}T00:00:00Z`) + i * 86_400_000)).filter((d) => d.getUTCDay() !== 0 && d.getUTCDay() !== 6).map((d) => d.toISOString().slice(0, 10));
+    let n = 0;
+    const marca = (c: string, data: string, hora: string, id: string) => db.query(
+      `insert into marcacao_ponto (organizacao_id, empresa_id, colaborador_id, momento, tipo_identificador, identificador_hash, identificador_final, nsr) values ($6,$1,$2,$3::timestamptz,'cpf',$4,'0000',$5)`, [emp, c, `${data}T${hora}:00-03:00`, `${id}-${data}-${hora}`, ++n, org]);
+    // Ana marcou todos os dias certinho, menos o primeiro (chegou 40 min atrasada); Bia não marcou nada
+    for (const [i, data] of dias.entries()) { await marca(A, data, i === 0 ? '08:40' : '08:00', 'a'); await marca(A, data, '17:00', 'a'); }
+    const marcacoes = (await db.query<{ colaborador_id: string; momento: string }>(`select colaborador_id, momento::text from marcacao_ponto where empresa_id=$1 and colaborador_id is not null order by momento, id`, [emp])).rows;
+    const f = calcularFechamento(base, entradas, { origem: 'ponto', marcacoes, semMarcacao: 'falta' });
+    const ana = f.linhas.find((l) => l.nome === 'Ana')!, bia = f.linhas.find((l) => l.nome === 'Bia')!;
+    expect(ana.trabalhadasMin).toBe(dias.length * 480 - 40);
+    expect(ana.diasAjustadosPeloPonto).toBe(1);
+    const semAfastamento = dias.filter((d) => d >= new Date(Date.parse(`${ini()}T00:00:00Z`) + 2 * 86_400_000).toISOString().slice(0, 10));   // os 2 primeiros dias, Bia está afastada
+    expect(bia).toMatchObject({ diasSemMarcacao: semAfastamento.length, faltasPontoMin: semAfastamento.length * 480 });
+    expect(f.origem).toBe('ponto');
+    expect(podeFechar(f)).toBe(true);
+    const id = await fecharFolha(cliente(), emp, f, 'Refeito pelo ponto apurado');
+    const r = (await db.query(`select dados->>'origem' o, dados->>'semMarcacao' s from fechamento_folha where id=$1`, [id])).rows[0];
+    expect(r).toEqual({ o: 'ponto', s: 'falta' });
+    expect((await comoUsuario(db, rh, (c) => c.query(`select fechamento_integro($1) ok`, [id]))).rows[0].ok).toBe(true);
+    const dados = (await db.query(`select dados from fechamento_folha where id=$1`, [id])).rows[0].dados;
+    const csv = gerarFolhaCsv(dados);
+    expect(csv.split('\r\n')[0]).toMatch(/Faltas pelo ponto \(horas\);Dias previstos sem marcação$/);
+  });
   it('colaborador não consegue ler a base do fechamento nem fechar', async () => {
     await expect(carregarBaseFechamento(rpcPg(db, ua), emp, ini())).rejects.toThrow(/sem permissão/);
+  });
+});
+
+describe('fechamento pelo ponto apurado (lógica pura)', () => {
+  const marc = (c: string, data: string, hora: string) => ({ colaborador_id: c, momento: `${data}T${hora}:00-03:00` });
+  const par = (c: string, data: string, ini = '08:00', fim = '17:00') => [marc(c, data, ini), marc(c, data, fim)];
+  const normal = (alocs: ReturnType<typeof dia>[]) => alocs.flatMap((a) => par(a.colaboradorId, a.data));
+  const alocs = mesCheio('a');
+  const feito = (marcacoes: ReturnType<typeof marc>[], extra: Partial<EntradaEscala> = {}, semMarcacao?: 'escala' | 'falta', baseExtra: Partial<BaseFechamento> = {}) =>
+    calcularFechamento(baseDe(baseExtra), [entradaMes(alocs, extra)], { origem: 'ponto', marcacoes, semMarcacao });
+  const linhaA = (f: ReturnType<typeof calcularFechamento>) => f.linhas[0]!;
+  const codigos = (f: ReturnType<typeof calcularFechamento>) => f.avisos.map((a) => a.codigo);
+
+  it('ponto dentro da tolerância (e só entrada/saída, com intervalo pré-assinalado) vale o previsto: 160h, sem ajuste', () => {
+    const f = feito(normal(alocs));
+    expect(f.origem).toBe('ponto');
+    expect(linhaA(f)).toMatchObject({ trabalhadasMin: 9600, extrasMin: 0, diasTrabalhados: 20, diasSemMarcacao: 0, diasPendentes: 0, diasAjustadosPeloPonto: 0, faltasPontoMin: 0 });
+    expect(codigos(f)).toContain('ORIGEM_PONTO');
+    expect(codigos(f)).not.toContain('ORIGEM_ESCALA');
+    expect(podeFechar(f)).toBe(true);
+  });
+
+  it('atraso acima da tolerância desconta o atraso; saída depois do turno soma o tempo a mais', () => {
+    const ms = normal(alocs).filter((m) => !m.momento.startsWith('2027-02-02') && !m.momento.startsWith('2027-02-03'));
+    const f = feito([...ms, ...par('a', '2027-02-02', '08:30'), ...par('a', '2027-02-03', '08:00', '18:00')]);
+    expect(linhaA(f).trabalhadasMin).toBe(9600 - 30 + 60);
+    expect(linhaA(f).diasAjustadosPeloPonto).toBe(2);
+    expect(linhaA(f).extrasMin).toBeGreaterThan(0);                 // 9h no dia: a hora a mais é extra
+  });
+
+  it('intervalo marcado (4 marcações) entra pelo que foi feito: pausa maior desconta, pausa menor soma', () => {
+    const ms = normal(alocs).filter((m) => !m.momento.startsWith('2027-02-02'));
+    const quatro = [marc('a', '2027-02-02', '08:00'), marc('a', '2027-02-02', '12:00'), marc('a', '2027-02-02', '12:30'), marc('a', '2027-02-02', '17:00')];
+    const f = feito([...ms, ...quatro]);
+    expect(linhaA(f).trabalhadasMin).toBe(9600 + 30);               // pausa de 30 min em vez de 60
+  });
+
+  it('dia previsto sem nenhuma marcação: por padrão vale o previsto (ponto não tratado) e vira aviso; "falta" desconta', () => {
+    const ms = normal(alocs).filter((m) => !m.momento.startsWith('2027-02-04'));
+    const padrao = feito(ms);
+    expect(linhaA(padrao)).toMatchObject({ trabalhadasMin: 9600, diasSemMarcacao: 1, faltasPontoMin: 0 });
+    expect(codigos(padrao)).toContain('PONTO_SEM_MARCACAO');
+    const falta = feito(ms, {}, 'falta');
+    expect(linhaA(falta)).toMatchObject({ trabalhadasMin: 9600 - 480, diasSemMarcacao: 1, faltasPontoMin: 480, diasTrabalhados: 19 });
+    expect(falta.semMarcacao).toBe('falta');
+    expect(falta.totais.faltasPontoMin).toBe(480);
+  });
+
+  it('marcação incompleta (ímpar) nunca desconta: vale o previsto e fica como pendência', () => {
+    const ms = normal(alocs).filter((m) => !(m.momento.startsWith('2027-02-04') && m.momento.includes('T17:00')));
+    const f = feito(ms, {}, 'falta');
+    expect(linhaA(f)).toMatchObject({ trabalhadasMin: 9600, diasPendentes: 1, diasSemMarcacao: 0, faltasPontoMin: 0 });
+    expect(codigos(f)).toContain('PONTO_PENDENTE');
+  });
+
+  it('trabalho em dia de folga (marcação completa) entra como trabalhado; em férias não entra', () => {
+    const sabado = '2027-02-06', ferias = '2027-02-10';
+    const comFerias = alocs.filter((a) => a.data !== ferias);
+    const f = calcularFechamento(baseDe({ ausencias: [{ colaboradorId: 'a', inicio: ferias, fim: ferias, tipo: 'ferias' }] }), [entradaMes(comFerias, { ausencias: [{ colaboradorId: 'a', inicio: ferias, fim: ferias }] } as Partial<EntradaEscala>)],
+      { origem: 'ponto', marcacoes: [...normal(comFerias), ...par('a', sabado, '08:00', '12:00'), ...par('a', ferias)] });
+    expect(linhaA(f).trabalhadasMin).toBe(9600 - 480 + 240);        // 19 dias + 4h do sábado; o dia de férias não conta
+    expect(codigos(f)).toEqual(expect.arrayContaining(['PONTO_EM_FOLGA', 'PONTO_EM_AUSENCIA']));
+  });
+
+  it('sem nenhuma marcação no mês: bloqueio (não dá para fechar pelo ponto), com orientação', () => {
+    const f = feito([]);
+    expect(codigos(f)).toContain('PONTO_SEM_IMPORTACAO');
+    expect(podeFechar(f)).toBe(false);
+  });
+
+  it('pela escala (padrão) nada muda: sem campos do ponto e a mesma origem de antes', () => {
+    const f = calcularFechamento(baseDe(), [entradaMes(alocs)]);
+    expect(f.origem).toBe('escala');
+    expect(f.semMarcacao).toBeUndefined();
+    expect(linhaA(f)).toMatchObject({ trabalhadasMin: 9600, diasSemMarcacao: 0, diasPendentes: 0, faltasPontoMin: 0, diasAjustadosPeloPonto: 0 });
+    expect(codigos(f)).toContain('ORIGEM_ESCALA');
   });
 });

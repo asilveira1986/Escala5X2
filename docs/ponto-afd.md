@@ -31,3 +31,18 @@ Rodar `packages/db/setup/supabase_atualizar_ponto.sql` (uma vez).
 
 ## Segurança
 Só quem gere a empresa importa, vincula e desfaz; o colaborador enxerga apenas as próprias marcações; outra organização não vê nada; a importação é auditada (início, conclusão, desfazer, vínculo).
+
+## Folha pelo ponto apurado
+
+No **Fechamento da folha** há o bloco "De onde vêm as horas": **Escala (previstas)** ou **Ponto (apuradas)**. Sem escolha, o sistema usa o ponto quando o mês tem marcações importadas. O que foi escolhido é o que o fechamento guarda (`origem` e `semMarcacao` no retrato) e aparece no Excel (aba Fechamento) e nas duas colunas novas no fim da planilha (*Faltas pelo ponto*, *Dias previstos sem marcação*; as demais colunas não mudam de lugar).
+
+Regras do cálculo pelo ponto (`packages/servicos/src/fechamento.ts`):
+
+- Dia dentro da tolerância da CLT (art. 58 §1º: 5 min por marcação, 10 min por dia): vale o horário da escala.
+- Atraso, saída antecipada, tempo além do turno ou intervalo menor: valem as marcações (primeira entrada → última saída, menos as pausas marcadas; com só entrada e saída, vale o intervalo previsto, que é pré-assinalado). Noturno, domingo, feriado e hora extra são recalculados pelo motor com esses horários.
+- Dia previsto sem nenhuma marcação: opção **Contar como previsto** (padrão: ponto ainda não tratado) ou **Descontar como falta**. Sempre gera aviso.
+- Marcação incompleta (número ímpar): nunca desconta; vale o previsto e vira pendência.
+- Marcação em dia de folga: conta como trabalhado, com aviso. Em férias/afastamento: não conta, com aviso.
+- Mês sem nenhuma marcação importada: bloqueia o fechamento pelo ponto.
+
+O banco de horas **não** é alimentado pelo ponto nesta etapa: ele segue só pelos lançamentos.

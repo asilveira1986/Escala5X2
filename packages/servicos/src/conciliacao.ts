@@ -11,6 +11,10 @@ export type DiaConciliado = {
   apuradoMin: number | null;                     // soma dos pares entrada→saída (null se não dá para apurar)
   marcacoes: string[];                           // horas locais HH:MM, em ordem
   atrasoMin: number; saidaAntecipadaMin: number; horaExtraMin: number; intervaloRealizadoMin: number | null;
+  /** Primeira e última marcação, em minutos desde 00:00 do dia do turno (pode passar de 1440 se o turno vira a noite); null se não dá para apurar. */
+  entradaRealMin: number | null; saidaRealMin: number | null;
+  /** Soma das pausas entre os pares entrada→saída (0 quando só há uma entrada e uma saída). */
+  pausasRealMin: number;
   codigos: CodigoConciliacao[];
 };
 export type ResumoColaboradorConciliacao = { colaboradorId: string; nome: string; diasPrevistos: number; diasSemMarcacao: number; previstoMin: number; apuradoMin: number; atrasoMin: number; horaExtraMin: number; diasComDivergencia: number };
@@ -55,12 +59,14 @@ export function conciliarPonto(entrada: EntradaEscala, marcacoes: MarcacaoPonto[
       const meus = todas.filter((ms, i) => !usadas.has(i) && ms >= t.ini - janela && ms <= t.fim + janela);
       todas.forEach((ms, i) => { if (ms >= t.ini - janela && ms <= t.fim + janela) usadas.add(i); });
       const codigos: CodigoConciliacao[] = [];
-      let apurado: number | null = 0, atraso = 0, antecipada = 0, extra = 0, intervaloReal: number | null = null;
+      let apurado: number | null = 0, atraso = 0, antecipada = 0, extra = 0, intervaloReal: number | null = null, entradaReal: number | null = null, saidaReal: number | null = null, pausas = 0;
       if (meus.length === 0) { codigos.push('SEM_MARCACAO'); apurado = null; }
       else if (meus.length % 2 === 1) { codigos.push('MARCACAO_IMPAR'); apurado = null; }
       else {
         for (let i = 0; i < meus.length; i += 2) apurado += Math.round((meus[i + 1]! - meus[i]!) / MIN);
         if (meus.length >= 4) intervaloReal = Math.round((meus[2]! - meus[1]!) / MIN);
+        entradaReal = Math.round((meus[0]! - instante(t.data, 0)) / MIN); saidaReal = Math.round((meus[meus.length - 1]! - instante(t.data, 0)) / MIN);
+        for (let i = 1; i + 1 < meus.length; i += 2) pausas += Math.round((meus[i + 1]! - meus[i]!) / MIN);
         const dEntrada = Math.round((meus[0]! - t.ini) / MIN), dSaida = Math.round((meus[meus.length - 1]! - t.fim) / MIN);
         // tolerância: variação de até `tol` min em cada ponta não conta, e o total do dia só deixa de contar se couber em `tolDia`
         const dentro = Math.abs(dEntrada) <= tol && Math.abs(dSaida) <= tol && Math.abs(dEntrada) + Math.abs(dSaida) <= tolDia;
@@ -73,14 +79,17 @@ export function conciliarPonto(entrada: EntradaEscala, marcacoes: MarcacaoPonto[
         }
         if (intervaloReal !== null && t.intervalo > 0 && intervaloReal < t.intervalo - tol) codigos.push('INTERVALO_REDUZIDO');
       }
-      dias.push({ colaboradorId: colab, data: t.data, previstoLiquidoMin: t.liquido, apuradoMin: apurado, marcacoes: meus.map(hh), atrasoMin: atraso, saidaAntecipadaMin: antecipada, horaExtraMin: extra, intervaloRealizadoMin: intervaloReal, codigos });
+      dias.push({ colaboradorId: colab, data: t.data, previstoLiquidoMin: t.liquido, apuradoMin: apurado, marcacoes: meus.map(hh), atrasoMin: atraso, saidaAntecipadaMin: antecipada, horaExtraMin: extra, intervaloRealizadoMin: intervaloReal, entradaRealMin: entradaReal, saidaRealMin: saidaReal, pausasRealMin: pausas, codigos });
     }
 
     // marcações que não pertencem a nenhum turno: dia de folga ou de ausência
     const soltas = new Map<DataISO, number[]>();
     todas.forEach((ms, i) => { if (!usadas.has(i)) { const d = dataLocal(ms); if (d >= inicio && d <= fim) soltas.set(d, [...(soltas.get(d) ?? []), ms]); } });
     for (const [d, l] of [...soltas].sort(([a], [b]) => a.localeCompare(b))) {
-      dias.push({ colaboradorId: colab, data: d, previstoLiquidoMin: 0, apuradoMin: l.length % 2 === 0 ? l.reduce((s, ms, i) => (i % 2 === 0 ? s + Math.round((l[i + 1]! - ms) / MIN) : s), 0) : null, marcacoes: l.map(hh), atrasoMin: 0, saidaAntecipadaMin: 0, horaExtraMin: 0, intervaloRealizadoMin: null, codigos: [ausente(colab, d) ? 'MARCACAO_EM_AUSENCIA' : 'MARCACAO_EM_FOLGA'] });
+      const par = l.length % 2 === 0;
+      let pausasSolta = 0;
+      for (let i = 1; par && i + 1 < l.length; i += 2) pausasSolta += Math.round((l[i + 1]! - l[i]!) / MIN);
+      dias.push({ colaboradorId: colab, data: d, previstoLiquidoMin: 0, apuradoMin: l.length % 2 === 0 ? l.reduce((s, ms, i) => (i % 2 === 0 ? s + Math.round((l[i + 1]! - ms) / MIN) : s), 0) : null, marcacoes: l.map(hh), atrasoMin: 0, saidaAntecipadaMin: 0, horaExtraMin: 0, intervaloRealizadoMin: null, entradaRealMin: par ? Math.round((l[0]! - instante(d, 0)) / MIN) : null, saidaRealMin: par ? Math.round((l[l.length - 1]! - instante(d, 0)) / MIN) : null, pausasRealMin: pausasSolta, codigos: [ausente(colab, d) ? 'MARCACAO_EM_AUSENCIA' : 'MARCACAO_EM_FOLGA'] });
     }
   }
   dias.sort((a, b) => a.colaboradorId.localeCompare(b.colaboradorId) || a.data.localeCompare(b.data));

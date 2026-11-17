@@ -3,7 +3,8 @@ import { Aviso, Cartao, classeBotaoLink, Selo } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
 import { horasTexto } from '@/lib/banco-horas-ui';
 import { mesVizinho } from '@/lib/carteira';
-import { lerCompetencia, mesEncerrado, rotuloMes } from '@/lib/folha-ui';
+import { carregarMarcacoes, temMarcacoes } from '@/lib/folha-dados';
+import { lerCompetencia, lerOpcoesFolha, mesEncerrado, rotuloMes } from '@/lib/folha-ui';
 import { calcularFechamento, carregarBaseFechamento, podeFechar } from '@jc/servicos';
 import { dataBr, dataDeInstante } from '@jc/rules-engine';
 import { BotaoFechar } from './BotaoFechar';
@@ -12,10 +13,11 @@ type FechamentoLinha = { id: string; versao: number; status: 'fechado' | 'substi
 const moeda = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const tomAviso = { bloqueio: 'erro', alerta: 'info', info: 'info' } as const;
 
-export default async function Folha({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mes?: string }> }) {
+export default async function Folha({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mes?: string; origem?: string; sem?: string }> }) {
   const empresaId = idOu404((await params).id);
   const hoje = dataDeInstante(new Date());
-  const { mes, dia } = lerCompetencia((await searchParams).mes, hoje);
+  const sp = await searchParams;
+  const { mes, dia } = lerCompetencia(sp.mes, hoje);
   const { supabase } = await exigirUsuario();
   const [{ data: fech }, { data: ger }, calculo] = await Promise.all([
     supabase.from('fechamento_folha').select('id, versao, status, motivo, criado_em, dados_hash').eq('empresa_id', empresaId).eq('competencia', dia).order('versao', { ascending: false }),
@@ -26,8 +28,11 @@ export default async function Folha({ params, searchParams }: { params: Promise<
   const vigente = versoes.find((v) => v.status === 'fechado');
   const podeGerir = ger === true;
   const encerrado = mesEncerrado(mes, hoje);
-  const f = calculo.ok ? calcularFechamento(calculo.base, calculo.entradas) : null;
-  const href = (m: string) => `/empresas/${empresaId}/folha?mes=${m}`;
+  const fim = calculo.ok ? calculo.base.fim : dia;
+  const { origem, semMarcacao } = lerOpcoesFolha(sp.origem, sp.sem, calculo.ok ? await temMarcacoes(supabase, empresaId, dia, fim) : false);
+  const marc = calculo.ok && origem === 'ponto' ? await carregarMarcacoes(supabase, empresaId, dia, fim) : null;
+  const f = calculo.ok ? calcularFechamento(calculo.base, calculo.entradas, { origem, marcacoes: marc?.marcacoes ?? [], semMarcacao }) : null;
+  const href = (m: string, o = origem, s2 = semMarcacao) => `/empresas/${empresaId}/folha?mes=${m}&origem=${o}&sem=${s2}`;
 
   return (
     <>
@@ -52,6 +57,15 @@ export default async function Folha({ params, searchParams }: { params: Promise<
         </Cartao>
       ) : null}
 
+      {calculo.ok ? (
+        <Cartao icone="relogio" titulo="De onde vêm as horas" subtitulo="Pela escala são as horas previstas; pelo ponto são as apuradas pelas marcações do relógio importadas em Ponto (AFD).">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Opcoes rotulo="Origem" itens={[{ v: 'escala', t: 'Escala (previstas)', h: href(mes, 'escala') }, { v: 'ponto', t: 'Ponto (apuradas)', h: href(mes, 'ponto') }]} atual={origem} />
+            {origem === 'ponto' ? <Opcoes rotulo="Dia sem marcação" itens={[{ v: 'escala', t: 'Contar como previsto', h: href(mes, 'ponto', 'escala') }, { v: 'falta', t: 'Descontar como falta', h: href(mes, 'ponto', 'falta') }]} atual={semMarcacao} /> : null}
+          </div>
+          {marc && !marc.completo ? <div className="mt-3"><Aviso tipo="erro">Não foi possível ler todas as marcações do mês: o resultado pode estar incompleto. Recarregue a página.</Aviso></div> : null}
+        </Cartao>
+      ) : null}
       {!calculo.ok ? <Aviso tipo="erro">Não foi possível calcular este mês agora. {/permiss/i.test(calculo.erro) ? 'Você não tem permissão para ver a folha desta empresa.' : 'Tente recarregar a página.'}</Aviso> : null}
       {f ? (
         <>
@@ -63,11 +77,11 @@ export default async function Folha({ params, searchParams }: { params: Promise<
             <Numero rotulo="Horas extras" valor={horasTexto(f.totais.extrasMin)} />
             <Numero rotulo="Vencido a pagar (banco)" valor={horasTexto(f.totais.bancoVencidoMin)} sub={f.totais.valorVencidoCentavos > 0 ? `≈ ${moeda(f.totais.valorVencidoCentavos)}` : undefined} />
           </div>
-          {podeGerir && encerrado ? <BotaoFechar empresaId={empresaId} mes={mes} reabrir={!!vigente} podeFechar={podeFechar(f)} motivoBloqueio={f.avisos.find((a) => a.severidade === 'bloqueio')?.mensagem} /> : null}
-          <Cartao icone="folha" titulo={`Prévia: ${rotuloMes(mes)}`} subtitulo="Calculada pela escala publicada e pelo banco de horas; é o que o fechamento guardaria agora.">
+          {podeGerir && encerrado ? <BotaoFechar empresaId={empresaId} mes={mes} reabrir={!!vigente} origem={origem} semMarcacao={semMarcacao} podeFechar={podeFechar(f) && (marc?.completo ?? true)} motivoBloqueio={f.avisos.find((a) => a.severidade === 'bloqueio')?.mensagem} /> : null}
+          <Cartao icone="folha" titulo={`Prévia: ${rotuloMes(mes)}`} subtitulo={`Calculada ${origem === 'ponto' ? 'pelo ponto apurado' : 'pela escala publicada'} e pelo banco de horas; é o que o fechamento guardaria agora.`}>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="py-1.5 pr-3">Colaborador</th><th className="pr-3">Matrícula</th><th className="pr-3 text-right">Trabalhadas</th><th className="pr-3 text-right">Extras</th><th className="pr-3 text-right">Noturno</th><th className="pr-3 text-right">Faltas</th><th className="pr-3 text-right">Férias/afast.</th><th className="pr-3 text-right">Banco</th></tr></thead>
+                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="py-1.5 pr-3">Colaborador</th><th className="pr-3">Matrícula</th><th className="pr-3 text-right">Trabalhadas</th><th className="pr-3 text-right">Extras</th><th className="pr-3 text-right">Noturno</th><th className="pr-3 text-right">Faltas</th>{origem === 'ponto' ? <th className="pr-3 text-right">Sem marcação</th> : null}<th className="pr-3 text-right">Férias/afast.</th><th className="pr-3 text-right">Banco</th></tr></thead>
                 <tbody className="divide-y divide-linha">
                   {f.linhas.map((l) => (
                     <tr key={l.colaboradorId}>
@@ -77,6 +91,7 @@ export default async function Folha({ params, searchParams }: { params: Promise<
                       <td className="pr-3 text-right">{horasTexto(l.extrasMin)}</td>
                       <td className="pr-3 text-right">{horasTexto(l.noturnasComputadasMin)}</td>
                       <td className="pr-3 text-right">{horasTexto(l.faltasMin)}</td>
+                      {origem === 'ponto' ? <td className="pr-3 text-right">{l.diasSemMarcacao > 0 ? `${l.diasSemMarcacao} d${l.faltasPontoMin > 0 ? ` (−${horasTexto(l.faltasPontoMin)})` : ''}` : '—'}</td> : null}
                       <td className="pr-3 text-right">{l.diasFerias + l.diasAfastamento} d</td>
                       <td className="pr-3 text-right">{horasTexto(l.bancoSaldoFinalMin)}</td>
                     </tr>
@@ -101,6 +116,19 @@ export default async function Folha({ params, searchParams }: { params: Promise<
         </Cartao>
       ) : null}
     </>
+  );
+}
+
+function Opcoes({ rotulo, itens, atual }: { rotulo: string; itens: { v: string; t: string; h: string }[]; atual: string }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <span className="font-semibold text-suave">{rotulo}</span>
+      <div role="group" aria-label={rotulo} className="inline-flex rounded-full border border-linha bg-fundo p-0.5">
+        {itens.map((i) => (
+          <Link key={i.v} href={i.h} aria-current={i.v === atual ? 'true' : undefined} className={`rounded-full px-3 py-1 font-semibold transition-colors ${i.v === atual ? 'bg-marca text-sobre-marca' : 'text-suave hover:text-tinta'}`}>{i.t}</Link>
+        ))}
+      </div>
+    </div>
   );
 }
 

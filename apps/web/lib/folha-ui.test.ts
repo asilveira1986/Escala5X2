@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lerCompetencia, mesEncerrado, nomeArquivo, rotuloMes } from './folha-ui';
+import { lerCompetencia, lerOpcoesFolha, mesEncerrado, nomeArquivo, rotuloMes } from './folha-ui';
 
 describe('fechamento: competência e arquivo', () => {
   it('o padrão é o mês passado; parâmetro inválido volta ao padrão', () => {
@@ -20,5 +20,18 @@ describe('fechamento: competência e arquivo', () => {
     expect(nomeArquivo('Açougue São João & Filhos', '2027-12', 1, 'xlsx')).toBe('folha-acougue-sao-joao-filhos-2027-12-v1.xlsx');
     expect(nomeArquivo('../../etc/passwd"; x', '2027-02', 1, 'csv')).toBe('folha-etc-passwd-x-2027-02-v1.csv');
     expect(nomeArquivo('###', '2027-02', 1, 'csv')).toBe('folha-empresa-2027-02-v1.csv');
+  });
+});
+
+describe('fechamento: origem das horas', () => {
+  it('sem escolha, usa o ponto quando o mês tem marcações importadas e a escala quando não tem', () => {
+    expect(lerOpcoesFolha(undefined, undefined, true)).toEqual({ origem: 'ponto', semMarcacao: 'escala' });
+    expect(lerOpcoesFolha(undefined, undefined, false)).toEqual({ origem: 'escala', semMarcacao: 'escala' });
+  });
+  it('a escolha explícita vale, e valor estranho volta ao padrão', () => {
+    expect(lerOpcoesFolha('escala', 'falta', true)).toEqual({ origem: 'escala', semMarcacao: 'falta' });
+    expect(lerOpcoesFolha('ponto', undefined, false).origem).toBe('ponto');
+    expect(lerOpcoesFolha('x', 'y', true)).toEqual({ origem: 'ponto', semMarcacao: 'escala' });
+    expect(lerOpcoesFolha(['ponto'], 5, false)).toEqual({ origem: 'escala', semMarcacao: 'escala' });
   });
 });

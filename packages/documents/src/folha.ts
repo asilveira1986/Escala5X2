@@ -6,10 +6,15 @@ export type LinhaFolha = {
   diasTrabalhados: number; trabalhadasMin: number; normaisMin: number; extrasMin: number; adicionalHePercentual: number;
   noturnasComputadasMin: number; domingoMin: number; feriadoMin: number; domingosTrabalhados: number; feriadosTrabalhados: number;
   faltasMin: number; diasFerias: number; diasAfastamento: number;
+  /** Só nos fechamentos pelo ponto (ausentes nos antigos). */
+  diasSemMarcacao?: number; faltasPontoMin?: number;
   bancoCreditoMin: number; bancoDebitoMin: number; bancoPagoMin: number; bancoSaldoFinalMin: number; bancoVencidoMin: number; valorVencidoCentavos: number;
 };
 export type FolhaFechada = {
   competencia: string;                                   // AAAA-MM
+  /** De onde vêm as horas: escala publicada (previstas) ou ponto (apuradas). Fechamentos antigos não têm: são da escala. */
+  origem?: 'escala' | 'ponto';
+  semMarcacao?: 'escala' | 'falta';
   linhas: LinhaFolha[];
   avisos: Array<{ severidade: string; mensagem: string }>;
 };
@@ -49,6 +54,9 @@ export const COLUNAS_GENERICO: Array<{ titulo: string; largura: number; valor: (
   { titulo: 'Banco: saldo final (h)', largura: 14, valor: (l) => horas(l.bancoSaldoFinalMin), formato: '0.00' },
   { titulo: 'Banco: vencido a pagar (h)', largura: 14, valor: (l) => horas(l.bancoVencidoMin), formato: '0.00' },
   { titulo: 'Valor estimado do vencido (R$)', largura: 16, valor: (l) => reais(l.valorVencidoCentavos), formato: '"R$" #,##0.00' },
+  // colunas do fechamento pelo ponto, no fim para não deslocar as demais em quem já mapeou o arquivo (0 nos fechamentos pela escala)
+  { titulo: 'Faltas pelo ponto (horas)', largura: 13, valor: (l) => horas(l.faltasPontoMin ?? 0), formato: '0.00' },
+  { titulo: 'Dias previstos sem marcação', largura: 13, valor: (l) => l.diasSemMarcacao ?? 0, formato: '0' },
 ];
 
 /** Texto de célula seguro para o Excel: não deixa o início virar fórmula (=, +, -, @). */
@@ -91,7 +99,9 @@ export async function gerarFolhaXlsx(f: FolhaFechada, meta: MetaFolha): Promise<
   resumo.addRows([
     ['Empresa', meta.empresa], ['CNPJ', meta.cnpj ?? ''], ['Competência', competenciaBr(f.competencia)], ['Versão do fechamento', meta.versao],
     ['Fechado em', new Date(meta.fechadoEm)], ['Código de integridade (SHA-256)', meta.hash], ['Colaboradores', f.linhas.length],
-    ['Origem das horas', 'Escala publicada (horas previstas; o ponto ainda não está integrado)'],
+    ['Origem das horas', f.origem === 'ponto'
+      ? `Ponto apurado (marcações do relógio). Dia previsto sem marcação: ${f.semMarcacao === 'falta' ? 'descontado como falta' : 'contado como previsto na escala'}.`
+      : 'Escala publicada (horas previstas, não apuradas pelo ponto)'],
     ['Aviso', 'Confira faltas, horas extras e adicionais antes de importar na folha; as regras de cada sindicato podem mudar o cálculo.'],
   ]);
   resumo.getCell('B6').numFmt = 'dd/mm/yyyy hh:mm';   // linha "Fechado em"
