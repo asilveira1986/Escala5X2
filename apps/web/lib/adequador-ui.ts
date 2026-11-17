@@ -97,3 +97,37 @@ export function compararJornadas(posicoesSemana: number[], equipe: number[], opc
     return { horas, dias, liquidaDiariaMin: liquidaDiariaMin(horas, dias), pessoasNecessarias: necessarias, equipe: total, sobra: saldo, horasEquipeSemana: total * horas };
   });
 }
+
+// ===== Fim da escala 6x1 (EC 141/2026) =====
+
+export type FaseJornada = { codigo: string; nome: string; inicio: string | null; fim: string | null; horas: number; dias: number; folgas: number; maxDiariaMin: number };
+export type RegraFase = { codigo: string; vigencia: string | null; parametros: Record<string, unknown> | null };
+const NOMES_FASE: Record<string, string> = { LEGADO_44H: 'Hoje: 6x1', EC141_F1: 'Fase 1: 5x2 com 42h', EC141_F2: 'Fase 2: 5x2 com 40h' };
+
+/** Fases legais da jornada, em ordem cronológica, a partir das regras cadastradas (nada de datas ou limites fixos na tela). */
+export function fasesDaJornada(regras: RegraFase[], parse: (v: string) => { inicio: string | null; fim: string | null }): FaseJornada[] {
+  const out: FaseJornada[] = [];
+  for (const cod of ['LEGADO_44H', 'EC141_F1', 'EC141_F2']) {
+    const r = regras.find((x) => x.codigo === cod);
+    if (!r?.parametros || !r.vigencia) continue;
+    let v: { inicio: string | null; fim: string | null };
+    try { v = parse(r.vigencia); } catch { continue; }
+    const p = r.parametros;
+    const semanal = Number(p.max_semanal_min);
+    if (!(semanal > 0)) continue;
+    const folgas = Number(p.folgas_semana) || 1;
+    out.push({ codigo: cod, nome: NOMES_FASE[cod] ?? cod, inicio: cod === 'LEGADO_44H' ? null : v.inicio, fim: v.fim, horas: semanal / 60, dias: folgas >= 2 ? 5 : 6, folgas, maxDiariaMin: Number(p.max_diaria_min) || 480 });
+  }
+  return out;
+}
+
+/** Fase em vigor numa data (AAAA-MM-DD). */
+export const faseNaData = (fases: FaseJornada[], data: string): FaseJornada | null =>
+  fases.find((f) => (f.inicio === null || f.inicio <= data) && (f.fim === null || data < f.fim)) ?? null;
+
+/** Horas líquidas por dia que a fase exige em 5 dias e se passa do limite diário (precisa de acordo de jornada diária estendida). */
+export function exigenciaDaFase(f: FaseJornada): { liquidaDiariaMin: number; excedeDiaria: boolean; alternativaHoras: number | null } {
+  const liq = liquidaDiariaMin(f.horas, f.dias);
+  const excede = liq > f.maxDiariaMin;
+  return { liquidaDiariaMin: liq, excedeDiaria: excede, alternativaHoras: excede ? (f.maxDiariaMin * f.dias) / 60 : null };
+}

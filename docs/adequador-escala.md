@@ -37,3 +37,14 @@ No passo **Jornada de trabalho** você informa as **horas por semana** (10 a 44;
 A tabela **Impacto da jornada** compara as jornadas mais comuns (44h em 6 ou 5 dias, 42h, 40h, 36h, 30h e a sua, se for outra) para o que você pediu nos setores: **pessoas necessárias** (posições por semana ÷ dias de trabalho, por setor) contra a **equipe** que existe — sobram ou faltam quantas. **Usar** aplica a jornada e os dias com um clique; **Voltar aos turnos como estão** desfaz. A geração mostra "Gerada com jornada de Xh por semana em N dias" e o teto semanal da lei continua valendo (o resultado avisa se um turno limitar os dias).
 
 **Limite importante:** a cobertura é por *turno* (quantas pessoas em cada turno). Ao **reduzir** a jornada, o turno fica mais curto e o fim do período deixa de ser coberto por aquele turno; o sistema não cria sozinho turnos escalonados para cobrir toda a faixa de funcionamento. Para manter o horário de atendimento, use turnos que se complementam (ex.: Manhã 08:00–15:00 e Tarde 12:00–19:00) e peça as pessoas em cada um.
+
+## Fim da escala 6x1 (EC 141/2026)
+
+Na etapa "Jornada de trabalho" há o painel **Adequar ao fim da escala 6x1**:
+
+- As fases (hoje 6x1 com 44h; fase 1 com 5x2 e 42h; fase 2 com 5x2 e 40h) são lidas da tabela `regra_jornada` (`LEGADO_44H`, `EC141_F1`, `EC141_F2`): datas, horas e folgas não estão fixas na tela.
+- Mostra quantos colaboradores ainda estão cadastrados em 6x1 (`tipo_escala`) e qual fase vale hoje.
+- "Adequar a Nh" preenche jornada e dias; o quadro "Impacto da jornada" mostra quantas pessoas a mais a cobertura exige.
+- Se a jornada escolhida passa do teto da fase vigente no mês da escala, aparece um alerta.
+- Fase 1: 42h em 5 dias dá mais de 8h por dia; a tela avisa que isso exige acordo coletivo de jornada diária estendida e oferece 40h (8h por dia) como alternativa sem acordo.
+- Exceções (terceirizada pública, regime compensatório, alta renda) não são calculadas aqui: confirmar com o jurídico. A data de início da fase 2 segue a confirmar.
