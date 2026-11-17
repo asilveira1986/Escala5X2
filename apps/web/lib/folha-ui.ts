@@ -18,3 +18,11 @@ export function nomeArquivo(razaoSocial: string, mes: string, versao: number, ex
   const slug = razaoSocial.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'empresa';
   return `folha-${slug}-${mes}-v${versao}.${extensao}`;
 }
+
+export type OrigemHoras = 'escala' | 'ponto';
+export type SemMarcacao = 'escala' | 'falta';
+/** Origem das horas e tratamento do dia sem marcação, a partir da URL (valores desconhecidos voltam ao padrão). */
+export function lerOpcoesFolha(origem: unknown, sem: unknown, temMarcacoes: boolean): { origem: OrigemHoras; semMarcacao: SemMarcacao } {
+  const o: OrigemHoras = origem === 'ponto' || origem === 'escala' ? origem : temMarcacoes ? 'ponto' : 'escala';
+  return { origem: o, semMarcacao: sem === 'falta' ? 'falta' : 'escala' };
+}

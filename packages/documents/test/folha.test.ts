@@ -22,7 +22,8 @@ describe('CSV da folha', () => {
     expect(c[6]).toBe('160');                         // 9600 min = 160 h
     expect(c[8]).toBe('4');                           // 240 min
     expect(c[12]).toBe('1,5');                        // 90 min computadas
-    expect(c.at(-1)).toBe('16,88');                   // R$ 16,88
+    expect(c.at(-3)).toBe('16,88');                   // R$ 16,88 (as colunas do ponto vêm depois e valem 0 na escala)
+    expect(c.slice(-2)).toEqual(['0', '0']);
     expect(ls[2]!.split(';')[1]).toBe('');            // sem matrícula: célula vazia
     expect(ls[2]!.split(';')[6]).toBe('1,5');
     expect(ls[0]!.split(';')).toHaveLength(COLUNAS_GENERICO.length);
@@ -80,5 +81,24 @@ describe('XLSX da folha', () => {
     await wb.xlsx.load((await gerarFolhaXlsx({ competencia: '2027-02', linhas: [], avisos: [] }, meta)) as unknown as ArrayBuffer);
     expect(wb.getWorksheet('Folha')!.rowCount).toBe(1);
     expect(wb.getWorksheet('Avisos')!.getRow(2).getCell(2).value).toBe('Nenhum aviso.');
+  });
+});
+
+describe('fechamento pelo ponto no arquivo', () => {
+  it('as colunas do ponto ficam no fim e saem preenchidas; o resumo diz de onde vêm as horas', async () => {
+    const f = { ...folha([linha({ faltasPontoMin: 480, diasSemMarcacao: 2 })]), origem: 'ponto' as const, semMarcacao: 'falta' as const };
+    const c = gerarFolhaCsv(f).trim().split('\r\n');
+    expect(c[0]!.split(';').slice(-2)).toEqual(['Faltas pelo ponto (horas)', 'Dias previstos sem marcação']);
+    expect(c[1]!.split(';').slice(-2)).toEqual(['8', '2']);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(Buffer.from(await gerarFolhaXlsx(f, meta)) as unknown as ArrayBuffer);
+    const origem = wb.getWorksheet('Fechamento')!.getRows(2, 12)!.map((r) => [r.getCell(1).value, r.getCell(2).value]).find(([k]) => k === 'Origem das horas')!;
+    expect(String(origem[1])).toMatch(/Ponto apurado.*descontado como falta/);
+  });
+  it('fechamento antigo (sem origem) continua saindo como escala', async () => {
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(Buffer.from(await gerarFolhaXlsx(folha([linha()]), meta)) as unknown as ArrayBuffer);
+    const origem = wb.getWorksheet('Fechamento')!.getRows(2, 12)!.map((r) => [r.getCell(1).value, r.getCell(2).value]).find(([k]) => k === 'Origem das horas')!;
+    expect(String(origem[1])).toMatch(/Escala publicada/);
   });
 });

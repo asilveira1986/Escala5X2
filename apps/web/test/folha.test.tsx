@@ -19,7 +19,7 @@ describe('BotaoFechar', () => {
     fireEvent.click(screen.getByRole('checkbox'));
     expect(confirmar.disabled).toBe(false);
     fireEvent.click(confirmar);
-    await waitFor(() => expect(fecharMes).toHaveBeenCalledWith('e', '2027-02', ''));
+    await waitFor(() => expect(fecharMes).toHaveBeenCalledWith('e', '2027-02', '', 'escala', 'escala'));
     expect(await screen.findByText('Mês fechado.')).toBeTruthy();
   });
   it('reabrir: exige motivo de pelo menos 5 caracteres', async () => {
@@ -34,7 +34,7 @@ describe('BotaoFechar', () => {
     fireEvent.change(screen.getByLabelText(/Motivo da reabertura/), { target: { value: 'Falta confirmada depois' } });
     expect(confirmar.disabled).toBe(false);
     fireEvent.click(confirmar);
-    await waitFor(() => expect(fecharMes).toHaveBeenCalledWith('e', '2027-02', 'Falta confirmada depois'));
+    await waitFor(() => expect(fecharMes).toHaveBeenCalledWith('e', '2027-02', 'Falta confirmada depois', 'escala', 'escala'));
   });
   it('mostra o erro do servidor e mantém o painel aberto', async () => {
     fecharMes.mockResolvedValue({ ok: false, erro: 'Só dá para fechar um mês já encerrado.' });
