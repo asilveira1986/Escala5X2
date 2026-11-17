@@ -19,3 +19,9 @@ Conceito: **tecnologia de gestão de pessoas** — limpa, confiável e leve de u
 ## Menu lateral
 
 O menu usa um **índigo profundo** (`#1E1B4B`) nos dois temas para se separar do conteúdo claro. Está na classe `.tema-menu` (`globals.css`), que só redefine os tokens dentro do menu; texto 13:1, texto suave 8:1 e item ativo 9:1 de contraste.
+
+## Telas
+
+- **Cabeçalho de página:** toda tela do menu abre com ícone, título e uma frase de apoio (`CabecalhoPagina`), vindos do próprio menu (`lib/menu.ts`: `descricao`). Telas com título próprio (Visão geral, Carteira, cadastros) ficam marcadas com `proprioTitulo`.
+- **Cartões:** `Cartao` aceita `icone` e `acoes` (botões no canto). `Metrica` mostra número + ícone. `IconeCaixa` é o quadradinho colorido do ícone.
+- **Visão geral da empresa:** identificação, quatro números, "Primeiros passos" com barra de progresso e as áreas do sistema (montadas a partir do menu, então novas telas aparecem lá sozinhas).

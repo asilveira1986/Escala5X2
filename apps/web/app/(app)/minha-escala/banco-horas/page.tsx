@@ -1,6 +1,5 @@
-import Link from 'next/link';
 import { EstadoVazio } from '@/components/EstadoVazio';
-import { Cartao } from '@/components/ui';
+import { CabecalhoPagina, Cartao } from '@/components/ui';
 import { exigirUsuario, linhas } from '@/lib/contexto';
 import { calcularSaldo, type Lancamento } from '@jc/servicos';
 import { dataDeInstante } from '@jc/rules-engine';
@@ -18,13 +17,9 @@ export default async function MeuBancoDeHoras() {
   const saldo = calcularSaldo(lancamentos, dataDeInstante(new Date()));
   return (
     <>
-      <div>
-        <Link href="/minha-escala" className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Minha escala</Link>
-        <h1 className="text-2xl font-bold leading-tight sm:text-3xl">Meu banco de horas</h1>
-        <p className="mt-1 text-suave">Horas a seu favor e quando elas vencem. Crédito vencido e não compensado é pago como hora extra.</p>
-      </div>
-      <Cartao titulo="Situação"><ResumoSaldo saldo={saldo} /></Cartao>
-      <Cartao titulo="Extrato">{lancamentos.length === 0 ? <EstadoVazio titulo="Nada lançado ainda">Quando houver horas no seu banco, elas aparecem aqui.</EstadoVazio> : <Extrato lancamentos={lancamentos} />}</Cartao>
+      <CabecalhoPagina icone="banco" titulo="Meu banco de horas" descricao="Horas a seu favor e quando elas vencem. Crédito vencido e não compensado é pago como hora extra." />
+      <Cartao icone="banco" titulo="Situação"><ResumoSaldo saldo={saldo} /></Cartao>
+      <Cartao icone="folha" titulo="Extrato">{lancamentos.length === 0 ? <EstadoVazio titulo="Nada lançado ainda">Quando houver horas no seu banco, elas aparecem aqui.</EstadoVazio> : <Extrato lancamentos={lancamentos} />}</Cartao>
     </>
   );
 }

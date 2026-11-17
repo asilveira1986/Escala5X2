@@ -53,13 +53,13 @@ export default async function EditarColaborador({ params }: { params: Promise<{ 
     <>
       {voltar}
       <div className="flex flex-wrap items-center gap-3">
-        <Titulo descricao={`Admitido em ${dataBr(colab.admissao)}`}>{colab.nome}</Titulo>
+        <Titulo icone="pessoas" descricao={`Admitido em ${dataBr(colab.admissao)}`}>{colab.nome}</Titulo>
         {desligado ? <Selo tom="vermelho">Desligado</Selo> : <Selo tom="verde">Ativo</Selo>}
       </div>
-      <Cartao titulo="Dados da pessoa">
+      <Cartao icone="pessoas" titulo="Dados da pessoa">
         <FormEditarPessoa empresaId={empresaId} colaboradorId={colaboradorId} valores={valoresPessoa} cpfMascarado={cpf.length === 11 ? `•••.•••.•••-${cpf.slice(9)}` : '—'} />
       </Cartao>
-      <Cartao titulo="Contrato e escala" subtitulo="Para mudar salário, jornada ou escala, informe a data em que passa a valer. O histórico é mantido.">
+      <Cartao icone="turnos" titulo="Contrato e escala" subtitulo="Para mudar salário, jornada ou escala, informe a data em que passa a valer. O histórico é mantido.">
         {desligado ? <Aviso>Colaborador desligado: reative para alterar o contrato.</Aviso> : atual
           ? <FormMudarContrato empresaId={empresaId} colaboradorId={colaboradorId} valores={valoresContrato} hoje={hoje} admissao={colab.admissao} />
           : <Aviso>Este colaborador não tem contrato cadastrado.</Aviso>}

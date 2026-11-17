@@ -34,10 +34,10 @@ export default async function DetalheDiagnostico({ params }: { params: Promise<{
         </div>
       </div>
       <PainelDiagnostico diagnostico={d} />
-      <Cartao titulo="Horas a cobrir por dia da semana" subtitulo="Estimativa para a fase 2, distribuída igualmente entre os dias."><GraficoDeficit minutosPorDia={porDia} /></Cartao>
-      <Cartao titulo="E se…? Simule uma solução" subtitulo="Escolha como cobrir as horas que deixam de ser trabalhadas. O sistema nunca simula redução de salário."><Simulador diagnosticoId={diagId} empresaId={empresaId} /></Cartao>
-      <Cartao titulo="Soluções lado a lado" subtitulo="O menor custo anual aparece destacado."><ComparacaoCenarios cenarios={cenarios} /></Cartao>
-      <Cartao titulo="Situação de cada pessoa"><TabelaItens itens={d.itens} /></Cartao>
+      <Cartao icone="cobertura" titulo="Horas a cobrir por dia da semana" subtitulo="Estimativa para a fase 2, distribuída igualmente entre os dias."><GraficoDeficit minutosPorDia={porDia} /></Cartao>
+      <Cartao icone="diagnostico" titulo="E se…? Simule uma solução" subtitulo="Escolha como cobrir as horas que deixam de ser trabalhadas. O sistema nunca simula redução de salário."><Simulador diagnosticoId={diagId} empresaId={empresaId} /></Cartao>
+      <Cartao icone="diagnostico" titulo="Soluções lado a lado" subtitulo="O menor custo anual aparece destacado."><ComparacaoCenarios cenarios={cenarios} /></Cartao>
+      <Cartao icone="pessoas" titulo="Situação de cada pessoa"><TabelaItens itens={d.itens} /></Cartao>
       <p className="text-xs text-suave">Estimativa para planejamento, calculada com as regras cadastradas e as premissas informadas. Não substitui parecer jurídico nem contábil. Nenhum cenário considera redução de salário.</p>
     </>
   );

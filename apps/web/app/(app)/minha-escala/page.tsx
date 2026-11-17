@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { EstadoVazio } from '@/components/EstadoVazio';
 import { BotaoInstalar } from '@/components/BotaoInstalar';
-import { Aviso, Cartao } from '@/components/ui';
+import { Aviso, CabecalhoPagina, Cartao } from '@/components/ui';
 import { exigirUsuario, linhas } from '@/lib/contexto';
 import { agruparPorEscala, proximoTurno, textoTurno, type LinhaMinhaEscala } from '@/lib/minha-escala';
 import { dataBr, diaDaSemana } from '@jc/rules-engine';
@@ -38,10 +38,7 @@ export default async function MinhaEscala() {
   }
   return (
     <>
-      <div>
-        <h1 className="text-2xl font-bold leading-tight sm:text-3xl">Minha escala</h1>
-        <p className="mt-1 text-suave">Olá, {nome.split(' ')[0]}. Aqui estão os seus horários publicados.</p>
-      </div>
+      <CabecalhoPagina icone="minha-escala" titulo="Minha escala" descricao={`Olá, ${nome.split(' ')[0]}. Aqui estão os seus horários publicados.`} />
 
       <BotaoInstalar />
 
@@ -53,7 +50,7 @@ export default async function MinhaEscala() {
       {pendentes.length > 0 ? <Aviso tipo="info">{pendentes.length === 1 ? 'Há uma escala aguardando a sua ciência.' : `Há ${pendentes.length} escalas aguardando a sua ciência.`} Leia e confirme abaixo.</Aviso> : null}
 
       {proximo ? (
-        <Cartao titulo="Seu próximo turno">
+        <Cartao icone="minha-escala" titulo="Seu próximo turno">
           <p className="text-xl font-bold">{proximo.dia.data === hoje ? 'Hoje' : `${DIAS_LONGOS[diaDaSemana(proximo.dia.data)]}, ${dataBr(proximo.dia.data)}`}</p>
           <p className="text-suave">{textoTurno(proximo.dia)}</p>
         </Cartao>

@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { caminhoParaEmpresa, COOKIE_EMPRESA, COOKIE_MENU, empresaDoCaminho, gravarEstadoMenu, migalhas, montarMenu, posicaoAtual, type EstadoMenu, type GrupoMenu, type ItemMenu, type PosicaoMenu, type SecaoMenu } from '@/lib/menu';
+import { entradaAtual, caminhoParaEmpresa, COOKIE_EMPRESA, COOKIE_MENU, empresaDoCaminho, gravarEstadoMenu, migalhas, montarMenu, posicaoAtual, type EstadoMenu, type GrupoMenu, type ItemMenu, type PosicaoMenu, type SecaoMenu } from '@/lib/menu';
 import { BotaoSair } from './BotaoSair';
+import { CabecalhoPagina } from './ui';
 import { IconeChevron, IconeEmpresa, IconeExpandir, IconeFechar, IconeMenu, IconeRecolher, MarcaLogo } from './icones';
 import { ICONES_MENU } from './menu-icones';
 
@@ -33,6 +34,10 @@ export function Shell({ email, empresas, ehGestor, temMinhaEscala, temCarteira, 
   const empresa = empresas.find((e) => e.id === empresaId) ?? null;
   const secoes = useMemo(() => montarMenu({ empresaId, ehGestor, temMinhaEscala, temCarteira }), [empresaId, ehGestor, temMinhaEscala, temCarteira]);
   const pos = posicaoAtual(secoes, pathname);
+  const entrada = entradaAtual(secoes, pos);
+  const limpo = pathname.split('?')[0]!.replace(/\/+$/, '') || '/';
+  // só nas páginas que são destino do menu (e têm descrição): as demais já trazem o próprio título
+  const cabecalho = entrada?.descricao && !entrada.proprioTitulo && pos?.hrefAtivo === limpo ? entrada : null;
   const crumbs = migalhas(secoes, pathname, empresa?.nome ?? (empresaId ? 'Empresa' : null));
 
   const alternarRecolhido = useCallback(() => setRecolhido((r) => { const n = !r; gravar({ recolhido: n, abertos }); return n; }), [abertos]);
@@ -90,7 +95,7 @@ export function Shell({ email, empresas, ehGestor, temMinhaEscala, temCarteira, 
               </ol>
             </nav>
           </header>
-          <main className={`mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 pt-4 sm:px-6 sm:pt-6 ${soColaborador ? 'pb-24 lg:pb-10' : 'pb-10'}`}>{children}</main>
+          <main className={`mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 pt-4 sm:px-6 sm:pt-6 ${soColaborador ? 'pb-24 lg:pb-10' : 'pb-10'}`}>{cabecalho ? <CabecalhoPagina titulo={cabecalho.rotulo} descricao={cabecalho.descricao} icone={cabecalho.icone} /> : null}{children}</main>
           {soColaborador ? <BarraInferior secoes={secoes} pos={pos} /> : null}
         </div>
       </div>

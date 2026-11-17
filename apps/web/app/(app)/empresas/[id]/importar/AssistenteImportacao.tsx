@@ -57,7 +57,7 @@ export function AssistenteImportacao({ empresaId }: { empresaId: string }) {
     return (
       <div className="space-y-4">
       <Etapas atual={1} />
-      <Cartao titulo="Envie a planilha da equipe" subtitulo="Aceitamos arquivos .csv e .xlsx de até 10 MB, com os nomes das colunas na primeira linha. Nada é salvo antes da sua confirmação.">
+      <Cartao icone="importar" titulo="Envie a planilha da equipe" subtitulo="Aceitamos arquivos .csv e .xlsx de até 10 MB, com os nomes das colunas na primeira linha. Nada é salvo antes da sua confirmação.">
         <form onSubmit={enviar} className="space-y-4">
           <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-linha bg-fundo px-4 py-8 text-center hover:border-marca">
             <span className="grid size-12 place-items-center rounded-full bg-marca-suave text-marca"><IconeEnviar width={24} height={24} /></span>
@@ -85,7 +85,7 @@ export function AssistenteImportacao({ empresaId }: { empresaId: string }) {
   return (
     <div className="space-y-4">
       <Etapas atual={validacao?.ok ? 3 : 2} />
-      <Cartao titulo="Confira as colunas" subtitulo="Já tentamos encaixar cada coluna da sua planilha. Ajuste o que estiver errado; os campos com * são obrigatórios.">
+      <Cartao icone="importar" titulo="Confira as colunas" subtitulo="Já tentamos encaixar cada coluna da sua planilha. Ajuste o que estiver errado; os campos com * são obrigatórios.">
         <p className="mb-4 text-sm font-semibold">{atual.totalLinhas} linhas encontradas.</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {CAMPOS_COLABORADOR.map((c) => (
@@ -106,7 +106,7 @@ export function AssistenteImportacao({ empresaId }: { empresaId: string }) {
         </div>
       </Cartao>
 
-      <Cartao titulo="Valide e confirme" subtitulo="A validação só confere os dados. Quando estiver tudo certo, importe.">
+      <Cartao icone="importar" titulo="Valide e confirme" subtitulo="A validação só confere os dados. Quando estiver tudo certo, importe.">
         <div className="flex flex-wrap gap-2">
           <Botao variante="secundario" onClick={validar} disabled={pendente}>{pendente ? 'Validando…' : 'Validar planilha'}</Botao>
           <Botao onClick={confirmar} disabled={pendente || !podeConfirmar}>Importar colaboradores válidos</Botao>

@@ -14,7 +14,7 @@ export default async function StatusImportacao({ params }: { params: Promise<{ i
   if (!imp) notFound();
   const r = imp.relatorio;
   return (
-    <Cartao titulo="Importação de colaboradores">
+    <Cartao icone="importar" titulo="Importação de colaboradores">
       {imp.status === 'processando' && (
         <>
           {/* Atualiza sozinho enquanto o worker processa */}

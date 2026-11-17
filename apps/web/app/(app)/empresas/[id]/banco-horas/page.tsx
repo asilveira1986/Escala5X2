@@ -47,7 +47,7 @@ export default async function BancoHoras({ params }: { params: Promise<{ id: str
   return (
     <>
       <Link href={`/empresas/${empresaId}/escalas`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Escalas</Link>
-      <Cartao titulo="Banco de horas" subtitulo="Saldo de cada colaborador, créditos que estão perto de vencer e horas vencidas a pagar como hora extra. Crédito só existe para quem tem acordo com banco de horas vigente.">
+      <Cartao icone="banco" titulo="Banco de horas" subtitulo="Saldo de cada colaborador, créditos que estão perto de vencer e horas vencidas a pagar como hora extra. Crédito só existe para quem tem acordo com banco de horas vigente.">
         {totalVencido > 0 ? <p className="mb-3 rounded-2xl bg-risco-bg px-3.5 py-2 text-sm font-semibold text-risco-fg">{horasTexto(totalVencido)} vencidas a pagar na empresa{totalValor > 0 ? ` (≈ ${moeda(totalValor)} com adicional)` : ''}.</p> : null}
         {linhasTabela.length === 0 ? <EstadoVazio titulo="Nenhum lançamento ainda">Abra um colaborador abaixo para lançar a primeira hora no banco.</EstadoVazio> : (
           <div className="overflow-x-auto">
@@ -70,7 +70,7 @@ export default async function BancoHoras({ params }: { params: Promise<{ id: str
         )}
       </Cartao>
       {podeGerir && semLancamento.length > 0 ? (
-        <Cartao titulo="Outros colaboradores" subtitulo="Ainda sem lançamentos no banco de horas.">
+        <Cartao icone="pessoas" titulo="Outros colaboradores" subtitulo="Ainda sem lançamentos no banco de horas.">
           <ul className="flex flex-wrap gap-2">
             {semLancamento.map((c) => <li key={c.id}><Link href={`/empresas/${empresaId}/banco-horas/${c.id}`} className="inline-flex min-h-9 items-center rounded-full border border-linha bg-cartao px-3 text-sm font-semibold hover:bg-marca-suave">{c.nome}</Link></li>)}
           </ul>
