@@ -196,3 +196,54 @@ describe('funcionamento, folgas fixas e férias', () => {
   });
 });
 
+
+describe('cobertura por faixa de horário', () => {
+  // Manhã 08–17 e Tarde 14–23 (intervalo 1h): faixas 08–14 (só a manhã), 14–17 (as duas) e 17–23 (só a tarde)
+  const faixas = (a: number[], b: number[], c: number[]) => [
+    { id: 'f1', inicioMin: 480, fimMin: 840, minimo: a }, { id: 'f2', inicioMin: 840, fimMin: 1020, minimo: b }, { id: 'f3', inicioMin: 1020, fimMin: 1380, minimo: c },
+  ];
+  const zeros = Array(7).fill(0) as number[];
+  const turnos = [manha(zeros), tarde(zeros)];
+
+  it('equipe suficiente: cada faixa tem o número pedido de pessoas em todos os dias', () => {
+    const r = adequarEscala(ent(16), { turnos, faixas: faixas(todos(3), todos(5), todos(3)) });
+    expect(r.resumo.faltaTotal).toBe(0);
+    expect(r.cobertura.every((c) => c.faixaInicioMin !== undefined && c.alocado >= c.necessario)).toBe(true);
+    expect(temBloqueio(r.violacoes)).toBe(false);
+  });
+
+  it('a faixa do meio soma as duas equipes: pedir 6 em 14–17 com 3+3 nos extremos fecha com a equipe certa', () => {
+    const r = adequarEscala(ent(16), { turnos, faixas: faixas(todos(3), todos(6), todos(3)) });
+    expect(r.resumo.faltaTotal).toBe(0);
+    expect(r.cobertura.filter((c) => c.turnoId === 'f2').every((c) => c.alocado >= 6)).toBe(true);
+  });
+
+  it('equipe curta: mostra a faixa e o dia em que falta gente e o motor concorda', () => {
+    const r = adequarEscala(ent(6), { turnos, faixas: faixas(todos(3), todos(4), todos(3)) });
+    expect(r.resumo.faltaTotal).toBeGreaterThan(0);
+    const f = r.cobertura.find((c) => c.falta > 0)!;
+    expect(['f1', 'f2', 'f3']).toContain(f.turnoId);
+    expect(r.violacoes.some((v) => v.codigo === 'COBERTURA_MINIMA')).toBe(true);
+    expect(temBloqueio(r.violacoes.filter((v) => v.codigo !== 'COBERTURA_MINIMA'))).toBe(false);
+  });
+
+  it('faixa que nenhum turno cobre inteira: avisa e aparece como falta', () => {
+    const r = adequarEscala(ent(6), { turnos: [manha(zeros)], faixas: [{ id: 'noite', inicioMin: 1080, fimMin: 1320, minimo: todos(1) }] });
+    expect(r.avisos.join(' ')).toMatch(/Nenhum turno cobre toda a faixa 18:00–22:00/);
+    expect(r.resumo.percentualAtendido).toBe(0);
+  });
+
+  it('turnos parciais cobrem juntos uma faixa longa (08–23 só presente quando há alguém em cada trecho)', () => {
+    const r = adequarEscala(ent(16), { turnos, faixas: [{ id: 'dia', inicioMin: 480, fimMin: 1380, minimo: todos(2) }] });
+    expect(r.avisos.join(' ')).not.toMatch(/Nenhum turno cobre/);
+    expect(r.resumo.faltaTotal).toBe(0);
+  });
+
+  it('é determinístico e valida as faixas', () => {
+    const p = { turnos, faixas: faixas(todos(3), todos(5), todos(3)) };
+    expect(adequarEscala(ent(16), p).alocacoes).toEqual(adequarEscala(ent(16), p).alocacoes);
+    expect(() => validarTurnosAdequacao(turnos, [{ id: 'x', inicioMin: 600, fimMin: 500, minimo: todos(1) }])).toThrow(ErroAdequacao);
+    expect(() => validarTurnosAdequacao(turnos, [{ id: 'x', inicioMin: 500, fimMin: 600, minimo: zeros }])).toThrow(/pelo menos um dia/);
+    expect(() => validarTurnosAdequacao(turnos, [{ id: 'x', inicioMin: 500, fimMin: 600, minimo: [1] }])).toThrow(/7 números/);
+  });
+});

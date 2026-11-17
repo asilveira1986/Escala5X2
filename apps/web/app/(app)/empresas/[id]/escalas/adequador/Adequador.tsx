@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { Aviso, Botao, Cartao, classeCampo, Metrica } from '@/components/ui';
-import { exigenciaDaFase, faseNaData, type FaseJornada, balancoDaEquipe, compararJornadas, CORES_TURNO, DIAS_TELA, diasDaJornada, frasePessoas, FUNCIONAMENTO_PADRAO, horasTexto, inicialDoTurno, liquidaDiariaMin, liquidoDoTurno, PRESETS_JORNADA, sugerirCobertura, turnoEfetivo, type TurnoBase } from '@/lib/adequador-ui';
+import { faixasPelosTurnos, faixaValida, posicoesPorFaixa, type FaixaForm, exigenciaDaFase, faseNaData, type FaseJornada, balancoDaEquipe, compararJornadas, CORES_TURNO, DIAS_TELA, diasDaJornada, frasePessoas, FUNCIONAMENTO_PADRAO, horasTexto, inicialDoTurno, liquidaDiariaMin, liquidoDoTurno, PRESETS_JORNADA, sugerirCobertura, turnoEfetivo, type TurnoBase } from '@/lib/adequador-ui';
 import { dataBr, diaDaSemana } from '@jc/rules-engine';
 import { gerarEscalas, type DadosSetor, type ResultadoGeracao } from './actions';
 
+const hm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
 export type ModeloBase = { id: string; nome: string; inicio: string; fim: string; intervalo: number };
 type Pessoa = { id: string; nome: string };
 type SetorProp = { id: string; nome: string; pessoas: Pessoa[] };
@@ -40,6 +41,9 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
   const [incluidos, setIncluidos] = useState<Set<string>>(() => new Set(grupos.filter((g) => g.pessoas.length > 0).map((g) => g.id)));
   const [minimos, setMinimos] = useState<Record<string, Record<string, number[]>>>({});
   const [folgasFixas, setFolgasFixas] = useState<Record<string, number[]>>({});
+  const [modo, setModo] = useState<'turno' | 'faixa'>('turno');
+  const [faixas, setFaixas] = useState<FaixaForm[]>([]);
+  const [minimosFaixa, setMinimosFaixa] = useState<Record<string, Record<string, number[]>>>({});
   const [resultado, setResultado] = useState<ResultadoGeracao | null>(null);
   const [pendente, iniciar] = useTransition();
   const jornadaNum = (() => { const n = Number(jornada.replace(',', '.')); return jornada.trim() !== '' && Number.isFinite(n) && n >= 10 && n <= 60 ? n : null; })();
@@ -52,17 +56,30 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
   const { ini: mesIni, fim: mesFim } = limitesMes(mes);
 
   const minimoDe = (setor: string, turno: string): number[] => minimos[setor]?.[turno] ?? sugerirCobertura(grupos.find((g) => g.id === setor)?.pessoas.length ?? 0, turnos.length, diasNum).map((v, d) => (funcionamento[d] ? v : 0));
+  // ---- cobertura por faixa de horário
+  const faixaDosTurnos = () => faixasPelosTurnos(turnosEf).map((f) => ({ chave: novaChave(), ...f }));
+  const ativarFaixas = () => { setModo('faixa'); if (faixas.length === 0) setFaixas(faixaDosTurnos().map(({ chave, inicio, fim }) => ({ chave, inicio, fim }))); };
+  const sugestaoFaixa = (setor: string, f: FaixaForm): number[] => {
+    const nCobrem = faixasPelosTurnos(turnosEf).find((x) => x.inicio === f.inicio && x.fim === f.fim)?.turnos ?? 1;
+    return sugerirCobertura(grupos.find((g) => g.id === setor)?.pessoas.length ?? 0, turnos.length, diasNum).map((v, d) => (funcionamento[d] ? v * nCobrem : 0));
+  };
+  const minimoFaixaDe = (setor: string, f: FaixaForm): number[] => minimosFaixa[setor]?.[f.chave] ?? sugestaoFaixa(setor, f);
+  const definirMinimoFaixa = (setor: string, f: FaixaForm, indice: number, valor: string) => setMinimosFaixa((m) => {
+    const novo = minimoFaixaDe(setor, f).map((v, i) => (i === indice ? Math.max(0, Math.min(500, Math.floor(Number(valor) || 0))) : v));
+    return { ...m, [setor]: { ...(m[setor] ?? {}), [f.chave]: novo } };
+  });
+  const alterarFaixa = (chave: string, patch: Partial<FaixaForm>) => setFaixas((l) => l.map((f) => (f.chave === chave ? { ...f, ...patch } : f)));
   const definirMinimo = (setor: string, turno: string, indice: number, valor: string) => setMinimos((m) => {
     const atual = minimoDe(setor, turno);
     const novo = atual.map((v, i) => (i === indice ? Math.max(0, Math.min(500, Math.floor(Number(valor) || 0))) : v));
     return { ...m, [setor]: { ...(m[setor] ?? {}), [turno]: novo } };
   });
-  const sugerir = (setor: string) => setMinimos((m) => {
+  const sugerir = (setor: string) => modo === 'faixa' ? setMinimosFaixa((m) => { const n = { ...m }; delete n[setor]; return n; }) : setMinimos((m) => {
     const g = grupos.find((x) => x.id === setor)!;
     const base = sugerirCobertura(g.pessoas.length, turnos.length, diasNum);
     return { ...m, [setor]: Object.fromEntries(turnos.map((t) => [t.chave, base.map((v, d) => (funcionamento[d] ? v : 0))])) };
   });
-  const copiarPara = (de: string) => setMinimos((m) => ({ ...m, ...Object.fromEntries(grupos.filter((g) => g.id !== de && incluidos.has(g.id)).map((g) => [g.id, Object.fromEntries(turnos.map((t) => [t.chave, [...minimoDe(de, t.chave)]]))])) }));
+  const copiarPara = (de: string) => modo === 'faixa' ? setMinimosFaixa((m) => ({ ...m, ...Object.fromEntries(grupos.filter((g) => g.id !== de && incluidos.has(g.id)).map((g) => [g.id, Object.fromEntries(faixas.map((f) => [f.chave, [...minimoFaixaDe(de, f)]]))])) })) : setMinimos((m) => ({ ...m, ...Object.fromEntries(grupos.filter((g) => g.id !== de && incluidos.has(g.id)).map((g) => [g.id, Object.fromEntries(turnos.map((t) => [t.chave, [...minimoDe(de, t.chave)]]))])) }));
 
   const alterarTurno = (chave: string, f: Partial<TurnoBase>) => setTurnos((l) => l.map((t) => {
     if (t.chave !== chave) return t;
@@ -84,7 +101,8 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
 
   const invalido = turnosEf.some((t) => liquidoDoTurno(t) === null || !t.nome.trim());
   const escolhidos = grupos.filter((g) => incluidos.has(g.id) && g.pessoas.length > 0);
-  const semCobertura = escolhidos.every((g) => turnos.every((t) => minimoDe(g.id, t.chave).every((m, d) => m === 0 || !funcionamento[d])));
+  const faixaInvalida = modo === 'faixa' && (faixas.length === 0 || faixas.some((f) => !faixaValida(f)));
+  const semCobertura = modo === 'faixa' ? escolhidos.every((g) => faixas.every((f) => minimoFaixaDe(g.id, f).every((m, d) => m === 0 || !funcionamento[d]))) : escolhidos.every((g) => turnos.every((t) => minimoDe(g.id, t.chave).every((m, d) => m === 0 || !funcionamento[d])));
   const abertos = funcionamento.filter(Boolean).length;
 
   const gerar = () => iniciar(async () => {
@@ -93,20 +111,22 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
     const r = await gerarEscalas({
       empresaId, mes, diasPorSemana: dias ? Number(dias) : jornadaNum ? diasNum : null, funcionamento, fecharNosFeriados: fecharFeriados,
       turnos: turnosEf.map((t) => ({ chave: t.chave, nome: t.nome, inicio: t.inicio, fim: t.fim, intervalo: t.intervalo, modeloId: t.fim === (turnos.find((o) => o.chave === t.chave)?.fim) ? t.modeloId : null })),
-      setores: escolhidos.map((g) => ({ setorId: g.id === CHAVE_TODOS ? null : g.id, nome: g.nome, minimos: Object.fromEntries(turnos.map((t) => [t.chave, minimoDe(g.id, t.chave)])) })),
+      ...(modo === 'faixa' ? { faixas: faixas.map((f) => ({ chave: f.chave, inicio: f.inicio, fim: f.fim })) } : {}),
+      setores: escolhidos.map((g) => ({ setorId: g.id === CHAVE_TODOS ? null : g.id, nome: g.nome, minimos: Object.fromEntries(turnos.map((t) => [t.chave, minimoDe(g.id, t.chave)])), ...(modo === 'faixa' ? { minimosFaixas: Object.fromEntries(faixas.map((f) => [f.chave, minimoFaixaDe(g.id, f)])) } : {}) })),
       folgasFixas: Object.fromEntries(Object.entries(folgasFixas).filter(([p, d]) => d.length > 0 && pessoasEscolhidas.has(p))),
     });
     setResultado(r);
   });
 
-  const posicoesDoSetor = (id: string) => turnos.reduce((t, tn) => t + minimoDe(id, tn.chave).reduce((a, m, d) => a + (funcionamento[d] ? m : 0), 0), 0);
+  const posicoesDoSetor = (id: string) => modo === 'faixa' ? posicoesPorFaixa(faixas.map((f) => minimoFaixaDe(id, f)), funcionamento).reduce((a, b) => a + b, 0) : turnos.reduce((t, tn) => t + minimoDe(id, tn.chave).reduce((a, m, d) => a + (funcionamento[d] ? m : 0), 0), 0);
   const comparacao = compararJornadas(escolhidos.map((g) => posicoesDoSetor(g.id)), escolhidos.map((g) => g.pessoas.length),
     jornadaNum && !PRESETS_JORNADA.some((p) => p.horas === jornadaNum && p.dias === diasNum) ? [{ horas: jornadaNum, dias: diasNum }, ...PRESETS_JORNADA] : PRESETS_JORNADA);
-  const resumoSetores = escolhidos.map((g) => ({ g, b: balancoDaEquipe(turnos.map((t) => ({ minimo: minimoDe(g.id, t.chave).map((m, d) => (funcionamento[d] ? m : 0)) })), g.pessoas.length, diasNum) }));
+  const resumoSetores = escolhidos.map((g) => ({ g, b: balancoDaEquipe(modo === 'faixa' ? [{ minimo: posicoesPorFaixa(faixas.map((f) => minimoFaixaDe(g.id, f)), funcionamento) }] : turnos.map((t) => ({ minimo: minimoDe(g.id, t.chave).map((m, d) => (funcionamento[d] ? m : 0)) })), g.pessoas.length, diasNum) }));
   const pendencias = [
     ...(abertos === 0 ? ['Marque os dias de funcionamento.'] : []),
     ...(jornadaNum && jornadaNum > 44 ? ['A jornada máxima legal é de 44 horas por semana.'] : []),
     ...(invalido ? ['Confira os horários dos turnos.'] : []),
+    ...(faixaInvalida ? ['Confira as faixas de horário.'] : []),
     ...(escolhidos.length === 0 ? ['Escolha ao menos um setor com pessoas.'] : []),
     ...(escolhidos.length > 0 && semCobertura ? ['Informe quantas pessoas cada turno precisa.'] : []),
   ];
@@ -224,6 +244,38 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
           </Etapa>
 
           <Etapa n={4} titulo="Setores e pessoas necessárias" texto="Quantas pessoas precisam estar em cada turno, em cada dia. O sistema aloca a equipe do setor para completar o time nesses momentos.">
+            <fieldset className="mb-4">
+              <legend className="text-sm font-semibold">Como informar a cobertura</legend>
+              <div className="mt-2 inline-flex rounded-xl border border-linha p-0.5 text-sm" role="radiogroup" aria-label="Como informar a cobertura">
+                <button type="button" role="radio" aria-checked={modo === 'turno'} onClick={() => setModo('turno')} className={`rounded-lg px-3 py-1.5 font-semibold ${modo === 'turno' ? 'bg-marca text-white' : 'text-suave hover:bg-marca-suave'}`}>Por turno</button>
+                <button type="button" role="radio" aria-checked={modo === 'faixa'} onClick={ativarFaixas} className={`rounded-lg px-3 py-1.5 font-semibold ${modo === 'faixa' ? 'bg-marca text-white' : 'text-suave hover:bg-marca-suave'}`}>Por faixa de horário</button>
+              </div>
+              <p className="mt-2 text-xs text-suave">{modo === 'faixa' ? 'Informe quantas pessoas precisam estar presentes em cada faixa do dia (ex.: 12h às 14h, o pico do almoço). O sistema distribui a equipe pelos turnos e dias para fechar cada faixa. O intervalo de refeição não é descontado da presença.' : 'Informe quantas pessoas cada turno precisa. Se a demanda muda ao longo do dia, use a cobertura por faixa de horário.'}</p>
+            </fieldset>
+            {modo === 'faixa' ? (
+              <section aria-label="Faixas de horário" className="mb-4 rounded-xl border border-linha p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-semibold">Faixas de horário</h3>
+                  <span className="ml-auto flex gap-1">
+                    <Botao variante="secundario" onClick={() => setFaixas(faixaDosTurnos().map(({ chave, inicio, fim }) => ({ chave, inicio, fim })))}>Sugerir pelos turnos</Botao>
+                    {faixas.length < 8 ? <Botao variante="secundario" onClick={() => setFaixas((l) => [...l, { chave: novaChave(), inicio: '12:00', fim: '14:00' }])}>Adicionar faixa</Botao> : null}
+                  </span>
+                </div>
+                <ul className="mt-3 space-y-2">
+                  {faixas.map((f, i) => (
+                    <li key={f.chave} className="flex flex-wrap items-center gap-2">
+                      <span className="w-14 text-xs font-semibold uppercase text-suave">Faixa {i + 1}</span>
+                      <input type="time" value={f.inicio} onChange={(e) => alterarFaixa(f.chave, { inicio: e.target.value })} aria-label={`Início da faixa ${i + 1}`} className={`${campo} w-28`} />
+                      <span className="text-suave">até</span>
+                      <input type="time" value={f.fim} onChange={(e) => alterarFaixa(f.chave, { fim: e.target.value })} aria-label={`Fim da faixa ${i + 1}`} className={`${campo} w-28`} />
+                      {!faixaValida(f) ? <span className="text-xs text-risco-fg">horário inválido</span> : null}
+                      <button type="button" onClick={() => setFaixas((l) => l.filter((x) => x.chave !== f.chave))} aria-label={`Remover a faixa ${i + 1}`} className="rounded-lg px-2.5 py-1.5 text-sm font-semibold text-risco-fg hover:bg-risco-bg">Remover</button>
+                    </li>
+                  ))}
+                </ul>
+                {faixas.length === 0 ? <p className="mt-2 text-sm text-atencao-fg">Adicione ao menos uma faixa.</p> : null}
+              </section>
+            ) : null}
             {semSetor > 0 ? <div className="mb-3"><Aviso>{semSetor} pessoa(s) sem setor ficam de fora. Defina o setor em <strong>Equipe › Colaboradores › Editar</strong>.</Aviso></div> : null}
             <div className="space-y-3">
               {grupos.map((g) => {
@@ -236,7 +288,30 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
                       <span className="text-sm text-suave">{g.pessoas.length} pessoa{g.pessoas.length === 1 ? '' : 's'}{g.pessoas.length === 0 ? ' · cadastre a equipe para gerar' : ''}</span>
                       {on && g.pessoas.length > 0 ? <span className="ml-auto flex gap-1"><Botao variante="secundario" onClick={() => sugerir(g.id)}>Sugerir</Botao>{grupos.filter((x) => incluidos.has(x.id)).length > 1 ? <Botao variante="secundario" onClick={() => copiarPara(g.id)}>Copiar para os outros</Botao> : null}</span> : null}
                     </div>
-                    {on && g.pessoas.length > 0 ? (
+                    {on && g.pessoas.length > 0 && modo === 'faixa' ? (
+                      <div className="border-t border-linha px-4 py-3">
+                        <div className="overflow-x-auto">
+                          <table className="text-center text-xs">
+                            <thead><tr><th className="pr-4 text-left font-semibold uppercase tracking-wide text-suave">Faixa</th>{DIAS_TELA.map((d) => <th key={d.indice} className={`px-1 pb-1 font-semibold uppercase tracking-wide ${funcionamento[d.indice] ? 'text-suave' : 'text-suave/40'}`}>{d.rotulo}</th>)}</tr></thead>
+                            <tbody>
+                              {faixas.map((f) => (
+                                <tr key={f.chave}>
+                                  <th scope="row" className="whitespace-nowrap pr-4 text-left text-sm font-semibold">{f.inicio}–{f.fim}</th>
+                                  {DIAS_TELA.map((d) => (
+                                    <td key={d.indice} className="p-0.5">
+                                      <input type="number" min={0} max={500} disabled={!funcionamento[d.indice]} value={funcionamento[d.indice] ? minimoFaixaDe(g.id, f)[d.indice] : 0} onChange={(e) => definirMinimoFaixa(g.id, f, d.indice, e.target.value)}
+                                        aria-label={`${g.nome}, faixa ${f.inicio}–${f.fim}: pessoas na ${d.rotulo}`} className={`${classeCampo} !mt-0 !min-h-9 !w-14 !px-1 text-center ${funcionamento[d.indice] ? '' : 'bg-fundo'}`} />
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <p className={`mt-2 text-xs ${b.sobra < 0 ? 'font-semibold text-atencao-fg' : 'text-suave'}`}>{frasePessoas(b, g.pessoas.length, diasNum)}</p>
+                      </div>
+                    ) : null}
+                    {on && g.pessoas.length > 0 && modo === 'turno' ? (
                       <div className="border-t border-linha px-4 py-3">
                         <div className="overflow-x-auto">
                           <table className="text-center text-xs">
@@ -356,7 +431,7 @@ function ResultadoAdequacao({ r, empresaId }: { r: DadosSetor; empresaId: string
       </Aviso>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Metrica icone="cobertura" tom={ok ? 'ok' : 'atencao'} rotulo="Cobertura atendida" valor={`${r.resumo.percentualAtendido.toLocaleString('pt-BR')}%`} texto={`${r.resumo.alocadoTotal} de ${r.resumo.necessarioTotal} posições`} />
-        <Metrica icone="calendario" tom={r.resumo.diasComFalta > 0 ? 'atencao' : 'neutro'} rotulo="Dias com falta de gente" valor={r.resumo.diasComFalta} texto="dia × turno descobertos" />
+        <Metrica icone="calendario" tom={r.resumo.diasComFalta > 0 ? 'atencao' : 'neutro'} rotulo="Dias com falta de gente" valor={r.resumo.diasComFalta} texto="dia × turno (ou faixa) descobertos" />
         <Metrica icone="pessoas" rotulo="Pessoas alocadas" valor={r.resumo.pessoasAlocadas} texto="com turno fixo no mês" />
         <Metrica icone="diagnostico" tom={r.bloqueios > 0 ? 'risco' : 'ok'} rotulo="Bloqueios da lei" valor={r.bloqueios} texto={r.alertas > 0 ? `${r.alertas} alerta(s)` : 'nenhum alerta'} />
       </div>
@@ -390,7 +465,7 @@ function ResultadoAdequacao({ r, empresaId }: { r: DadosSetor; empresaId: string
       {r.faltas.length > 0 ? (
         <Cartao icone="cobertura" titulo="Onde falta gente" subtitulo="Dias e turnos que a equipe atual não cobre. Reduza a cobertura, ajuste os horários ou reforce a equipe.">
           <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
-            {r.faltas.map((f) => <li key={`${f.data}${f.turnoId}`} className="flex justify-between gap-3 rounded-xl bg-atencao-bg px-3 py-1.5 text-atencao-fg"><span>{dataBr(f.data)} · {r.turnos.find((t) => t.id === f.turnoId)?.nome}</span><strong>{f.alocado}/{f.necessario}</strong></li>)}
+            {r.faltas.map((f) => <li key={`${f.data}${f.turnoId}`} className="flex justify-between gap-3 rounded-xl bg-atencao-bg px-3 py-1.5 text-atencao-fg"><span>{dataBr(f.data)} · {f.faixaInicioMin !== undefined && f.faixaFimMin !== undefined ? `${hm(f.faixaInicioMin)}–${hm(f.faixaFimMin % 1440)}` : r.turnos.find((t) => t.id === f.turnoId)?.nome}</span><strong>{f.alocado}/{f.necessario}</strong></li>)}
           </ul>
         </Cartao>
       ) : null}

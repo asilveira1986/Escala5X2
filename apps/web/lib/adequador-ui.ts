@@ -131,3 +131,28 @@ export function exigenciaDaFase(f: FaseJornada): { liquidaDiariaMin: number; exc
   const excede = liq > f.maxDiariaMin;
   return { liquidaDiariaMin: liq, excedeDiaria: excede, alternativaHoras: excede ? (f.maxDiariaMin * f.dias) / 60 : null };
 }
+
+// ===== Cobertura por faixa de horário =====
+
+export type FaixaForm = { chave: string; inicio: string; fim: string };
+const emMin = (ini: string, fim: string): { i: number; f: number } | null => { const i = minutosDeHora(ini), f = minutosDeHora(fim); return i === null || f === null ? null : { i, f: f <= i ? f + 1440 : f }; };
+
+/** Faixas sugeridas: os trechos entre as entradas e saídas dos turnos, com quantos turnos cobrem cada trecho (trechos sem turno ficam de fora). */
+export function faixasPelosTurnos(turnos: Pick<TurnoBase, 'inicio' | 'fim'>[]): { inicio: string; fim: string; turnos: number }[] {
+  const ts = turnos.map((t) => emMin(t.inicio, t.fim)).filter((x): x is { i: number; f: number } => x !== null);
+  const cortes = [...new Set(ts.flatMap((t) => [t.i, t.f]))].sort((a, b) => a - b);
+  const out: { inicio: string; fim: string; turnos: number }[] = [];
+  for (let k = 0; k < cortes.length - 1; k++) {
+    const n = ts.filter((t) => t.i <= cortes[k]! && t.f >= cortes[k + 1]!).length;
+    if (n > 0) out.push({ inicio: horaDeMinutos(cortes[k]!), fim: horaDeMinutos(cortes[k + 1]! % 1440), turnos: n });
+  }
+  return out;
+}
+
+/** Faixa válida: horários certos e terminando depois de começar (passando da meia-noite se preciso), no máximo 24 h. */
+export const faixaValida = (f: Pick<FaixaForm, 'inicio' | 'fim'>): boolean => emMin(f.inicio, f.fim) !== null && f.inicio !== f.fim;
+
+/** Pessoas-dia por semana que as faixas exigem no mínimo: em cada dia aberto, o pico entre as faixas (alguém precisa estar presente naquele momento). */
+export function posicoesPorFaixa(minimosPorFaixa: number[][], aberto: boolean[]): number[] {
+  return Array.from({ length: 7 }, (_, d) => (aberto[d] ? Math.max(0, ...minimosPorFaixa.map((m) => m[d] ?? 0)) : 0));
+}
