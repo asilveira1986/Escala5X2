@@ -156,46 +156,48 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
           <Etapa n={2} titulo="Jornada de trabalho" texto="Aumente ou reduza a jornada e veja na hora quantas pessoas cada uma exige. Os turnos que seguem a jornada têm a saída ajustada sozinha.">
             {fases.length > 1 ? (
               <section aria-label="Fim da escala 6x1" className="mb-6 rounded-2xl border border-linha bg-fundo/60 p-4 sm:p-5">
-                <div className="flex flex-wrap items-start gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <IconeCaixa icone="calendario" tom="violeta" />
                   <div className="min-w-0 flex-1">
                     <h3 className="text-base font-semibold">Adequar ao fim da escala 6x1</h3>
-                    <p className="text-sm text-suave">Emenda Constitucional 141/2026 · escolha a fase e a jornada e os dias de trabalho são preenchidos.</p>
+                    <p className="text-sm text-suave">Emenda Constitucional 141/2026: escolha a fase e a jornada e os dias já são preenchidos.</p>
                   </div>
-                  {em6x1 > 0 ? <span className="rounded-full bg-ambar-bg px-3 py-1 text-xs font-semibold text-ambar-fg"><strong>{em6x1} de {totalEquipe}</strong> em 6x1 hoje</span> : null}
+                  {em6x1 > 0 ? <span className="rounded-full bg-ambar-bg px-3 py-1 text-xs font-semibold text-ambar-fg">{em6x1} de {totalEquipe} pessoas em 6x1</span> : null}
                 </div>
-                <ol className="mt-4 grid gap-3 md:grid-cols-3">
+                <ol className="mt-4 space-y-2.5">
                   {fases.map((f, fi) => {
                     const ex = exigenciaDaFase(f);
                     const vigente = !!hoje && faseNaData(fases, hoje)?.codigo === f.codigo;
                     const emUso = jornadaNum === f.horas && diasNum === f.dias;
                     const br = (d: string) => d.split('-').reverse().join('/');
-                    const periodo = f.inicio && f.fim ? `${br(f.inicio)} a ${br(f.fim)}` : f.inicio ? `a partir de ${br(f.inicio)}` : f.fim ? `até ${br(f.fim)}` : '';
+                    const periodo = f.inicio && f.fim ? `${br(f.inicio)} a ${br(f.fim)}` : f.inicio ? `A partir de ${br(f.inicio)}` : f.fim ? `Até ${br(f.fim)}` : '';
                     const cor = f.dias >= 6 ? 'bg-ambar-bg text-ambar-fg' : fi === 1 ? 'bg-azul-bg text-azul-fg' : 'bg-verde-bg text-verde-fg';
                     return (
-                      <li key={f.codigo} className={`flex flex-col rounded-2xl border bg-cartao p-4 ${vigente ? 'border-marca ring-1 ring-marca' : 'border-linha'}`}>
-                        <div className="flex items-center gap-2">
-                          <span className={`grid size-7 place-items-center rounded-lg text-xs font-bold ${cor}`}>{fi + 1}</span>
-                          <p className="text-sm font-semibold">{f.nome}</p>
-                          {vigente ? <span className="ml-auto rounded-full bg-marca-suave px-2 py-0.5 text-[10px] font-bold uppercase text-marca">hoje</span> : null}
+                      <li key={f.codigo} className={`rounded-2xl border bg-cartao px-4 py-3 ${vigente ? 'border-marca ring-1 ring-marca' : 'border-linha'}`}>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 sm:flex-nowrap">
+                          <span className={`grid size-9 shrink-0 place-items-center rounded-xl text-sm font-bold ${cor}`}>{fi + 1}</span>
+                          <div className="min-w-0 flex-1 basis-40">
+                            <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">{f.nome}{vigente ? <span className="rounded-full bg-marca-suave px-2 py-0.5 text-[10px] font-bold uppercase text-marca">hoje</span> : null}</p>
+                            <p className="text-xs text-suave">{periodo}</p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="flex items-baseline justify-end gap-1"><span className="text-2xl font-bold leading-none tracking-tight">{f.horas.toLocaleString('pt-BR')}h</span><span className="text-xs text-suave">/semana</span></p>
+                            <p className="mt-1 text-xs text-suave"><span className="font-semibold text-tinta">{f.dias}x{7 - f.dias}</span> · {horasTexto(ex.liquidaDiariaMin)} por dia</p>
+                          </div>
+                          <button type="button" onClick={() => { setJornada(String(f.horas)); setDias(String(f.dias)); }} aria-label={`Adequar à ${f.nome}`} className={`ml-auto shrink-0 rounded-xl px-3.5 py-2 text-sm font-semibold sm:ml-0 ${emUso ? 'bg-marca-suave text-marca' : 'bg-marca text-white hover:opacity-90'}`}>{emUso ? 'Em uso' : `Adequar a ${f.horas.toLocaleString('pt-BR')}h`}</button>
                         </div>
-                        <p className="mt-3 flex items-baseline gap-1"><span className="text-3xl font-bold tracking-tight">{f.horas.toLocaleString('pt-BR')}h</span><span className="text-sm text-suave">por semana</span></p>
-                        <dl className="mt-2 space-y-1 text-sm">
-                          <div className="flex justify-between gap-3"><dt className="text-suave">Escala</dt><dd className="font-semibold">{f.dias}x{7 - f.dias}</dd></div>
-                          <div className="flex justify-between gap-3"><dt className="text-suave">Por dia</dt><dd className="font-semibold">{horasTexto(ex.liquidaDiariaMin)}</dd></div>
-                          <div className="flex justify-between gap-3"><dt className="text-suave">Período</dt><dd className="text-right font-semibold">{periodo}</dd></div>
-                        </dl>
-                        {ex.excedeDiaria ? <p className="mt-3 rounded-lg bg-ambar-bg px-2.5 py-1.5 text-xs text-ambar-fg">Acima de {horasTexto(f.maxDiariaMin)} por dia: exige acordo coletivo de jornada diária estendida.</p> : null}
-                        <div className="mt-auto space-y-1.5 pt-4">
-                          <button type="button" onClick={() => { setJornada(String(f.horas)); setDias(String(f.dias)); }} aria-label={`Adequar à ${f.nome}`} className={`w-full rounded-xl px-3 py-2 text-sm font-semibold ${emUso ? 'bg-marca-suave text-marca' : 'bg-marca text-white hover:opacity-90'}`}>{emUso ? 'Em uso' : `Adequar a ${f.horas.toLocaleString('pt-BR')}h`}</button>
-                          {ex.alternativaHoras ? <button type="button" onClick={() => { setJornada(String(ex.alternativaHoras)); setDias(String(f.dias)); }} aria-label={`Adequar a ${ex.alternativaHoras} horas em ${f.dias} dias`} className="w-full rounded-xl border border-linha px-3 py-2 text-sm font-semibold text-marca hover:bg-marca-suave">Usar {ex.alternativaHoras}h (sem acordo)</button> : null}
-                        </div>
+                        {ex.excedeDiaria && ex.alternativaHoras ? (
+                          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-ambar-bg px-3 py-2 text-xs text-ambar-fg">
+                            <p className="min-w-0 flex-1 basis-56">{f.horas.toLocaleString('pt-BR')}h em {f.dias} dias passa de {horasTexto(f.maxDiariaMin)} por dia: exige acordo coletivo de jornada diária estendida.</p>
+                            <button type="button" onClick={() => { setJornada(String(ex.alternativaHoras)); setDias(String(f.dias)); }} aria-label={`Adequar a ${ex.alternativaHoras} horas em ${f.dias} dias`} className="shrink-0 rounded-lg bg-cartao px-2.5 py-1.5 text-xs font-semibold text-marca hover:bg-marca-suave">Sem acordo: usar {ex.alternativaHoras}h</button>
+                          </div>
+                        ) : null}
                       </li>
                     );
                   })}
                 </ol>
                 {foraDoTeto && faseDoMes ? <p role="alert" className="mt-3 rounded-lg bg-ambar-bg px-3 py-2 text-sm text-ambar-fg">Em {mes.split('-').reverse().join('/')} vale a “{faseDoMes.nome}”, com teto de {faseDoMes.horas.toLocaleString('pt-BR')}h por semana: a jornada escolhida ({jornadaNum?.toLocaleString('pt-BR')}h) passa do limite desse mês.</p> : null}
-                <p className="mt-3 text-xs text-suave">Datas e limites vêm das regras cadastradas. Exceções (terceirizada pública, regime compensatório, alta renda) seguem regras próprias: confirme com o jurídico. A data de início da fase 2 deve ser confirmada.</p>
+                <p className="mt-3 text-xs text-suave">Datas e limites vêm das regras cadastradas. Terceirizada pública, regime compensatório e alta renda têm regras próprias: confirme com o jurídico. A data de início da fase 2 ainda deve ser confirmada.</p>
               </section>
             ) : null}
             <div className="flex flex-wrap items-end gap-4">
