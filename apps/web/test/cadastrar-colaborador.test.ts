@@ -27,6 +27,14 @@ describe('cadastrarColaborador (ação)', () => {
     expect(r.valores.nome).toBe('Ana Souza'); // mantém o que a pessoa digitou
     expect(rpc).not.toHaveBeenCalled();
   });
+  it('grava o CBO escolhido da lista e recusa um código que não existe', async () => {
+    expect(await rodar({ ...ok, cbo: '4110-10' })).toMatch(/^REDIRECT/);
+    expect(rpc.mock.calls[0]![1]).toMatchObject({ p_cbo: '411010' });
+    rpc.mockClear();
+    const r = await rodar({ ...ok, cbo: '999999' }) as { erros: Record<string, string> };
+    expect(r.erros.cbo).toMatch(/lista/);
+    expect(rpc).not.toHaveBeenCalled();
+  });
   it('CPF já cadastrado vira erro no campo CPF', async () => {
     rpc.mockResolvedValue({ data: null, error: { message: 'CPF já cadastrado nesta empresa' } });
     const r = await rodar(ok) as { erros: Record<string, string> };

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useActionState, useState } from 'react';
+import { SeletorCbo } from '@/components/SeletorCbo';
 import { Aviso, Botao, Campo, classeBotaoLink, classeCampo } from '@/components/ui';
 import { cadastrarColaborador, type EstadoNovoColaborador } from '../actions';
 
@@ -9,6 +10,7 @@ const ESCOLARIDADES = [['', 'Não informar'], ['fundamental', 'Ensino fundamenta
 
 export function FormNovoColaborador({ empresaId }: { empresaId: string }) {
   const [estado, acao, pendente] = useActionState<EstadoNovoColaborador, FormData>(cadastrarColaborador.bind(null, empresaId), {});
+  const [cargo, setCargo] = useState(estado.valores?.cargo ?? '');
   const [tipo, setTipo] = useState(estado.valores?.tipo_escala ?? '5x2');
   const v = (c: string) => estado.valores?.[c] ?? '';
   const erro = (c: keyof NonNullable<EstadoNovoColaborador['erros']>) => (estado.erros?.[c] ? <span role="alert" className="mt-1 block text-xs text-risco-fg">{estado.erros[c]}</span> : null);
@@ -26,8 +28,8 @@ export function FormNovoColaborador({ empresaId }: { empresaId: string }) {
       </Campo>
 
       <p className={`${sec} mt-2`}>Cargo e setor</p>
-      <Campo rotulo="Cargo"><input name="cargo" defaultValue={v('cargo')} className={classeCampo} /></Campo>
-      <Campo rotulo="CBO" dica="Opcional"><input name="cbo" inputMode="numeric" defaultValue={v('cbo')} className={classeCampo} /></Campo>
+      <Campo rotulo="Ocupação (CBO)" dica="Opcional. Ao escolher, o cargo é preenchido se estiver vazio"><SeletorCbo valorInicial={v('cbo')} aoEscolher={(o) => setCargo((c) => c || o[1])} />{erro('cbo')}</Campo>
+      <Campo rotulo="Cargo"><input name="cargo" value={cargo} onChange={(e) => setCargo(e.target.value)} className={classeCampo} /></Campo>
       <Campo rotulo="Setor" dica="Se o setor ainda não existir, ele é criado"><input name="setor" defaultValue={v('setor')} className={classeCampo} />{erro('setor')}</Campo>
 
       <p className={`${sec} mt-2`}>Contrato e escala</p>
