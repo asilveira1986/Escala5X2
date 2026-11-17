@@ -1,6 +1,7 @@
 import PgBoss from 'pg-boss';
 import type { Pool } from 'pg';
 import type { Armazenamento } from './armazenamento';
+import { AGENDA_AVISO_BANCO, FILA_AVISO_BANCO, processarAvisoVencimento } from './avisar-vencimento-banco';
 import { FILA_IMPORTAR_COLABORADORES, processarImportacao } from './importar-colaboradores';
 import { FILA_OTIMIZAR_ESCALA, processarOtimizacao, type ConfigOtimizadorJob } from './otimizar-escala';
 
@@ -17,6 +18,9 @@ export async function iniciarFila(connectionString: string): Promise<PgBoss> {
   await boss.start();
   await boss.createQueue(FILA_IMPORTAR_COLABORADORES);
   await boss.createQueue(FILA_OTIMIZAR_ESCALA);
+  await boss.createQueue(FILA_AVISO_BANCO);
+  // Aviso diário de vencimento do banco de horas (o pg-boss garante uma execução por agendamento, mesmo com mais de um worker).
+  await boss.schedule(FILA_AVISO_BANCO, AGENDA_AVISO_BANCO.cron, {}, { tz: AGENDA_AVISO_BANCO.tz });
   return boss;
 }
 
@@ -64,6 +68,10 @@ export async function registrarWorkers(boss: PgBoss, pool: Pool, armazenamento: 
   await boss.work<PayloadOtimizacao>(FILA_OTIMIZAR_ESCALA, { batchSize: 1 }, async ([job]) => {
     if (!job) return;
     await processarOtimizacao(pool, job.data.otimizacaoId, otimizador);
+  });
+  await boss.work(FILA_AVISO_BANCO, { batchSize: 1 }, async () => {
+    const r = await processarAvisoVencimento(pool);
+    console.log(`[aviso-banco] ${r.empresas} empresa(s), ${r.colaboradores} colaborador(es), ${r.avisos} aviso(s) novo(s).`);
   });
   await boss.work<PayloadImportacao>(FILA_IMPORTAR_COLABORADORES, { batchSize: 1 }, async ([job]) => {
     if (!job) return;

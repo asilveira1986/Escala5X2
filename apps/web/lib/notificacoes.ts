@@ -24,6 +24,7 @@ export function tempoRelativo(iso: string, agora: number = Date.now()): string {
 export function iconeDoTipo(tipo: string): IconeId {
   if (tipo.startsWith('pedido')) return 'pedidos';
   if (tipo === 'escala_publicada') return 'calendario';
+  if (tipo.startsWith('banco_')) return 'banco';
   return 'inicio';
 }
 
