@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { Aviso, Botao, Cartao, classeCampo, Metrica } from '@/components/ui';
-import { balancoDaEquipe, CORES_TURNO, DIAS_TELA, frasePessoas, FUNCIONAMENTO_PADRAO, horasTexto, inicialDoTurno, liquidoDoTurno, sugerirCobertura, type TurnoBase } from '@/lib/adequador-ui';
+import { balancoDaEquipe, compararJornadas, CORES_TURNO, DIAS_TELA, diasDaJornada, frasePessoas, FUNCIONAMENTO_PADRAO, horasTexto, inicialDoTurno, liquidaDiariaMin, liquidoDoTurno, PRESETS_JORNADA, sugerirCobertura, turnoEfetivo, type TurnoBase } from '@/lib/adequador-ui';
 import { dataBr, diaDaSemana } from '@jc/rules-engine';
 import { gerarEscalas, type DadosSetor, type ResultadoGeracao } from './actions';
 
@@ -13,14 +13,14 @@ type SetorProp = { id: string; nome: string; pessoas: Pessoa[] };
 type Ausencia = { colaboradorId: string; inicio: string; fim: string; tipo: 'ferias' | 'afastamento' };
 type Props = { empresaId: string; mesPadrao: string; modelos: ModeloBase[]; setores: SetorProp[]; semSetor: number; todos: Pessoa[]; ausencias: Ausencia[] };
 
-const DIAS_OPCOES = [{ v: '', t: 'O que a lei permite (padrão)' }, { v: '5', t: '5 dias (escala 5x2)' }, { v: '6', t: '6 dias (escala 6x1)' }, { v: '4', t: '4 dias' }];
+const DIAS_OPCOES = [{ v: '', t: 'Automático (o que a lei permite)' }, { v: '5', t: '5 dias (escala 5x2)' }, { v: '6', t: '6 dias (escala 6x1)' }, { v: '4', t: '4 dias' }];
 let seq = 0;
 const novaChave = () => `t${++seq}`;
 const CHAVE_TODOS = '__todos__';
 
 function turnosIniciais(modelos: ModeloBase[]): TurnoBase[] {
   const base = modelos.length > 0 ? modelos.slice(0, 4) : [{ id: '', nome: 'Turno 1', inicio: '08:00', fim: '17:00', intervalo: 60 }];
-  return base.map((m) => ({ chave: novaChave(), nome: m.nome, inicio: m.inicio, fim: m.fim, intervalo: m.intervalo, modeloId: m.id || null }));
+  return base.map((m) => ({ chave: novaChave(), nome: m.nome, inicio: m.inicio, fim: m.fim, intervalo: m.intervalo, modeloId: m.id || null, segueJornada: (liquidoDoTurno({ inicio: m.inicio, fim: m.fim, intervalo: m.intervalo }) ?? 0) >= 360 }));
 }
 /** Primeiro e último dia (AAAA-MM-DD) do mês AAAA-MM. */
 const limitesMes = (mes: string) => { const [a, m] = mes.split('-').map(Number) as [number, number]; return { ini: `${mes}-01`, fim: `${mes}-${String(new Date(Date.UTC(a, m, 0)).getUTCDate()).padStart(2, '0')}` }; };
@@ -33,6 +33,7 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
   const grupos: SetorProp[] = useMemo(() => (setores.length > 0 ? setores : [{ id: CHAVE_TODOS, nome: 'Empresa toda', pessoas: todos }]), [setores, todos]);
   const [mes, setMes] = useState(mesPadrao);
   const [dias, setDias] = useState('');
+  const [jornada, setJornada] = useState('');
   const [funcionamento, setFuncionamento] = useState<boolean[]>(FUNCIONAMENTO_PADRAO);
   const [fecharFeriados, setFecharFeriados] = useState(false);
   const [turnos, setTurnos] = useState<TurnoBase[]>(() => turnosIniciais(modelos));
@@ -41,7 +42,10 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
   const [folgasFixas, setFolgasFixas] = useState<Record<string, number[]>>({});
   const [resultado, setResultado] = useState<ResultadoGeracao | null>(null);
   const [pendente, iniciar] = useTransition();
-  const diasNum = dias ? Number(dias) : 5;
+  const jornadaNum = (() => { const n = Number(jornada.replace(',', '.')); return jornada.trim() !== '' && Number.isFinite(n) && n >= 10 && n <= 60 ? n : null; })();
+  const diasNum = dias ? Number(dias) : jornadaNum ? diasDaJornada(jornadaNum) : 5;
+  // turnos como serão usados: com a jornada informada, os que seguem a jornada têm a saída ajustada
+  const turnosEf = turnos.map((t) => turnoEfetivo(t, jornadaNum, diasNum));
   const originais = useMemo(() => new Map(modelos.map((m) => [m.id, m])), [modelos]);
   const { ini: mesIni, fim: mesFim } = limitesMes(mes);
 
@@ -66,7 +70,7 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
     if (o && (novo.inicio !== o.inicio || novo.fim !== o.fim || novo.intervalo !== o.intervalo)) novo.modeloId = null;
     return novo;
   }));
-  const adicionarTurno = () => setTurnos((l) => (l.length >= 6 ? l : [...l, { chave: novaChave(), nome: `Turno ${l.length + 1}`, inicio: '14:00', fim: '23:00', intervalo: 60, modeloId: null }]));
+  const adicionarTurno = () => setTurnos((l) => (l.length >= 6 ? l : [...l, { chave: novaChave(), nome: `Turno ${l.length + 1}`, inicio: '14:00', fim: '23:00', intervalo: 60, modeloId: null, segueJornada: true }]));
   const removerTurno = (chave: string) => setTurnos((l) => (l.length <= 1 ? l : l.filter((t) => t.chave !== chave)));
   const alternarDia = (d: number) => setFuncionamento((f) => f.map((v, i) => (i === d ? !v : v)));
   const alternarFolga = (pessoa: string, d: number) => setFolgasFixas((f) => {
@@ -76,7 +80,7 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
   });
   const alternarSetor = (id: string) => setIncluidos((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
-  const invalido = turnos.some((t) => liquidoDoTurno(t) === null || !t.nome.trim());
+  const invalido = turnosEf.some((t) => liquidoDoTurno(t) === null || !t.nome.trim());
   const escolhidos = grupos.filter((g) => incluidos.has(g.id) && g.pessoas.length > 0);
   const semCobertura = escolhidos.every((g) => turnos.every((t) => minimoDe(g.id, t.chave).every((m, d) => m === 0 || !funcionamento[d])));
   const abertos = funcionamento.filter(Boolean).length;
@@ -85,17 +89,21 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
     setResultado(null);
     const pessoasEscolhidas = new Set(escolhidos.flatMap((g) => g.pessoas.map((p) => p.id)));
     const r = await gerarEscalas({
-      empresaId, mes, diasPorSemana: dias ? Number(dias) : null, funcionamento, fecharNosFeriados: fecharFeriados,
-      turnos: turnos.map((t) => ({ chave: t.chave, nome: t.nome, inicio: t.inicio, fim: t.fim, intervalo: t.intervalo, modeloId: t.modeloId })),
+      empresaId, mes, diasPorSemana: dias ? Number(dias) : jornadaNum ? diasNum : null, funcionamento, fecharNosFeriados: fecharFeriados,
+      turnos: turnosEf.map((t) => ({ chave: t.chave, nome: t.nome, inicio: t.inicio, fim: t.fim, intervalo: t.intervalo, modeloId: t.fim === (turnos.find((o) => o.chave === t.chave)?.fim) ? t.modeloId : null })),
       setores: escolhidos.map((g) => ({ setorId: g.id === CHAVE_TODOS ? null : g.id, nome: g.nome, minimos: Object.fromEntries(turnos.map((t) => [t.chave, minimoDe(g.id, t.chave)])) })),
       folgasFixas: Object.fromEntries(Object.entries(folgasFixas).filter(([p, d]) => d.length > 0 && pessoasEscolhidas.has(p))),
     });
     setResultado(r);
   });
 
+  const posicoesDoSetor = (id: string) => turnos.reduce((t, tn) => t + minimoDe(id, tn.chave).reduce((a, m, d) => a + (funcionamento[d] ? m : 0), 0), 0);
+  const comparacao = compararJornadas(escolhidos.map((g) => posicoesDoSetor(g.id)), escolhidos.map((g) => g.pessoas.length),
+    jornadaNum && !PRESETS_JORNADA.some((p) => p.horas === jornadaNum && p.dias === diasNum) ? [{ horas: jornadaNum, dias: diasNum }, ...PRESETS_JORNADA] : PRESETS_JORNADA);
   const resumoSetores = escolhidos.map((g) => ({ g, b: balancoDaEquipe(turnos.map((t) => ({ minimo: minimoDe(g.id, t.chave).map((m, d) => (funcionamento[d] ? m : 0)) })), g.pessoas.length, diasNum) }));
   const pendencias = [
     ...(abertos === 0 ? ['Marque os dias de funcionamento.'] : []),
+    ...(jornadaNum && jornadaNum > 44 ? ['A jornada máxima legal é de 44 horas por semana.'] : []),
     ...(invalido ? ['Confira os horários dos turnos.'] : []),
     ...(escolhidos.length === 0 ? ['Escolha ao menos um setor com pessoas.'] : []),
     ...(escolhidos.length > 0 && semCobertura ? ['Informe quantas pessoas cada turno precisa.'] : []),
@@ -106,10 +114,9 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
     <div className="space-y-6">
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">
-          <Etapa n={1} titulo="Período e funcionamento" texto="O mês, quantos dias cada pessoa trabalha e em quais dias a empresa funciona.">
+          <Etapa n={1} titulo="Período e funcionamento" texto="O mês e em quais dias da semana a empresa funciona.">
             <div className="flex flex-wrap items-end gap-4">
               <Rotulo t="Mês"><input type="month" value={mes} onChange={(e) => setMes(e.target.value)} required aria-label="Mês" className={`${campo} w-44`} /></Rotulo>
-              <Rotulo t="Dias de trabalho por semana"><select value={dias} onChange={(e) => setDias(e.target.value)} aria-label="Dias de trabalho por semana" className={`${campo} w-64`}>{DIAS_OPCOES.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</select></Rotulo>
             </div>
             <fieldset className="mt-5">
               <legend className="text-xs font-semibold uppercase tracking-wide text-suave">Dias de funcionamento</legend>
@@ -124,21 +131,57 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
             </fieldset>
           </Etapa>
 
-          <Etapa n={2} titulo="Turnos" texto="Mudar um turno cadastrado vale só para esta geração; o cadastro não muda." acoes={turnos.length < 6 ? <Botao variante="secundario" onClick={adicionarTurno}>Adicionar turno</Botao> : null}>
+          <Etapa n={2} titulo="Jornada de trabalho" texto="Aumente ou reduza a jornada e veja na hora quantas pessoas cada uma exige. Os turnos que seguem a jornada têm a saída ajustada sozinha.">
+            <div className="flex flex-wrap items-end gap-4">
+              <Rotulo t="Jornada semanal (horas)"><input type="number" min={10} max={60} step={0.5} inputMode="decimal" value={jornada} placeholder="manter os turnos" onChange={(e) => setJornada(e.target.value)} aria-label="Jornada semanal (horas)" className={`${campo} w-44`} /></Rotulo>
+              <Rotulo t="Dias de trabalho por semana"><select value={dias} onChange={(e) => setDias(e.target.value)} aria-label="Dias de trabalho por semana" className={`${campo} w-64`}>{DIAS_OPCOES.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</select></Rotulo>
+              {jornada ? <Botao variante="secundario" onClick={() => { setJornada(''); setDias(''); }}>Voltar aos turnos como estão</Botao> : null}
+            </div>
+            <p className="mt-3 text-sm text-suave">
+              {jornadaNum ? <>Cada pessoa trabalha <strong className="text-tinta">{diasNum} dias de {horasTexto(liquidaDiariaMin(jornadaNum, diasNum))}</strong> líquidas = <strong className="text-tinta">{jornadaNum.toLocaleString('pt-BR')}h por semana</strong>. A lei vigente limita o que vale: o resultado avisa se algum turno passar do teto.</> : <>Sem jornada informada, valem os horários dos turnos como estão ({diasNum} dias por semana).</>}
+            </p>
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[34rem] text-left text-sm" aria-label="Impacto da jornada">
+                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="pb-1.5 pr-3">Jornada</th><th className="pb-1.5 pr-3">Dias</th><th className="pb-1.5 pr-3">Por dia</th><th className="pb-1.5 pr-3 text-right">Pessoas necessárias</th><th className="pb-1.5 pr-3 text-right">Sua equipe</th><th className="pb-1.5 pr-3">Situação</th><th /></tr></thead>
+                <tbody>
+                  {comparacao.map((l) => {
+                    const atual = jornadaNum === l.horas && diasNum === l.dias;
+                    return (
+                      <tr key={`${l.horas}-${l.dias}`} className={`border-t border-linha ${atual ? 'bg-marca-suave/50' : ''}`}>
+                        <td className="py-2 pr-3 font-semibold">{l.horas}h/semana</td>
+                        <td className="pr-3">{l.dias}</td>
+                        <td className="pr-3">{horasTexto(l.liquidaDiariaMin)}</td>
+                        <td className="pr-3 text-right font-semibold">{l.pessoasNecessarias}</td>
+                        <td className="pr-3 text-right">{l.equipe}</td>
+                        <td className={`pr-3 font-semibold ${l.sobra < 0 ? 'text-atencao-fg' : 'text-ok-fg'}`}>{l.sobra < 0 ? `faltam ${-l.sobra}` : l.sobra > 0 ? `sobram ${l.sobra}` : 'na medida'}</td>
+                        <td className="py-1 text-right">{atual ? <span className="text-xs font-semibold text-marca">em uso</span> : <button type="button" onClick={() => { setJornada(String(l.horas)); setDias(String(l.dias)); }} aria-label={`Usar ${l.horas}h por semana em ${l.dias} dias`} className="rounded-lg px-2.5 py-1.5 text-sm font-semibold text-marca hover:bg-marca-suave">Usar</button>}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs text-suave">“Pessoas necessárias” = pessoas pedidas por semana (passo 4) ÷ dias de trabalho, por setor. Reduzir a jornada em menos dias por semana exige mais gente para cobrir o mesmo time.</p>
+          </Etapa>
+
+          <Etapa n={3} titulo="Turnos" texto="Mudar um turno cadastrado vale só para esta geração; o cadastro não muda." acoes={turnos.length < 6 ? <Botao variante="secundario" onClick={adicionarTurno}>Adicionar turno</Botao> : null}>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[34rem] text-left text-sm">
-                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="w-10 pb-1.5" /><th className="pb-1.5 pr-2">Turno</th><th className="pb-1.5 pr-2">Entrada</th><th className="pb-1.5 pr-2">Saída</th><th className="pb-1.5 pr-2">Intervalo (min)</th><th className="pb-1.5 pr-2">Líquidas</th><th /></tr></thead>
+                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="w-10 pb-1.5" /><th className="pb-1.5 pr-2">Turno</th><th className="pb-1.5 pr-2">Entrada</th><th className="pb-1.5 pr-2">Saída</th><th className="pb-1.5 pr-2">Intervalo (min)</th><th className="pb-1.5 pr-2">Líquidas</th>{jornadaNum ? <th className="pb-1.5 pr-2">Segue a jornada</th> : null}<th /></tr></thead>
                 <tbody>
                   {turnos.map((t, ti) => {
-                    const liq = liquidoDoTurno(t);
+                    const ef = turnosEf[ti]!;
+                    const ajustado = !!jornadaNum && !!t.segueJornada && ef.fim !== t.fim;
+                    const liq = liquidoDoTurno(ef);
                     return (
                       <tr key={t.chave} className="border-t border-linha">
                         <td className="py-2 pr-2"><span aria-hidden className={`grid size-8 place-items-center rounded-lg text-sm font-bold ${CORES_TURNO[ti % CORES_TURNO.length]}`}>{inicialDoTurno(t.nome, ti)}</span></td>
                         <td className="py-2 pr-2"><input value={t.nome} maxLength={40} onChange={(e) => alterarTurno(t.chave, { nome: e.target.value })} aria-label={`Nome do turno ${ti + 1}`} className={`${campo} w-36`} /></td>
                         <td className="py-2 pr-2"><input type="time" value={t.inicio} onChange={(e) => alterarTurno(t.chave, { inicio: e.target.value })} aria-label={`Entrada do turno ${t.nome}`} className={`${campo} w-28`} /></td>
-                        <td className="py-2 pr-2"><input type="time" value={t.fim} onChange={(e) => alterarTurno(t.chave, { fim: e.target.value })} aria-label={`Saída do turno ${t.nome}`} className={`${campo} w-28`} /></td>
+                        <td className="py-2 pr-2">{jornadaNum && t.segueJornada ? <span className="inline-flex h-9 w-28 items-center rounded-xl bg-marca-suave px-3 text-sm font-semibold text-marca" title="Ajustada pela jornada" aria-label={`Saída do turno ${t.nome}, ajustada pela jornada`}>{ef.fim}{ajustado ? <span className="ml-1 text-[10px] font-medium uppercase">ajust.</span> : null}</span> : <input type="time" value={t.fim} onChange={(e) => alterarTurno(t.chave, { fim: e.target.value })} aria-label={`Saída do turno ${t.nome}`} className={`${campo} w-28`} />}</td>
                         <td className="py-2 pr-2"><input type="number" min={0} max={240} step={5} value={t.intervalo} onChange={(e) => alterarTurno(t.chave, { intervalo: Math.max(0, Math.min(240, Number(e.target.value) || 0)) })} aria-label={`Intervalo do turno ${t.nome}`} className={`${campo} w-24`} /></td>
                         <td className="whitespace-nowrap py-2 pr-2 font-semibold">{liq === null ? <span className="text-risco-fg">inválido</span> : <>{horasTexto(liq)}<span className="font-normal text-suave"> · {horasTexto(liq * diasNum)}/sem</span></>}</td>
+                        {jornadaNum ? <td className="py-2 pr-2"><input type="checkbox" className="size-4" checked={!!t.segueJornada} onChange={(e) => alterarTurno(t.chave, { segueJornada: e.target.checked })} aria-label={`${t.nome} segue a jornada`} /></td> : null}
                         <td className="py-2 text-right">{turnos.length > 1 ? <button type="button" onClick={() => removerTurno(t.chave)} aria-label={`Remover o turno ${t.nome}`} className="rounded-lg px-2.5 py-1.5 text-sm font-semibold text-risco-fg hover:bg-risco-bg">Remover</button> : null}</td>
                       </tr>
                     );
@@ -148,7 +191,7 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
             </div>
           </Etapa>
 
-          <Etapa n={3} titulo="Setores e pessoas necessárias" texto="Quantas pessoas precisam estar em cada turno, em cada dia. O sistema aloca a equipe do setor para completar o time nesses momentos.">
+          <Etapa n={4} titulo="Setores e pessoas necessárias" texto="Quantas pessoas precisam estar em cada turno, em cada dia. O sistema aloca a equipe do setor para completar o time nesses momentos.">
             {semSetor > 0 ? <div className="mb-3"><Aviso>{semSetor} pessoa(s) sem setor ficam de fora. Defina o setor em <strong>Equipe › Colaboradores › Editar</strong>.</Aviso></div> : null}
             <div className="space-y-3">
               {grupos.map((g) => {
@@ -190,7 +233,7 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
             </div>
           </Etapa>
 
-          <Etapa n={4} titulo="Folgas e férias" texto="Folga fixa: dia da semana em que a pessoa não trabalha (até 3). Férias e afastamentos cadastrados já entram e a equipe cobre sem a pessoa.">
+          <Etapa n={5} titulo="Folgas e férias" texto="Folga fixa: dia da semana em que a pessoa não trabalha (até 3). Férias e afastamentos cadastrados já entram e a equipe cobre sem a pessoa.">
             {escolhidos.length === 0 ? <p className="text-sm text-suave">Escolha ao menos um setor com pessoas.</p> : (
               <div className="space-y-4">
                 {escolhidos.map((g) => (
@@ -224,8 +267,9 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
         <aside aria-label="Resumo" className="space-y-4 rounded-2xl border border-linha bg-cartao p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] lg:sticky lg:top-20">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-suave">Resumo</h2>
           <dl className="space-y-3 text-sm">
+            <div><dt className="text-suave">Jornada</dt><dd className="font-semibold">{jornadaNum ? `${jornadaNum.toLocaleString('pt-BR')}h/semana · ${diasNum} dias · ${horasTexto(liquidaDiariaMin(jornadaNum, diasNum))}/dia` : `Turnos como estão · ${diasNum} dias`}</dd></div>
             <div><dt className="text-suave">Período</dt><dd className="font-semibold">{mes.split('-').reverse().join('/')} · {abertos} dia{abertos === 1 ? '' : 's'}/semana abertos{fecharFeriados ? ' · fecha nos feriados' : ''}</dd></div>
-            <div><dt className="text-suave">Turnos</dt><dd className="space-y-1">{turnos.map((t, ti) => { const liq = liquidoDoTurno(t); return <span key={t.chave} className="flex items-center gap-2 font-semibold"><span aria-hidden className={`grid size-5 place-items-center rounded-md text-[11px] font-bold ${CORES_TURNO[ti % CORES_TURNO.length]}`}>{inicialDoTurno(t.nome, ti)}</span>{t.nome}<span className="font-normal text-suave">{t.inicio}–{t.fim}{liq ? ` · ${horasTexto(liq)}` : ''}</span></span>; })}</dd></div>
+            <div><dt className="text-suave">Turnos</dt><dd className="space-y-1">{turnosEf.map((t, ti) => { const liq = liquidoDoTurno(t); return <span key={t.chave} className="flex items-center gap-2 font-semibold"><span aria-hidden className={`grid size-5 place-items-center rounded-md text-[11px] font-bold ${CORES_TURNO[ti % CORES_TURNO.length]}`}>{inicialDoTurno(t.nome, ti)}</span>{t.nome}<span className="font-normal text-suave">{t.inicio}–{t.fim}{liq ? ` · ${horasTexto(liq)}` : ''}</span></span>; })}</dd></div>
             <div><dt className="text-suave">Setores</dt><dd className="space-y-1">{resumoSetores.length === 0 ? <span className="text-suave">Nenhum escolhido</span> : resumoSetores.map(({ g, b }) => <span key={g.id} className="flex items-center justify-between gap-2 font-semibold">{g.nome}<span className={`text-xs font-semibold ${b.sobra < 0 ? 'text-atencao-fg' : 'text-ok-fg'}`}>{g.pessoas.length} pessoas · {b.sobra < 0 ? `faltam ~${-b.sobra}` : b.sobra > 0 ? `sobram ~${b.sobra}` : 'na medida'}</span></span>)}</dd></div>
           </dl>
           {pendencias.length > 0 ? <ul className="space-y-1 rounded-xl bg-atencao-bg px-3 py-2 text-xs font-semibold text-atencao-fg">{pendencias.map((x) => <li key={x}>{x}</li>)}</ul> : null}
@@ -237,6 +281,7 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
       {resultado && !resultado.ok ? <Aviso tipo="erro">{resultado.erro}</Aviso> : null}
       {resultado && resultado.ok ? (
         <div className="space-y-8">
+          {jornadaNum ? <Aviso>Gerada com jornada de {jornadaNum.toLocaleString('pt-BR')}h por semana em {diasNum} dias ({horasTexto(liquidaDiariaMin(jornadaNum, diasNum))} líquidas por dia).</Aviso> : null}
           {resultado.setores.map((s) => (
             <section key={s.setorId ?? CHAVE_TODOS} aria-label={`Resultado: ${s.setorNome}`} className="space-y-3">
               {resultado.setores.length > 1 || s.setorId ? <h2 className="text-lg font-bold">{s.setorNome}</h2> : null}

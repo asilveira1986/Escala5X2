@@ -118,4 +118,72 @@ describe('Gerar escala (tela)', () => {
     await montar({ semSetor: 3 });
     expect(screen.getByText(/3 pessoa\(s\) sem setor ficam de fora/)).toBeTruthy();
   });
+
+  it('jornada: informar as horas ajusta a saída dos turnos que seguem a jornada e o pedido leva os horários ajustados e os dias', async () => {
+    await montar();
+    fireEvent.change(screen.getByLabelText('Jornada semanal (horas)'), { target: { value: '36' } });
+    fireEvent.change(screen.getByLabelText('Dias de trabalho por semana'), { target: { value: '5' } });
+    expect(screen.getByText(/5 dias de 7h10/)).toBeTruthy();                               // 36h ÷ 5 = 7h12 → 7h10
+    expect(screen.getByLabelText('Saída do turno Manhã, ajustada pela jornada').textContent).toContain('16:10');
+    expect(screen.getByLabelText('Saída do turno Tarde, ajustada pela jornada').textContent).toContain('22:10');     // 14:00 + 7h10 + 1h
+    fireEvent.click(botaoGerar());
+    await waitFor(() => expect(gerar).toHaveBeenCalled());
+    const p = gerar.mock.calls[0]![0];
+    expect(p.diasPorSemana).toBe(5);
+    expect(p.turnos.map((t: { fim: string; modeloId: string | null }) => [t.fim, t.modeloId])).toEqual([['16:10', null], ['22:10', null]]);   // horário mudou: deixa de ser o do cadastro
+    expect(await screen.findByText(/Gerada com jornada de 36h por semana em 5 dias \(7h10 líquidas por dia\)/)).toBeTruthy();
+  });
+
+  it('jornada: turno que não segue a jornada mantém o horário digitado; sem jornada nada muda', async () => {
+    await montar();
+    fireEvent.change(screen.getByLabelText('Jornada semanal (horas)'), { target: { value: '30' } });
+    fireEvent.click(screen.getByLabelText('Tarde segue a jornada'));
+    expect((screen.getByLabelText('Saída do turno Tarde') as HTMLInputElement).value).toBe('23:00');
+    fireEvent.click(botaoGerar());
+    await waitFor(() => expect(gerar).toHaveBeenCalled());
+    const p = gerar.mock.calls[0]![0];
+    expect(p.turnos[0]).toMatchObject({ fim: '15:00' });                                   // 30h ÷ 5 = 6h + 1h de intervalo
+    expect(p.turnos[1]).toMatchObject({ fim: '23:00', modeloId: M2 });                      // não seguiu a jornada: continua o turno do cadastro
+    cleanup();
+    gerar.mockClear();
+    await montar();
+    fireEvent.click(botaoGerar());
+    await waitFor(() => expect(gerar).toHaveBeenCalled());
+    expect(gerar.mock.calls[0]![0].turnos.map((t: { fim: string }) => t.fim)).toEqual(['17:00', '23:00']);
+    expect(gerar.mock.calls[0]![0].diasPorSemana).toBeNull();
+  });
+
+  it('impacto da jornada: a tabela mostra pessoas necessárias × equipe e "Usar" aplica a jornada e os dias', async () => {
+    await montar();
+    const tabela = screen.getByRole('table', { name: 'Impacto da jornada' });
+    const linha = (rotulo: RegExp) => Array.from(tabela.querySelectorAll('tbody tr')).find((r) => rotulo.test(r.textContent ?? ''))!;
+    // Loja: 2 turnos × 2 pessoas × 6 dias abertos = 24 posições; Estoque: 2 × 1 × 6 = 12 (cobertura sugerida). Equipe: 6 + 2 = 8.
+    const r44 = linha(/^44h\/semana6/);
+    expect(r44.textContent).toContain('sobram 2');                                          // 44h em 6 dias: ⌈24/6⌉ + ⌈12/6⌉ = 6 pessoas
+    const r40 = linha(/^40h\/semana5/);
+    expect(r40.textContent).toContain('na medida');                                         // 40h em 5 dias: ⌈24/5⌉ + ⌈12/5⌉ = 8 pessoas
+    expect(linha(/^36h\/semana5/).textContent).toContain('na medida');
+    expect(linha(/^30h\/semana5/).textContent).toContain('na medida');
+    fireEvent.click(screen.getByRole('button', { name: 'Usar 40h por semana em 5 dias' }));
+    expect(screen.getByLabelText('Jornada semanal (horas)')).toHaveProperty('value', '40');
+    expect(screen.getByLabelText('Dias de trabalho por semana')).toHaveProperty('value', '5');
+    expect(screen.getByText('em uso')).toBeTruthy();
+    expect(screen.queryAllByText(/Turnos como estão/).length).toBe(0);
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar aos turnos como estão' }));
+    expect(screen.getByLabelText('Jornada semanal (horas)')).toHaveProperty('value', '');
+  });
+
+  it('jornada fora do que a tela aceita (muito baixa) é ignorada', async () => {
+    await montar();
+    fireEvent.change(screen.getByLabelText('Jornada semanal (horas)'), { target: { value: '3' } });
+    expect(screen.getByText(/Sem jornada informada/)).toBeTruthy();
+    expect(screen.queryByLabelText('Saída do turno Manhã, ajustada pela jornada')).toBeNull();
+  });
+
+  it('jornada acima do máximo legal (44h) bloqueia a geração com o motivo', async () => {
+    await montar();
+    fireEvent.change(screen.getByLabelText('Jornada semanal (horas)'), { target: { value: '48' } });
+    expect(screen.getByText('A jornada máxima legal é de 44 horas por semana.')).toBeTruthy();
+    expect((botaoGerar() as HTMLButtonElement).disabled).toBe(true);
+  });
 });
