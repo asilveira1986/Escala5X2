@@ -21,6 +21,12 @@
   --c-atencao-bg: #fff1cc; --c-atencao-fg: #7a4b00;
   --c-risco-bg: #ffe1e6;  --c-risco-fg: #9f1239;
   --c-neutro-bg: #eaecf3; --c-neutro-fg: #3b4458;
+  /* Cores de apoio: cada área do sistema tem a sua (equipe, escalas, pedidos, ponto e folha, análises). */
+  --c-azul-bg: #e0f2fe;    --c-azul-fg: #075985;
+  --c-violeta-bg: #ede9fe; --c-violeta-fg: #5b21b6;
+  --c-verde-bg: #d9f7ea;   --c-verde-fg: #0b5a3a;
+  --c-ambar-bg: #fff1cc;   --c-ambar-fg: #7a4b00;
+  --c-rosa-bg: #ffe4ec;    --c-rosa-fg: #9d174d;
   --font-titulo: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
   --font-texto: 'Public Sans', 'Segoe UI', system-ui, sans-serif;
   color-scheme: light;
@@ -32,6 +38,8 @@
     --c-ok-bg: #0f3a2a; --c-ok-fg: #9bf0c8; --c-atencao-bg: #3d3008; --c-atencao-fg: #f6dc8c;
     --c-risco-bg: #4a1a26; --c-risco-fg: #fdb4c1; --c-neutro-bg: #1d2640; --c-neutro-fg: #b8c2dd;
     color-scheme: dark;
+    --c-azul-bg: #0c2a40; --c-azul-fg: #7dd3fc; --c-violeta-bg: #2a1f4f; --c-violeta-fg: #c4b5fd; --c-verde-bg: #0f3a2a; --c-verde-fg: #9bf0c8;
+    --c-ambar-bg: #3d3008; --c-ambar-fg: #f6dc8c; --c-rosa-bg: #4a1a2e; --c-rosa-fg: #f9a8d4;
   }
 }
 :root[data-theme='dark'] {
@@ -40,12 +48,15 @@
   --c-ok-bg: #0f3a2a; --c-ok-fg: #9bf0c8; --c-atencao-bg: #3d3008; --c-atencao-fg: #f6dc8c;
   --c-risco-bg: #4a1a26; --c-risco-fg: #fdb4c1; --c-neutro-bg: #1d2640; --c-neutro-fg: #b8c2dd;
   color-scheme: dark;
+  --c-azul-bg: #0c2a40; --c-azul-fg: #7dd3fc; --c-violeta-bg: #2a1f4f; --c-violeta-fg: #c4b5fd; --c-verde-bg: #0f3a2a; --c-verde-fg: #9bf0c8;
+  --c-ambar-bg: #3d3008; --c-ambar-fg: #f6dc8c; --c-rosa-bg: #4a1a2e; --c-rosa-fg: #f9a8d4;
 }
 
 /* Menu lateral: índigo profundo nos dois temas, para se destacar do conteúdo. Redefine os mesmos tokens só dentro dele. */
 .tema-menu {
   --c-cartao: #1e1b4b; --c-fundo: #2b2778; --c-tinta: #e7eaff; --c-suave: #aeb6ee; --c-linha: #36318a;
   --c-marca: #ffffff; --c-marca-escuro: #e7eaff; --c-marca-suave: #3b36a8; --c-sobre-marca: #1e1b4b;
+  --c-azul-fg: #7dd3fc; --c-violeta-fg: #c4b5fd; --c-verde-fg: #86efac; --c-ambar-fg: #fcd34d; --c-rosa-fg: #f9a8d4;
   color: var(--c-tinta); color-scheme: dark;
 }
 
@@ -64,6 +75,11 @@
   --color-atencao-bg: var(--c-atencao-bg); --color-atencao-fg: var(--c-atencao-fg);
   --color-risco-bg: var(--c-risco-bg);  --color-risco-fg: var(--c-risco-fg);
   --color-neutro-bg: var(--c-neutro-bg); --color-neutro-fg: var(--c-neutro-fg);
+  --color-azul-bg: var(--c-azul-bg); --color-azul-fg: var(--c-azul-fg);
+  --color-violeta-bg: var(--c-violeta-bg); --color-violeta-fg: var(--c-violeta-fg);
+  --color-verde-bg: var(--c-verde-bg); --color-verde-fg: var(--c-verde-fg);
+  --color-ambar-bg: var(--c-ambar-bg); --color-ambar-fg: var(--c-ambar-fg);
+  --color-rosa-bg: var(--c-rosa-bg); --color-rosa-fg: var(--c-rosa-fg);
   --font-titulo: var(--font-titulo);
   --font-texto: var(--font-texto);
 }

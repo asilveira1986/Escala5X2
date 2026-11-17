@@ -1,4 +1,4 @@
-import type { IconeId } from '@/lib/menu';
+import { tomDoIcone, type IconeId, type TomCor } from '@/lib/menu';
 import { ICONES_MENU } from './menu-icones';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
@@ -30,11 +30,18 @@ export function Campo({ rotulo, children, dica }: { rotulo: string; children: Re
 }
 
 /** Quadradinho colorido com o ícone (cabeçalhos, cartões, métricas). */
-export function IconeCaixa({ icone, tom = 'marca', tamanho = 'md' }: { icone: IconeId; tom?: 'marca' | 'ok' | 'atencao' | 'risco' | 'neutro'; tamanho?: 'sm' | 'md' | 'lg' }) {
+export const COR_TOM: Record<TomCor | 'ok' | 'atencao' | 'risco', string> = {
+  marca: 'bg-marca-suave text-marca', azul: 'bg-azul-bg text-azul-fg', violeta: 'bg-violeta-bg text-violeta-fg', verde: 'bg-verde-bg text-verde-fg',
+  ambar: 'bg-ambar-bg text-ambar-fg', rosa: 'bg-rosa-bg text-rosa-fg', neutro: 'bg-neutro-bg text-neutro-fg', ok: 'bg-ok-bg text-ok-fg', atencao: 'bg-atencao-bg text-atencao-fg', risco: 'bg-risco-bg text-risco-fg',
+};
+type TomIcone = keyof typeof COR_TOM;
+const COR_BARRA: Record<TomIcone, string> = { marca: 'bg-marca', azul: 'bg-azul-fg', violeta: 'bg-violeta-fg', verde: 'bg-verde-fg', ambar: 'bg-ambar-fg', rosa: 'bg-rosa-fg', neutro: 'bg-neutro-fg', ok: 'bg-ok-fg', atencao: 'bg-atencao-fg', risco: 'bg-risco-fg' };
+
+/** Quadradinho colorido com o ícone. Sem `tom`, usa a cor da área a que o ícone pertence. */
+export function IconeCaixa({ icone, tom, tamanho = 'md' }: { icone: IconeId; tom?: TomIcone; tamanho?: 'sm' | 'md' | 'lg' }) {
   const I = ICONES_MENU[icone];
-  const cor = { marca: 'bg-marca-suave text-marca', ok: 'bg-ok-bg text-ok-fg', atencao: 'bg-atencao-bg text-atencao-fg', risco: 'bg-risco-bg text-risco-fg', neutro: 'bg-neutro-bg text-neutro-fg' }[tom];
   const dim = { sm: 'size-8 rounded-xl', md: 'size-10 rounded-2xl', lg: 'size-12 rounded-2xl' }[tamanho];
-  return <span aria-hidden className={`grid shrink-0 place-items-center ${dim} ${cor}`}><I width={tamanho === 'sm' ? 18 : 22} height={tamanho === 'sm' ? 18 : 22} /></span>;
+  return <span aria-hidden className={`grid shrink-0 place-items-center ${dim} ${COR_TOM[tom ?? tomDoIcone(icone)]}`}><I width={tamanho === 'sm' ? 18 : 22} height={tamanho === 'sm' ? 18 : 22} /></span>;
 }
 
 export function Cartao({ titulo, subtitulo, icone, acoes, children, className = '' }: { titulo?: string; subtitulo?: string; icone?: IconeId; acoes?: ReactNode; children: ReactNode; className?: string }) {
@@ -75,9 +82,11 @@ export function CabecalhoPagina({ titulo, descricao, icone, acoes, children }: {
 }
 
 /** Número em destaque com ícone, para resumos. Vira link quando recebe `href`. */
-export function Metrica({ icone, rotulo, valor, texto, tom = 'marca', href }: { icone: IconeId; rotulo: string; valor: number | string; texto?: string; tom?: 'marca' | 'ok' | 'atencao' | 'risco' | 'neutro'; href?: string }) {
+export function Metrica({ icone, rotulo, valor, texto, tom, href }: { icone: IconeId; rotulo: string; valor: number | string; texto?: string; tom?: TomIcone; href?: string }) {
+  const barra = COR_BARRA[tom ?? tomDoIcone(icone)];
   const corpo = (
     <>
+      <span aria-hidden className={`absolute inset-x-5 top-0 h-1 rounded-b-full opacity-70 ${barra}`} />
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-semibold text-suave">{rotulo}</span>
         <IconeCaixa icone={icone} tom={tom} tamanho="sm" />
@@ -86,7 +95,7 @@ export function Metrica({ icone, rotulo, valor, texto, tom = 'marca', href }: { 
       {texto ? <span className="mt-2 block text-sm text-suave">{texto}</span> : null}
     </>
   );
-  const cls = 'block rounded-3xl border border-linha bg-cartao p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5';
+  const cls = 'relative block overflow-hidden rounded-3xl border border-linha bg-cartao p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5';
   return href ? <a href={href} className={`${cls} transition hover:-translate-y-0.5 hover:border-marca hover:shadow-md`}>{corpo}</a> : <div className={cls}>{corpo}</div>;
 }
 

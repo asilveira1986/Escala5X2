@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { caminhoParaEmpresa, empresaDoCaminho, entradaAtual, gravarEstadoMenu, lerEstadoMenu, migalhas, montarMenu, posicaoAtual, type ContextoMenu } from './menu';
+import { caminhoParaEmpresa, empresaDoCaminho, entradaAtual, tomDoIcone, gravarEstadoMenu, lerEstadoMenu, migalhas, montarMenu, posicaoAtual, type ContextoMenu } from './menu';
 
 const E = '11111111-1111-1111-1111-111111111111';
 const E2 = '22222222-2222-2222-2222-222222222222';
@@ -135,9 +135,22 @@ describe('entradaAtual (cabeçalho automático)', () => {
     expect(entradaAtual(m, null)).toBeNull();
   });
   it('todo destino do menu tem descrição; as páginas com título próprio estão marcadas', () => {
-    const todos: { rotulo: string; descricao?: string; proprioTitulo?: boolean }[] = m.flatMap((s) => s.grupos.flatMap((g) => (g.itens ?? [g])));
+    const todos = m.flatMap((s) => s.grupos.flatMap((g): { rotulo: string; descricao?: string; proprioTitulo?: boolean }[] => (g.itens ? g.itens : [g])));
     expect(todos.filter((d) => !d.descricao).map((d) => d.rotulo)).toEqual([]);
     const proprios = todos.filter((d) => d.proprioTitulo).map((d) => d.rotulo).sort();
     expect(proprios).toEqual(['Carteira', 'Empresas', 'Nova empresa', 'Novo colaborador', 'Visão geral']);
+  });
+});
+
+describe('cores por área', () => {
+  it('cada ícone do menu pertence a uma área com cor (equipe azul, escalas violeta, pedidos âmbar, ponto e folha verde, análises rosa)', () => {
+    expect(tomDoIcone('pessoas')).toBe('azul');
+    expect(tomDoIcone('turnos')).toBe('violeta');
+    expect(tomDoIcone('pedidos')).toBe('ambar');
+    expect(tomDoIcone('banco')).toBe('verde');
+    expect(tomDoIcone('diagnostico')).toBe('rosa');
+    const usados = montarMenu(ctx({ temMinhaEscala: true })).flatMap((s) => s.grupos.flatMap((g) => [g.icone, ...(g.itens ?? []).map((i) => i.icone)]));
+    expect(usados.length).toBeGreaterThan(15);
+    expect(usados.every((i) => typeof tomDoIcone(i) === 'string')).toBe(true);
   });
 });
