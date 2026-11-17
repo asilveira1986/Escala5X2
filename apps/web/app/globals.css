@@ -27,8 +27,8 @@
   --c-verde-bg: #d9f7ea;   --c-verde-fg: #0b5a3a;
   --c-ambar-bg: #fff1cc;   --c-ambar-fg: #7a4b00;
   --c-rosa-bg: #ffe4ec;    --c-rosa-fg: #9d174d;
-  --font-titulo: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
-  --font-texto: 'Public Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-titulo: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-texto: 'Inter', 'Segoe UI', system-ui, sans-serif;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -84,8 +84,8 @@
   --font-texto: var(--font-texto);
 }
 
-body { background: var(--c-fundo); color: var(--c-tinta); font-family: var(--font-texto); font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
-h1, h2, h3 { font-family: var(--font-titulo); letter-spacing: -0.01em; text-wrap: balance; }
+body { background: var(--c-fundo); color: var(--c-tinta); font-family: var(--font-texto); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; font-feature-settings: 'cv11', 'ss01'; }
+h1, h2, h3 { font-family: var(--font-titulo); letter-spacing: -0.02em; text-wrap: balance; }
 table { font-variant-numeric: tabular-nums; }
 :focus-visible { outline: 3px solid var(--c-marca); outline-offset: 2px; border-radius: 6px; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

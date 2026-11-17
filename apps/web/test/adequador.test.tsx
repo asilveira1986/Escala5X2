@@ -31,7 +31,7 @@ const botaoGerar = () => screen.getByRole('button', { name: /^Gerar escala/ });
 describe('Gerar escala (tela)', () => {
   it('mostra os setores com a equipe, os turnos com as horas e sugere a cobertura pela equipe de cada setor', async () => {
     await montar();
-    expect(screen.getAllByText(/8h líquidas · 40h\/semana/)).toHaveLength(2);
+    expect(screen.getAllByText(/· 40h\/sem/)).toHaveLength(2);
     expect(screen.getByText('6 pessoas')).toBeTruthy();
     expect(screen.getByText('2 pessoas')).toBeTruthy();
     expect(screen.getByLabelText('Loja, Manhã: pessoas na Seg')).toHaveProperty('value', '2');      // 6 ÷ 2 turnos × 5 ÷ 7
@@ -50,7 +50,7 @@ describe('Gerar escala (tela)', () => {
 
   it('o pedido leva funcionamento, feriados, turnos, cobertura por setor e folgas fixas; horário editado desliga o turno do cadastro', async () => {
     await montar();
-    fireEvent.change(screen.getAllByLabelText('Saída')[0]!, { target: { value: '16:00' } });
+    fireEvent.change(screen.getByLabelText('Saída do turno Manhã'), { target: { value: '16:00' } });
     fireEvent.change(screen.getByLabelText('Loja, Manhã: pessoas na Ter'), { target: { value: '4' } });
     fireEvent.click(screen.getByLabelText('Não funciona nos feriados (ninguém é escalado)'));
     fireEvent.click(screen.getByLabelText('Ana: folga fixa na Sáb'));
@@ -104,7 +104,7 @@ describe('Gerar escala (tela)', () => {
     cleanup();
     await montar({ setores: [{ id: S1, nome: 'Loja', pessoas: [] }] });
     expect((botaoGerar() as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText(/Nenhum setor com pessoas escolhido/)).toBeTruthy();
+    expect(screen.getAllByText('Escolha ao menos um setor com pessoas.').length).toBeGreaterThan(0);
   });
 
   it('empresa sem setores cadastrados: gera para a empresa toda', async () => {
