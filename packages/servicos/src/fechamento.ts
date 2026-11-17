@@ -24,7 +24,7 @@ const baseZ = z.object({
 export type BaseFechamento = Omit<z.infer<typeof baseZ>, 'banco'> & { banco: Lancamento[] };
 
 export type SeveridadeAviso = 'bloqueio' | 'alerta' | 'info';
-export type AvisoFechamento = { codigo: 'SEM_ESCALA' | 'MES_PARCIAL' | 'SEM_MATRICULA' | 'SEM_CONTRATO' | 'VENCIDO_A_PAGAR' | 'ORIGEM_ESCALA' | 'ORIGEM_PONTO' | 'PONTO_SEM_IMPORTACAO' | 'PONTO_SEM_MARCACAO' | 'PONTO_PENDENTE' | 'PONTO_EM_AUSENCIA' | 'PONTO_EM_FOLGA'; severidade: SeveridadeAviso; mensagem: string };
+export type AvisoFechamento = { codigo: 'SEM_ESCALA' | 'MES_PARCIAL' | 'SEM_MATRICULA' | 'SEM_CONTRATO' | 'VENCIDO_A_PAGAR' | 'ORIGEM_ESCALA' | 'ORIGEM_PONTO' | 'PONTO_SEM_IMPORTACAO' | 'PONTO_SEM_MARCACAO' | 'PONTO_PENDENTE' | 'PONTO_EM_AUSENCIA' | 'PONTO_EM_FOLGA' | 'EXTRAS_NO_BANCO'; severidade: SeveridadeAviso; mensagem: string };
 
 export type LinhaFechamento = {
   colaboradorId: string; nome: string; matricula: string | null; cargo: string | null; setor: string | null;
@@ -34,13 +34,15 @@ export type LinhaFechamento = {
   faltasMin: number; diasFerias: number; diasAfastamento: number;
   /** Só no fechamento pelo ponto: dias previstos sem marcação, dias com marcação incompleta, horas descontadas por falta de marcação e dias em que o ponto mudou o previsto. */
   diasSemMarcacao: number; diasPendentes: number; faltasPontoMin: number; diasAjustadosPeloPonto: number;
+  /** Pelo ponto: horas a mais que foram para o banco de horas (lançamentos de ponto do mês) e, por isso, saem das horas extras a pagar. */
+  extrasNoBancoMin: number;
   bancoCreditoMin: number; bancoDebitoMin: number; bancoPagoMin: number; bancoSaldoFinalMin: number; bancoVencidoMin: number; bancoAVencerMin: number; valorVencidoCentavos: number;
 };
 export type Fechamento = {
   competencia: string; inicio: DataISO; fim: DataISO; origem: 'escala' | 'ponto'; /** Só no ponto: o que fazer com dia previsto sem nenhuma marcação. */ semMarcacao?: 'escala' | 'falta'; motor: string;
   linhas: LinhaFechamento[]; avisos: AvisoFechamento[];
   escalas: BaseFechamento['escalas'];
-  totais: { colaboradores: number; trabalhadasMin: number; extrasMin: number; noturnasComputadasMin: number; faltasMin: number; faltasPontoMin: number; bancoVencidoMin: number; valorVencidoCentavos: number };
+  totais: { colaboradores: number; trabalhadasMin: number; extrasMin: number; noturnasComputadasMin: number; faltasMin: number; faltasPontoMin: number; extrasNoBancoMin: number; bancoVencidoMin: number; valorVencidoCentavos: number };
 };
 
 export function lerBaseFechamento(json: unknown): BaseFechamento {
@@ -171,10 +173,12 @@ export function calcularFechamento(base: BaseFechamento, entradas: EntradaEscala
       adicional = r0.adicionalHePercentual;
       if (saldo.vencidoMin > 0) valorVencido = valorEstimadoVencido(saldo.vencidoMin, valorHoraCentavos(ctx.salarioBaseCentavos, divisorEfetivo(r0, ctx)), adicional);
     }
+    // Pelo ponto: hora a mais lançada no banco não é paga como extra no mês (senão pagaria duas vezes)
+    const noBanco = peloPonto ? Math.min(horas.extrasMin, doMes.filter((l) => l.origem === 'ponto' && l.minutos > 0 && !estornados.has(l.id)).reduce((t, l) => t + l.minutos, 0)) : 0;
     const diasAus = (tipo: 'ferias' | 'afastamento') => new Set(base.ausencias.filter((a) => a.colaboradorId === c.id && a.tipo === tipo).flatMap((a) => dias.filter((d) => d >= a.inicio && d <= a.fim))).size;
     return {
       colaboradorId: c.id, nome: c.nome, matricula: c.matricula, cargo: c.cargo, setor: c.setor, temContrato: !!ctx,
-      diasTrabalhados: horas.diasTrabalhados, trabalhadasMin: horas.trabalhadasMin, normaisMin: horas.normaisMin, extrasMin: horas.extrasMin, adicionalHePercentual: adicional,
+      diasTrabalhados: horas.diasTrabalhados, trabalhadasMin: horas.trabalhadasMin, normaisMin: horas.normaisMin, extrasMin: horas.extrasMin - noBanco, extrasNoBancoMin: noBanco, adicionalHePercentual: adicional,
       noturnasRelogioMin: horas.noturnasRelogioMin, noturnasComputadasMin: horas.noturnasComputadasMin, domingoMin: horas.domingoMin, feriadoMin: horas.feriadoMin,
       domingosTrabalhados: horas.domingosTrabalhados, feriadosTrabalhados: horas.feriadosTrabalhados,
       faltasMin: doMes.filter((l) => l.origem === 'falta' && !estornados.has(l.id)).reduce((s, l) => s - l.minutos, 0),
@@ -200,6 +204,8 @@ export function calcularFechamento(base: BaseFechamento, entradas: EntradaEscala
     const sem = soma((c) => c.semMarcacao), pend = soma((c) => c.pendentes), folga = soma((c) => c.emFolga), aus = soma((c) => c.emAusencia);
     if (sem > 0) avisos.push({ codigo: 'PONTO_SEM_MARCACAO', severidade: 'alerta', mensagem: `${sem} dia(s) previstos na escala sem nenhuma marcação (possível falta, atestado ou ponto não importado) — ${semMarcacao === 'falta' ? 'descontados como falta' : 'contados como previstos'}. Confira em Ponto (AFD).` });
     if (pend > 0) avisos.push({ codigo: 'PONTO_PENDENTE', severidade: 'alerta', mensagem: `${pend} dia(s) com marcação incompleta (número ímpar de marcações): valeu o horário previsto na escala. Corrija o ponto e refaça o fechamento se necessário.` });
+    const nb = linhas.reduce((t, l) => t + l.extrasNoBancoMin, 0);
+    if (nb > 0) avisos.push({ codigo: 'EXTRAS_NO_BANCO', severidade: 'info', mensagem: `${Math.floor(nb / 60)}h${String(nb % 60).padStart(2, '0')} de horas a mais foram para o banco de horas (lançamentos de ponto do mês) e não entram nas horas extras a pagar.` });
     if (folga > 0) avisos.push({ codigo: 'PONTO_EM_FOLGA', severidade: 'info', mensagem: `${folga} dia(s) com marcação em dia de folga: as horas trabalhadas entraram no fechamento.` });
     if (aus > 0) avisos.push({ codigo: 'PONTO_EM_AUSENCIA', severidade: 'alerta', mensagem: `${aus} dia(s) com marcação durante férias ou afastamento: não entraram no fechamento; confira o lançamento da ausência.` });
   }
@@ -213,7 +219,7 @@ export function calcularFechamento(base: BaseFechamento, entradas: EntradaEscala
   const soma = (f: (l: LinhaFechamento) => number) => linhas.reduce((s, l) => s + f(l), 0);
   return {
     competencia: inicio.slice(0, 7), inicio, fim, origem: opcoes.origem, ...(peloPonto ? { semMarcacao } : {}), motor: VERSAO_MOTOR, linhas, avisos, escalas: base.escalas,
-    totais: { colaboradores: linhas.length, trabalhadasMin: soma((l) => l.trabalhadasMin), extrasMin: soma((l) => l.extrasMin), noturnasComputadasMin: soma((l) => l.noturnasComputadasMin), faltasMin: soma((l) => l.faltasMin), faltasPontoMin: soma((l) => l.faltasPontoMin), bancoVencidoMin: venc, valorVencidoCentavos: soma((l) => l.valorVencidoCentavos) },
+    totais: { colaboradores: linhas.length, trabalhadasMin: soma((l) => l.trabalhadasMin), extrasMin: soma((l) => l.extrasMin), extrasNoBancoMin: soma((l) => l.extrasNoBancoMin), noturnasComputadasMin: soma((l) => l.noturnasComputadasMin), faltasMin: soma((l) => l.faltasMin), faltasPontoMin: soma((l) => l.faltasPontoMin), bancoVencidoMin: venc, valorVencidoCentavos: soma((l) => l.valorVencidoCentavos) },
   };
 }
 

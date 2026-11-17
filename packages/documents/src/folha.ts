@@ -7,7 +7,7 @@ export type LinhaFolha = {
   noturnasComputadasMin: number; domingoMin: number; feriadoMin: number; domingosTrabalhados: number; feriadosTrabalhados: number;
   faltasMin: number; diasFerias: number; diasAfastamento: number;
   /** Só nos fechamentos pelo ponto (ausentes nos antigos). */
-  diasSemMarcacao?: number; faltasPontoMin?: number;
+  diasSemMarcacao?: number; faltasPontoMin?: number; extrasNoBancoMin?: number;
   bancoCreditoMin: number; bancoDebitoMin: number; bancoPagoMin: number; bancoSaldoFinalMin: number; bancoVencidoMin: number; valorVencidoCentavos: number;
 };
 export type FolhaFechada = {
@@ -57,6 +57,7 @@ export const COLUNAS_GENERICO: Array<{ titulo: string; largura: number; valor: (
   // colunas do fechamento pelo ponto, no fim para não deslocar as demais em quem já mapeou o arquivo (0 nos fechamentos pela escala)
   { titulo: 'Faltas pelo ponto (horas)', largura: 13, valor: (l) => horas(l.faltasPontoMin ?? 0), formato: '0.00' },
   { titulo: 'Dias previstos sem marcação', largura: 13, valor: (l) => l.diasSemMarcacao ?? 0, formato: '0' },
+  { titulo: 'Horas extras enviadas ao banco (h)', largura: 15, valor: (l) => horas(l.extrasNoBancoMin ?? 0), formato: '0.00' },
 ];
 
 /** Texto de célula seguro para o Excel: não deixa o início virar fórmula (=, +, -, @). */

@@ -49,6 +49,7 @@ export function montarMenu(c: ContextoMenu): SecaoMenu[] {
         { id: 'ponto-folha', rotulo: 'Ponto e folha', icone: 'folha', itens: [
           { id: 'ponto', rotulo: 'Ponto (AFD)', href: `${e}/ponto`, icone: 'relogio', descricao: 'Importe as marcações do relógio de ponto e compare com a escala.' },
           { id: 'banco-horas', rotulo: 'Banco de horas', href: `${e}/banco-horas`, icone: 'banco', descricao: 'Saldos, créditos e compensações de cada pessoa.' },
+          { id: 'banco-ponto', rotulo: 'Banco pelo ponto', href: `${e}/banco-horas/ponto`, icone: 'banco', descricao: 'Lance no banco as horas a mais e a menos apuradas pelo ponto.' },
           { id: 'folha', rotulo: 'Fechamento da folha', href: `${e}/folha`, icone: 'folha', descricao: 'Feche o mês e exporte as horas para a folha de pagamento.' },
         ] },
       ],
@@ -116,7 +117,7 @@ export function caminhoParaEmpresa(caminho: string, novaEmpresaId: string): stri
   const atual = empresaDoCaminho(caminho);
   if (!atual) return `/empresas/${novaEmpresaId}`;
   const resto = caminho.slice(`/empresas/${atual}`.length).split('?')[0]!;
-  const base = ['/escalas/cobertura', '/escalas/ausencias', '/escalas/turnos', '/escalas', '/colaboradores', '/importar', '/diagnostico', '/solicitacoes', '/ponto', '/banco-horas', '/folha']
+  const base = ['/escalas/cobertura', '/escalas/ausencias', '/escalas/turnos', '/escalas', '/colaboradores', '/importar', '/diagnostico', '/solicitacoes', '/ponto', '/banco-horas/ponto', '/banco-horas', '/folha']
     .find((b) => resto === b || resto.startsWith(`${b}/`));
   return `/empresas/${novaEmpresaId}${base ?? ''}`;
 }
