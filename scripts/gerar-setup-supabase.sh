@@ -162,4 +162,14 @@ INC16=$DB/setup/supabase_atualizar_ponto.sql
   echo "commit;"
 } > "$INC16"
 echo "gerado: $INC16"
+# Cadastro manual de colaborador (migration 0017) para bancos com as migrations 0001 a 0016.
+INC17=$DB/setup/supabase_atualizar_colaborador.sql
+{
+  echo "-- JornadaCerta: cadastro manual de colaborador (migration 0017) em um banco que já tem as migrations 0001 a 0016."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0017_cadastro_colaborador.up.sql"
+  echo "commit;"
+} > "$INC17"
+echo "gerado: $INC17"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"

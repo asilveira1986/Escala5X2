@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Aviso, Cartao } from '@/components/ui';
+import { Aviso, Cartao, classeBotaoLinkPrimario } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
 import { todasAsLinhas } from '@/lib/paginar';
 import type { ColaboradorVigenteRow, LinhaEquipe } from '@/lib/tipos-db';
@@ -32,7 +32,10 @@ export default async function Colaboradores({ params }: { params: Promise<{ id: 
     <Cartao titulo={`Colaboradores (${dados.length})`}>
       {error ? <Aviso tipo="erro">Não foi possível carregar os colaboradores.</Aviso> : null}
       {dados.length >= LIMITE ? <Aviso>Exibindo os primeiros {LIMITE} colaboradores.</Aviso> : null}
-      <div className="mb-3 text-sm"><Link className="text-marca hover:underline" href={`/empresas/${empresaId}/importar`}>Importar ou atualizar por planilha</Link></div>
+      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+        {podeGerirRpc === true ? <Link className={classeBotaoLinkPrimario} href={`/empresas/${empresaId}/colaboradores/novo`}>Novo colaborador</Link> : null}
+        <Link className="text-marca hover:underline" href={`/empresas/${empresaId}/importar`}>Importar ou atualizar por planilha</Link>
+      </div>
       <TabelaColaboradores dados={dados} empresaId={empresaId} podeGerir={podeGerirRpc === true} />
     </Cartao>
   );

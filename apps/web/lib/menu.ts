@@ -36,6 +36,7 @@ export function montarMenu(c: ContextoMenu): SecaoMenu[] {
         { id: 'diagnostico', rotulo: 'Diagnóstico', icone: 'diagnostico', href: `${e}/diagnostico` },
         { id: 'equipe', rotulo: 'Equipe', icone: 'equipe', itens: [
           { id: 'colaboradores', rotulo: 'Colaboradores', href: `${e}/colaboradores`, icone: 'pessoas' },
+          { id: 'novo-colaborador', rotulo: 'Novo colaborador', href: `${e}/colaboradores/novo`, icone: 'mais' },
           { id: 'importar', rotulo: 'Importar planilha', href: `${e}/importar`, icone: 'importar' },
         ] },
         { id: 'escalas', rotulo: 'Escalas', icone: 'escalas', itens: [
