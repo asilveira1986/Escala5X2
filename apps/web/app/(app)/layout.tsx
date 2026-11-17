@@ -12,14 +12,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const { data: mfaObrigatorio } = await supabase.rpc('mfa_obrigatorio');
   const { data: gestao } = await supabase.rpc('minhas_organizacoes_gestao');
   const ehGestor = Array.isArray(gestao) && gestao.length > 0;
-  const [{ count }, { data: emp }] = await Promise.all([
+  const [{ count }, { data: emp }, { count: naoLidas }] = await Promise.all([
     supabase.from('colaborador').select('id', { count: 'exact', head: true }).eq('usuario_id', user.id),
     // empresas do seletor do menu (só para quem gere; o RLS já limita ao que a pessoa pode ver)
     ehGestor ? supabase.from('empresa').select('id, razao_social').order('razao_social').limit(300) : Promise.resolve({ data: [] }),
+    supabase.from('notificacao').select('id', { count: 'exact', head: true }).is('lida_em', null),
   ]);
   const jar = await cookies();
   return (
-    <Casca email={user.email ?? ''} mfaDesligado={mfaObrigatorio === false} temMinhaEscala={(count ?? 0) > 0} temCarteira={ehGestor} ehGestor={ehGestor}
+    <Casca email={user.email ?? ''} mfaDesligado={mfaObrigatorio === false} temMinhaEscala={(count ?? 0) > 0} temCarteira={ehGestor} ehGestor={ehGestor} naoLidas={naoLidas ?? 0}
       empresas={linhas<{ id: string; razao_social: string }>(emp).map((e) => ({ id: e.id, nome: e.razao_social }))} estadoMenu={lerEstadoMenu(jar.get(COOKIE_MENU)?.value)}>
       {children}
       <PwaRegistro usuario={await hashUsuario(user.id)} />

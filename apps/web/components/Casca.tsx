@@ -3,13 +3,13 @@ import { Shell, type EmpresaDoMenu } from './Shell';
 import type { EstadoMenu } from '@/lib/menu';
 
 /** Estrutura do aplicativo: menu lateral recolhível, barra de cima com o caminho e o conteúdo. */
-export function Casca({ email, children, mfaDesligado = false, temMinhaEscala = false, temCarteira = false, ehGestor = true, empresas = [], estadoMenu = { recolhido: false, abertos: [] } }: {
-  email: string; children: ReactNode; mfaDesligado?: boolean; temMinhaEscala?: boolean; temCarteira?: boolean; ehGestor?: boolean; empresas?: EmpresaDoMenu[]; estadoMenu?: EstadoMenu;
+export function Casca({ email, children, mfaDesligado = false, temMinhaEscala = false, temCarteira = false, ehGestor = true, empresas = [], estadoMenu = { recolhido: false, abertos: [] }, naoLidas = 0 }: {
+  email: string; children: ReactNode; mfaDesligado?: boolean; temMinhaEscala?: boolean; temCarteira?: boolean; ehGestor?: boolean; empresas?: EmpresaDoMenu[]; estadoMenu?: EstadoMenu; naoLidas?: number;
 }) {
   const aviso = mfaDesligado ? (
     <div role="status" className="bg-atencao-bg px-4 py-2 text-center text-sm font-semibold text-atencao-fg">
       Modo de teste: a verificação em duas etapas está <strong>desativada</strong> neste ambiente. Não use dados reais.
     </div>
   ) : null;
-  return <Shell email={email} empresas={empresas} ehGestor={ehGestor} temMinhaEscala={temMinhaEscala} temCarteira={temCarteira} estadoInicial={estadoMenu} aviso={aviso}>{children}</Shell>;
+  return <Shell naoLidas={naoLidas} email={email} empresas={empresas} ehGestor={ehGestor} temMinhaEscala={temMinhaEscala} temCarteira={temCarteira} estadoInicial={estadoMenu} aviso={aviso}>{children}</Shell>;
 }
