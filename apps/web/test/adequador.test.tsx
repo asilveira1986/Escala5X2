@@ -202,12 +202,12 @@ describe('Gerar escala: fim da 6x1', () => {
     expect(screen.getByLabelText('Jornada semanal (horas)')).toHaveProperty('value', '40');
     expect(screen.getByLabelText('Dias de trabalho por semana')).toHaveProperty('value', '5');
   });
-  it('avisa se a jornada passa do teto da fase do mês e oferece 40h na fase 1 (acima de 8h por dia)', async () => {
+  it('avisa se a jornada passa do teto da fase do mês', async () => {
     await montar({ fases, em6x1: 0, totalEquipe: 8, hoje: '2026-11-17', mesPadrao: '2027-01' });
-    expect(screen.getByText(/convenção ou acordo coletivo que amplie a jornada diária/)).toBeTruthy();
+    expect(screen.queryByText(/acordo coletivo/)).toBeNull();
     fireEvent.change(screen.getByLabelText('Jornada semanal (horas)'), { target: { value: '44' } });
     expect(screen.getByRole('alert').textContent).toMatch(/teto de 42h/);
-    fireEvent.click(screen.getByRole('button', { name: 'Adequar a 40 horas em 5 dias' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Adequar à Fase 2: 5x2 com 40h' }));
     expect(screen.getByLabelText('Jornada semanal (horas)')).toHaveProperty('value', '40');
     expect(screen.queryByRole('alert')).toBeNull();
   });
