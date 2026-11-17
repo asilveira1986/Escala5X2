@@ -14,7 +14,7 @@ describe('montarMenu', () => {
     const emp = m[1]!.grupos;
     expect(emp.map((g) => g.id)).toEqual(['visao', 'diagnostico', 'equipe', 'escalas', 'pedidos', 'ponto-folha']);
     expect(emp.find((g) => g.id === 'escalas')!.itens!.map((i) => i.rotulo)).toEqual(['Escalas do mês', 'Turnos', 'Cobertura mínima', 'Férias e afastamentos']);
-    expect(emp.find((g) => g.id === 'ponto-folha')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/ponto`, `/empresas/${E}/banco-horas`, `/empresas/${E}/folha`]);
+    expect(emp.find((g) => g.id === 'ponto-folha')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/ponto`, `/empresas/${E}/banco-horas`, `/empresas/${E}/banco-horas/ponto`, `/empresas/${E}/folha`]);
     expect(emp.find((g) => g.id === 'equipe')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/colaboradores`, `/empresas/${E}/colaboradores/novo`, `/empresas/${E}/importar`]);
   });
   it('Configurações reúne a lista de empresas e o cadastro de nova empresa', () => {
@@ -63,6 +63,7 @@ describe('posicaoAtual', () => {
   it('páginas de um registro pertencem ao item da lista (editor de escala, extrato de pessoa, diagnóstico)', () => {
     expect(posicaoAtual(m, `/empresas/${E}/escalas/9d3c0a52-0000-0000-0000-000000000001`)).toMatchObject({ grupoId: 'escalas', itemId: 'escalas-lista' });
     expect(posicaoAtual(m, `/empresas/${E}/banco-horas/abc`)).toMatchObject({ itemId: 'banco-horas' });
+    expect(posicaoAtual(m, `/empresas/${E}/banco-horas/ponto`)).toMatchObject({ itemId: 'banco-ponto' });
     expect(posicaoAtual(m, `/empresas/${E}/diagnostico/abc`)).toMatchObject({ grupoId: 'diagnostico' });
     expect(posicaoAtual(m, `/empresas/${E}/importar/xyz`)).toMatchObject({ itemId: 'importar' });
     expect(posicaoAtual(m, `/empresas/${E}/colaboradores/novo`)).toMatchObject({ itemId: 'novo-colaborador' });
@@ -97,6 +98,7 @@ describe('empresa na URL e troca de empresa', () => {
   it('trocar de empresa mantém a seção; telas de registro voltam à lista; fora de empresa vai à visão geral', () => {
     expect(caminhoParaEmpresa(`/empresas/${E}/banco-horas`, E2)).toBe(`/empresas/${E2}/banco-horas`);
     expect(caminhoParaEmpresa(`/empresas/${E}/banco-horas/pessoa-1`, E2)).toBe(`/empresas/${E2}/banco-horas`);
+    expect(caminhoParaEmpresa(`/empresas/${E}/banco-horas/ponto`, E2)).toBe(`/empresas/${E2}/banco-horas/ponto`);
     expect(caminhoParaEmpresa(`/empresas/${E}/escalas/cobertura`, E2)).toBe(`/empresas/${E2}/escalas/cobertura`);
     expect(caminhoParaEmpresa(`/empresas/${E}/escalas/uuid-da-escala`, E2)).toBe(`/empresas/${E2}/escalas`);
     expect(caminhoParaEmpresa(`/empresas/${E}/folha?mes=2027-02`, E2)).toBe(`/empresas/${E2}/folha`);

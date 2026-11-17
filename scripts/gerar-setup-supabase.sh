@@ -182,4 +182,14 @@ INC18=$DB/setup/supabase_atualizar_edicao_colaborador.sql
   echo "commit;"
 } > "$INC18"
 echo "gerado: $INC18"
+# Banco de horas alimentado pelo ponto (migration 0019) para bancos com as migrations 0001 a 0018.
+INC19=$DB/setup/supabase_atualizar_banco_horas_ponto.sql
+{
+  echo "-- JornadaCerta: banco de horas pelo ponto (migration 0019) em um banco que já tem as migrations 0001 a 0018."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0019_banco_horas_ponto.up.sql"
+  echo "commit;"
+} > "$INC19"
+echo "gerado: $INC19"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"

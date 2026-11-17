@@ -2,7 +2,7 @@ import type { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { comoUsuario, novoUsuario, prepararBanco } from '../../db/test/helpers';
 import { acordo, colab } from '../../rules-engine/test/util';
-import { gerarFolhaCsv } from '../../documents/src';
+import { gerarFolhaCsv } from '../../documents/src/folha';
 import { calcularFechamento, carregarBaseFechamento, fecharFolha, lerBaseFechamento, podeFechar, publicarEscala, type BaseFechamento, type EntradaEscala, type Lancamento } from '../src';
 import { entrada } from './otimizador-util';
 import { rpcPg, rpcPgServidor } from './pg-rpc';
@@ -212,7 +212,7 @@ describe('fechamento de ponta a ponta (banco real)', () => {
     expect((await comoUsuario(db, rh, (c) => c.query(`select fechamento_integro($1) ok`, [id]))).rows[0].ok).toBe(true);
     const dados = (await db.query(`select dados from fechamento_folha where id=$1`, [id])).rows[0].dados;
     const csv = gerarFolhaCsv(dados);
-    expect(csv.split('\r\n')[0]).toMatch(/Faltas pelo ponto \(horas\);Dias previstos sem marcação$/);
+    expect(csv.split('\r\n')[0]).toMatch(/Faltas pelo ponto \(horas\);Dias previstos sem marcação;Horas extras enviadas ao banco \(h\)$/);
   });
   it('colaborador não consegue ler a base do fechamento nem fechar', async () => {
     await expect(carregarBaseFechamento(rpcPg(db, ua), emp, ini())).rejects.toThrow(/sem permissão/);
@@ -292,5 +292,32 @@ describe('fechamento pelo ponto apurado (lógica pura)', () => {
     expect(f.semMarcacao).toBeUndefined();
     expect(linhaA(f)).toMatchObject({ trabalhadasMin: 9600, diasSemMarcacao: 0, diasPendentes: 0, faltasPontoMin: 0, diasAjustadosPeloPonto: 0 });
     expect(codigos(f)).toContain('ORIGEM_ESCALA');
+  });
+});
+
+describe('fechamento pelo ponto × banco de horas', () => {
+  const marc = (c: string, data: string, hora: string) => ({ colaborador_id: c, momento: `${data}T${hora}:00-03:00` });
+  const par = (c: string, data: string, ini = '08:00', fim = '17:00') => [marc(c, data, ini), marc(c, data, fim)];
+  const alocs = mesCheio('a');
+  const marcacoes = [...alocs.flatMap((a) => par('a', a.data)).filter((m) => !m.momento.startsWith('2027-02-02')), ...par('a', '2027-02-02', '08:00', '20:00')];   // 3 h a mais no dia 2 (11h: 8 normais + 3 extras)
+  const fechar = (banco: Lancamento[]) => calcularFechamento(baseDe({ banco }), [entradaMes(alocs)], { origem: 'ponto', marcacoes });
+  it('crédito de ponto lançado no banco sai das horas extras a pagar (não paga duas vezes) e vira aviso', () => {
+    const sem = fechar([]);
+    expect(sem.linhas[0]!.extrasMin).toBeGreaterThanOrEqual(180);
+    const bruto = sem.linhas[0]!.extrasMin;
+    const com = fechar([lanc('a', '2027-02-02', 120, { origem: 'ponto' })]);
+    expect(com.linhas[0]).toMatchObject({ extrasNoBancoMin: 120, extrasMin: bruto - 120, bancoCreditoMin: 120 });
+    expect(com.totais.extrasNoBancoMin).toBe(120);
+    expect(com.avisos.map((a) => a.codigo)).toContain('EXTRAS_NO_BANCO');
+  });
+  it('nunca abate mais do que existe de extra; crédito estornado ou de outra origem não abate; pela escala nada muda', () => {
+    const grande = fechar([lanc('a', '2027-02-02', 1000, { origem: 'ponto' })]);
+    expect(grande.linhas[0]!.extrasMin).toBe(0);
+    const c1 = lanc('a', '2027-02-02', 120, { origem: 'ponto' });
+    const estornado = fechar([c1, lanc('a', '2027-02-05', -120, { origem: 'estorno', estorna_id: c1.id })]);
+    expect(estornado.linhas[0]!.extrasNoBancoMin).toBe(0);
+    expect(fechar([lanc('a', '2027-02-02', 120, { origem: 'manual' })]).linhas[0]!.extrasNoBancoMin).toBe(0);
+    const pelaEscala = calcularFechamento(baseDe({ banco: [lanc('a', '2027-02-02', 120, { origem: 'ponto' })] }), [entradaMes(alocs)]);
+    expect(pelaEscala.linhas[0]!.extrasNoBancoMin).toBe(0);
   });
 });

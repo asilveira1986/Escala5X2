@@ -46,3 +46,14 @@ Regras do cálculo pelo ponto (`packages/servicos/src/fechamento.ts`):
 - Mês sem nenhuma marcação importada: bloqueia o fechamento pelo ponto.
 
 O banco de horas **não** é alimentado pelo ponto nesta etapa: ele segue só pelos lançamentos.
+
+## Banco de horas pelo ponto
+
+Em **Ponto e folha › Banco pelo ponto** (`/empresas/[id]/banco-horas/ponto`), a gestão vê, mês a mês, os dias em que o ponto diverge da escala e **escolhe o que lançar** no banco de horas:
+
+- **Entra:** dia com marcação completa fora da tolerância da CLT (5 min por marcação, 10 min por dia): atraso, saída antecipada e intervalo maior viram débito; saída depois do turno e intervalo menor viram crédito; trabalho em dia de folga vira crédito.
+- **Não entra:** dia sem marcação, marcação incompleta e férias/afastamento. Falta e abono são decisão da gestão (lançamento manual no banco de horas).
+- Os minutos são recalculados **no servidor** ao lançar (o navegador só diz quais dias). O banco (`lancar_banco_horas_ponto`, migration 0019) aplica as mesmas regras do lançamento manual — crédito só com acordo de banco de horas vigente, teto de saldo, prazo de compensação, limite negativo — e **recusa item a item**, devolvendo o motivo, sem derrubar o resto do lote. Um dia só recebe um lançamento de ponto (a menos que o anterior seja estornado).
+- Os lançamentos ficam com origem **Ponto** no extrato, auditados, e podem ser estornados como qualquer outro.
+
+**Folha:** no fechamento pelo ponto, o crédito de ponto lançado no mês é **abatido das horas extras a pagar** (para não pagar duas vezes), aparece no aviso "horas a mais foram para o banco" e na coluna *Horas extras enviadas ao banco (h)* (no fim da planilha). Instalador incremental: `packages/db/setup/supabase_atualizar_banco_horas_ponto.sql`.
