@@ -18,7 +18,11 @@ export function SeletorCbo({ name = 'cbo', valorInicial = '', aoEscolher }: { na
   const caixa = useRef<HTMLDivElement>(null);
 
   // a lista (~110 KB) só é baixada quando o formulário aparece, não no resto do sistema
-  useEffect(() => { void import('@/lib/cbo-dados.json').then((m) => setLista(m.default as unknown as OcupacaoCbo[])); }, []);
+  useEffect(() => {
+    let vivo = true;
+    import('@/lib/cbo-dados.json').then((m) => { if (vivo && Array.isArray(m.default)) setLista(m.default as unknown as OcupacaoCbo[]); }).catch(() => { /* sem a lista o campo só não sugere: o cadastro segue sem CBO */ });
+    return () => { vivo = false; };
+  }, []);
   useEffect(() => {
     if (codigo && lista.length > 0) { const o = lista.find(([c]) => c === codigo); if (o) setTexto((t) => t || `${o[0]} · ${o[1]}`); }
   }, [codigo, lista]);
