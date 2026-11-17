@@ -1,3 +1,5 @@
+import type { IconeId } from '@/lib/menu';
+import { ICONES_MENU } from './menu-icones';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 const base = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-9';
@@ -27,14 +29,65 @@ export function Campo({ rotulo, children, dica }: { rotulo: string; children: Re
   );
 }
 
-export function Cartao({ titulo, subtitulo, children, className = '' }: { titulo?: string; subtitulo?: string; children: ReactNode; className?: string }) {
+/** Quadradinho colorido com o ícone (cabeçalhos, cartões, métricas). */
+export function IconeCaixa({ icone, tom = 'marca', tamanho = 'md' }: { icone: IconeId; tom?: 'marca' | 'ok' | 'atencao' | 'risco' | 'neutro'; tamanho?: 'sm' | 'md' | 'lg' }) {
+  const I = ICONES_MENU[icone];
+  const cor = { marca: 'bg-marca-suave text-marca', ok: 'bg-ok-bg text-ok-fg', atencao: 'bg-atencao-bg text-atencao-fg', risco: 'bg-risco-bg text-risco-fg', neutro: 'bg-neutro-bg text-neutro-fg' }[tom];
+  const dim = { sm: 'size-8 rounded-xl', md: 'size-10 rounded-2xl', lg: 'size-12 rounded-2xl' }[tamanho];
+  return <span aria-hidden className={`grid shrink-0 place-items-center ${dim} ${cor}`}><I width={tamanho === 'sm' ? 18 : 22} height={tamanho === 'sm' ? 18 : 22} /></span>;
+}
+
+export function Cartao({ titulo, subtitulo, icone, acoes, children, className = '' }: { titulo?: string; subtitulo?: string; icone?: IconeId; acoes?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-3xl border border-linha bg-cartao p-4 shadow-[0_2px_8px_rgba(16,32,30,0.05)] sm:p-5 ${className}`}>
-      {titulo ? <h2 className="text-base font-bold">{titulo}</h2> : null}
-      {subtitulo ? <p className="mt-0.5 text-sm text-suave">{subtitulo}</p> : null}
-      {titulo || subtitulo ? <div className="mt-3">{children}</div> : children}
+    <section className={`rounded-3xl border border-linha bg-cartao p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.10)] sm:p-6 ${className}`}>
+      {titulo || subtitulo || acoes ? (
+        <header className="mb-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+          <div className="flex min-w-0 items-start gap-3">
+            {icone ? <IconeCaixa icone={icone} tamanho="sm" /> : null}
+            <div className="min-w-0">
+              {titulo ? <h2 className="text-base font-bold leading-8">{titulo}</h2> : null}
+              {subtitulo ? <p className={`text-sm text-suave ${titulo ? '-mt-1' : ''}`}>{subtitulo}</p> : null}
+            </div>
+          </div>
+          {acoes ? <div className="flex flex-wrap items-center gap-2">{acoes}</div> : null}
+        </header>
+      ) : null}
+      {children}
     </section>
   );
+}
+
+/** Cabeçalho de página: ícone, título, descrição e, à direita, as ações da tela. */
+export function CabecalhoPagina({ titulo, descricao, icone, acoes, children }: { titulo: ReactNode; descricao?: string; icone?: IconeId; acoes?: ReactNode; children?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+      <div className="flex min-w-0 items-start gap-3.5">
+        {icone ? <IconeCaixa icone={icone} tamanho="lg" /> : null}
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-[1.75rem]">{titulo}</h1>
+          {descricao ? <p className="mt-1 max-w-2xl text-suave">{descricao}</p> : null}
+          {children}
+        </div>
+      </div>
+      {acoes ? <div className="flex flex-wrap items-center gap-2">{acoes}</div> : null}
+    </div>
+  );
+}
+
+/** Número em destaque com ícone, para resumos. Vira link quando recebe `href`. */
+export function Metrica({ icone, rotulo, valor, texto, tom = 'marca', href }: { icone: IconeId; rotulo: string; valor: number | string; texto?: string; tom?: 'marca' | 'ok' | 'atencao' | 'risco' | 'neutro'; href?: string }) {
+  const corpo = (
+    <>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-semibold text-suave">{rotulo}</span>
+        <IconeCaixa icone={icone} tom={tom} tamanho="sm" />
+      </div>
+      <span className="mt-2 block text-2xl font-bold sm:text-3xl leading-none tracking-tight">{valor}</span>
+      {texto ? <span className="mt-2 block text-sm text-suave">{texto}</span> : null}
+    </>
+  );
+  const cls = 'block rounded-3xl border border-linha bg-cartao p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5';
+  return href ? <a href={href} className={`${cls} transition hover:-translate-y-0.5 hover:border-marca hover:shadow-md`}>{corpo}</a> : <div className={cls}>{corpo}</div>;
 }
 
 const tons = {
@@ -60,11 +113,6 @@ export function Aviso({ tipo = 'info', children }: { tipo?: 'info' | 'erro' | 'o
   return <div role={tipo === 'erro' ? 'alert' : 'status'} className={`rounded-2xl px-3.5 py-2 text-sm font-medium ${c}`}>{children}</div>;
 }
 
-export function Titulo({ children, descricao }: { children: ReactNode; descricao?: string }) {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold leading-tight sm:text-3xl">{children}</h1>
-      {descricao ? <p className="mt-1 max-w-2xl text-suave">{descricao}</p> : null}
-    </div>
-  );
+export function Titulo({ children, descricao, icone, acoes }: { children: ReactNode; descricao?: string; icone?: IconeId; acoes?: ReactNode }) {
+  return <CabecalhoPagina titulo={children} descricao={descricao} icone={icone} acoes={acoes} />;
 }

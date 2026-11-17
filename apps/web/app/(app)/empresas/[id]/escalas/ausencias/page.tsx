@@ -27,10 +27,10 @@ export default async function Ausencias({ params }: { params: Promise<{ id: stri
   return (
     <>
       <Link href={`/empresas/${empresaId}/escalas`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Escalas</Link>
-      <Cartao titulo="Férias e afastamentos" subtitulo="Quem está ausente não pode ser escalado: o editor bloqueia a publicação se houver trabalho nesses dias.">
+      <Cartao icone="ferias" titulo="Férias e afastamentos" subtitulo="Quem está ausente não pode ser escalado: o editor bloqueia a publicação se houver trabalho nesses dias.">
         {podeGerir ? <FormAusencia empresaId={empresaId} colaboradores={colaboradores.filter((c) => !c.desligamento).map((c) => ({ id: c.id, nome: c.nome }))} /> : <p className="text-sm text-suave">Só quem gere a empresa pode lançar ausências.</p>}
       </Cartao>
-      <Cartao titulo="Lançamentos">
+      <Cartao icone="ferias" titulo="Lançamentos">
         {lista.length === 0 ? <EstadoVazio titulo="Nenhuma ausência lançada">Lance as férias programadas para o editor evitar escalar quem está fora.</EstadoVazio> : (
           <ul className="divide-y divide-linha">
             {lista.map((a) => (

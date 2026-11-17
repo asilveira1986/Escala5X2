@@ -13,7 +13,7 @@ export default async function Turnos({ params }: { params: Promise<{ id: string 
   const modelos = linhas<ModeloLinha>(data);
   return (
     <>
-      <Cartao titulo="Turnos cadastrados" subtitulo="Modelos de horário para pintar na grade da escala.">
+      <Cartao icone="turnos" titulo="Turnos cadastrados" subtitulo="Modelos de horário para pintar na grade da escala.">
         {modelos.length === 0 ? <EstadoVazio titulo="Nenhum turno ainda">Cadastre o primeiro abaixo.</EstadoVazio> : (
           <ul className="flex flex-wrap gap-2">
             {modelos.map((m) => (
@@ -25,7 +25,7 @@ export default async function Turnos({ params }: { params: Promise<{ id: string 
           </ul>
         )}
       </Cartao>
-      <Cartao titulo="Novo turno"><FormModeloTurno empresaId={empresaId} /></Cartao>
+      <Cartao icone="mais" titulo="Novo turno"><FormModeloTurno empresaId={empresaId} /></Cartao>
     </>
   );
 }

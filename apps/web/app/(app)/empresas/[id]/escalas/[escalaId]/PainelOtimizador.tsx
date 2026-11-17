@@ -50,7 +50,7 @@ export function PainelOtimizador({ escalaId, inicial, bloqueado, onAplicada, int
 
   const resumo = estado?.status === 'concluida' ? estado.resumo : null;
   return (
-    <Cartao titulo="Propostas automáticas" subtitulo="O sistema monta até 3 escalas que respeitam a lei e cobrem a demanda. Você escolhe uma, aplica na grade e ajusta o que quiser antes de publicar.">
+    <Cartao icone="escalas" titulo="Propostas automáticas" subtitulo="O sistema monta até 3 escalas que respeitam a lei e cobrem a demanda. Você escolhe uma, aplica na grade e ajusta o que quiser antes de publicar.">
       <div className="flex flex-wrap items-center gap-2">
         <Botao onClick={gerar} disabled={pendente || ativo || bloqueado}>{ativo ? 'Gerando…' : resumo || estado?.status === 'erro' ? 'Gerar novamente' : 'Gerar propostas'}</Botao>
         {ativo ? <Botao variante="secundario" onClick={cancelar} disabled={pendente}>Cancelar</Botao> : null}

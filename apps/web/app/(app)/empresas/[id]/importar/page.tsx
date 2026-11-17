@@ -17,7 +17,7 @@ export default async function Importar({ params }: { params: Promise<{ id: strin
     <>
       <AssistenteImportacao empresaId={empresaId} />
       {historico.length > 0 && (
-        <Cartao titulo="Importações recentes">
+        <Cartao icone="importar" titulo="Importações recentes">
           <ul className="space-y-1 text-sm">
             {historico.map((h) => (
               <li key={h.id}><Link className="text-marca hover:underline" href={`/empresas/${empresaId}/importar/${h.id}`}>{dataBr(h.criado_em)}</Link> <Selo tom={tom[h.status]}>{rotulo[h.status]}</Selo></li>

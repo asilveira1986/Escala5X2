@@ -79,4 +79,14 @@ describe('Shell', () => {
     expect(screen.getByRole('navigation', { name: 'Atalhos' })).toBeTruthy();
     expect(screen.getAllByRole('link', { name: /Minha escala/ }).length).toBeGreaterThan(0);
   });
+
+  it('mostra o cabeçalho da página (ícone, título e descrição) nas telas do menu, mas não nas que têm título próprio', () => {
+    montar();
+    expect(screen.getByRole('heading', { level: 1, name: 'Turnos' })).toBeTruthy();
+    expect(screen.getByText('Modelos de horário para pintar na grade.')).toBeTruthy();
+    cleanup();
+    caminho = `/empresas/${E1}`; // Visão geral desenha o próprio título
+    montar();
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
+  });
 });

@@ -35,17 +35,17 @@ export default async function Colaboradores({ params }: { params: Promise<{ id: 
   const desligados = linhas<{ id: string; nome: string; cargo: string | null; desligamento: string }>(deslig);
   return (
     <>
-    <Cartao titulo={`Colaboradores (${dados.length})`}>
+    <Cartao icone="pessoas" titulo={`Colaboradores (${dados.length})`} subtitulo="Equipe, contratos e acesso ao aplicativo."
+      acoes={<>
+        <Link className="text-sm font-semibold text-marca hover:underline" href={`/empresas/${empresaId}/importar`}>Importar planilha</Link>
+        {podeGerirRpc === true ? <Link className={classeBotaoLinkPrimario} href={`/empresas/${empresaId}/colaboradores/novo`}>Novo colaborador</Link> : null}
+      </>}>
       {error ? <Aviso tipo="erro">Não foi possível carregar os colaboradores.</Aviso> : null}
       {dados.length >= LIMITE ? <Aviso>Exibindo os primeiros {LIMITE} colaboradores.</Aviso> : null}
-      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-        {podeGerirRpc === true ? <Link className={classeBotaoLinkPrimario} href={`/empresas/${empresaId}/colaboradores/novo`}>Novo colaborador</Link> : null}
-        <Link className="text-marca hover:underline" href={`/empresas/${empresaId}/importar`}>Importar ou atualizar por planilha</Link>
-      </div>
       <TabelaColaboradores dados={dados} empresaId={empresaId} podeGerir={podeGerirRpc === true} />
     </Cartao>
     {desligados.length > 0 ? (
-      <Cartao titulo={`Desligados (${desligados.length})`}>
+      <Cartao icone="pessoas" titulo={`Desligados (${desligados.length})`}>
         <ul className="divide-y divide-linha text-sm">
           {desligados.map((d) => (
             <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2">

@@ -51,12 +51,12 @@ export default async function Ponto({ params, searchParams }: { params: Promise<
   return (
     <>
       <Link href={`/empresas/${empresaId}/escalas`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Escalas</Link>
-      <Cartao titulo="Importar o ponto (AFD)" subtitulo="Marcações do relógio de ponto. CPF e PIS não ficam guardados: o sistema guarda só um código e os 4 últimos dígitos.">
+      <Cartao icone="relogio" titulo="Importar o ponto (AFD)" subtitulo="Marcações do relógio de ponto. CPF e PIS não ficam guardados: o sistema guarda só um código e os 4 últimos dígitos.">
         {podeGerir ? <FormImportarAfd empresaId={empresaId} /> : <p className="text-sm text-suave">Só quem gere a empresa pode importar o ponto.</p>}
       </Cartao>
 
       {pendentes.length > 0 ? (
-        <Cartao titulo="Identificadores sem colaborador" subtitulo="O relógio mandou marcações de números que o sistema ainda não reconhece (PIS, ou CPF não cadastrado). Vincule uma vez e as próximas importações já reconhecem.">
+        <Cartao icone="pessoas" titulo="Identificadores sem colaborador" subtitulo="O relógio mandou marcações de números que o sistema ainda não reconhece (PIS, ou CPF não cadastrado). Vincule uma vez e as próximas importações já reconhecem.">
           {podeGerir ? <Pendentes empresaId={empresaId} pendentes={pendentes} colaboradores={colaboradores.map((c) => ({ id: c.id, nome: c.nome }))} /> : <p className="text-sm text-suave">{pendentes.length} identificador(es) aguardando vínculo pelo RH.</p>}
         </Cartao>
       ) : null}
@@ -76,7 +76,7 @@ export default async function Ponto({ params, searchParams }: { params: Promise<
       ) : (
         <>
           <Aviso tipo="info">A conferência só informa: ela não altera a escala, o banco de horas nem o fechamento. Marcação sem colaborador vinculado não aparece aqui.</Aviso>
-          <Cartao titulo={`Resumo por colaborador · ${rotuloMes(mes)}`}>
+          <Cartao icone="pessoas" titulo={`Resumo por colaborador · ${rotuloMes(mes)}`}>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="py-1.5 pr-3">Colaborador</th><th className="pr-3 text-right">Previsto</th><th className="pr-3 text-right">Apurado</th><th className="pr-3 text-right">Sem marcação</th><th className="pr-3 text-right">Atrasos</th><th className="pr-3 text-right">Além do turno</th><th className="pr-3 text-right">Dias a conferir</th></tr></thead>
@@ -94,7 +94,7 @@ export default async function Ponto({ params, searchParams }: { params: Promise<
               </table>
             </div>
           </Cartao>
-          <Cartao titulo="Dias a conferir" subtitulo={divergencias.length > LIMITE_DIVERGENCIAS ? `Mostrando os primeiros ${LIMITE_DIVERGENCIAS} de ${divergencias.length}.` : undefined}>
+          <Cartao icone="relogio" titulo="Dias a conferir" subtitulo={divergencias.length > LIMITE_DIVERGENCIAS ? `Mostrando os primeiros ${LIMITE_DIVERGENCIAS} de ${divergencias.length}.` : undefined}>
             {divergencias.length === 0 ? <Aviso tipo="ok">Nenhuma divergência entre a escala e o ponto neste mês.</Aviso> : (
               <ul className="divide-y divide-linha">
                 {divergencias.slice(0, LIMITE_DIVERGENCIAS).map((d) => (
@@ -109,7 +109,7 @@ export default async function Ponto({ params, searchParams }: { params: Promise<
         </>
       )}
 
-      <Cartao titulo="Importações">
+      <Cartao icone="relogio" titulo="Importações">
         {importacoes.length === 0 ? <EstadoVazio titulo="Nenhum arquivo importado">Envie o AFD do relógio de ponto acima.</EstadoVazio> : <ListaImportacoes empresaId={empresaId} importacoes={importacoes} podeGerir={podeGerir} />}
       </Cartao>
     </>

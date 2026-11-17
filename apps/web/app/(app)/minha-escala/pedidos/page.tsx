@@ -1,6 +1,5 @@
-import Link from 'next/link';
 import { EstadoVazio } from '@/components/EstadoVazio';
-import { Cartao } from '@/components/ui';
+import { CabecalhoPagina, Cartao } from '@/components/ui';
 import { exigirUsuario, linhas } from '@/lib/contexto';
 import { agruparPorEscala, textoTurno, type LinhaMinhaEscala } from '@/lib/minha-escala';
 import type { TurnoColega } from '@/lib/solicitacoes-ui';
@@ -46,18 +45,14 @@ export default async function Pedidos() {
 
   return (
     <>
-      <div>
-        <Link href="/minha-escala" className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Minha escala</Link>
-        <h1 className="text-2xl font-bold leading-tight sm:text-3xl">Meus pedidos</h1>
-        <p className="mt-1 text-suave">Troque turno com um colega, mude uma folga ou peça férias. O RH confere se continua dentro da lei antes de aprovar.</p>
-      </div>
+      <CabecalhoPagina icone="pedidos" titulo="Meus pedidos" descricao="Troque turno com um colega, mude uma folga ou peça férias. O RH confere se continua dentro da lei antes de aprovar." />
       {paraMim.length > 0 ? (
-        <Cartao titulo="Pedidos de colegas para você" subtitulo="Se você aceitar, o pedido segue para o RH decidir.">
+        <Cartao icone="pedidos" titulo="Pedidos de colegas para você" subtitulo="Se você aceitar, o pedido segue para o RH decidir.">
           <ListaPedidos pedidos={paraMim} modo="para-mim" />
         </Cartao>
       ) : null}
-      <Cartao titulo="Novo pedido"><FormPedido colaboradorId={meus[0]!.id} escalas={paraForm} hoje={hoje} /></Cartao>
-      <Cartao titulo="Meus pedidos">
+      <Cartao icone="mais" titulo="Novo pedido"><FormPedido colaboradorId={meus[0]!.id} escalas={paraForm} hoje={hoje} /></Cartao>
+      <Cartao icone="pedidos" titulo="Meus pedidos">
         {meusPedidos.length === 0 ? <EstadoVazio titulo="Você ainda não fez pedidos">Quando fizer, o andamento aparece aqui.</EstadoVazio> : (
           <ListaPedidos pedidos={meusPedidos} modo="meus" />
         )}

@@ -42,7 +42,7 @@ export default async function Folha({ params, searchParams }: { params: Promise<
       </div>
 
       {vigente ? (
-        <Cartao titulo={`Mês fechado · versão ${vigente.versao}`} subtitulo={`Fechado em ${dataBr(vigente.criado_em.slice(0, 10))}. Código de integridade ${vigente.dados_hash.slice(0, 16)}…`}>
+        <Cartao icone="folha" titulo={`Mês fechado · versão ${vigente.versao}`} subtitulo={`Fechado em ${dataBr(vigente.criado_em.slice(0, 10))}. Código de integridade ${vigente.dados_hash.slice(0, 16)}…`}>
           <div className="flex flex-wrap items-center gap-2">
             <Selo tom="verde">Fechado</Selo>
             <a href={`/api/v1/folha/${vigente.id}?formato=xlsx`} className={classeBotaoLink}>Baixar Excel</a>
@@ -64,7 +64,7 @@ export default async function Folha({ params, searchParams }: { params: Promise<
             <Numero rotulo="Vencido a pagar (banco)" valor={horasTexto(f.totais.bancoVencidoMin)} sub={f.totais.valorVencidoCentavos > 0 ? `≈ ${moeda(f.totais.valorVencidoCentavos)}` : undefined} />
           </div>
           {podeGerir && encerrado ? <BotaoFechar empresaId={empresaId} mes={mes} reabrir={!!vigente} podeFechar={podeFechar(f)} motivoBloqueio={f.avisos.find((a) => a.severidade === 'bloqueio')?.mensagem} /> : null}
-          <Cartao titulo={`Prévia: ${rotuloMes(mes)}`} subtitulo="Calculada pela escala publicada e pelo banco de horas; é o que o fechamento guardaria agora.">
+          <Cartao icone="folha" titulo={`Prévia: ${rotuloMes(mes)}`} subtitulo="Calculada pela escala publicada e pelo banco de horas; é o que o fechamento guardaria agora.">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="py-1.5 pr-3">Colaborador</th><th className="pr-3">Matrícula</th><th className="pr-3 text-right">Trabalhadas</th><th className="pr-3 text-right">Extras</th><th className="pr-3 text-right">Noturno</th><th className="pr-3 text-right">Faltas</th><th className="pr-3 text-right">Férias/afast.</th><th className="pr-3 text-right">Banco</th></tr></thead>
@@ -89,7 +89,7 @@ export default async function Folha({ params, searchParams }: { params: Promise<
       ) : null}
 
       {versoes.length > 1 || (versoes.length === 1 && !vigente) ? (
-        <Cartao titulo="Versões anteriores">
+        <Cartao icone="folha" titulo="Versões anteriores">
           <ul className="divide-y divide-linha">
             {versoes.filter((v) => v.status === 'substituido').map((v) => (
               <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5 text-sm">

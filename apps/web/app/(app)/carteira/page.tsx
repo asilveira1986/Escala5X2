@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { EstadoVazio } from '@/components/EstadoVazio';
-import { Aviso, Cartao, classeBotaoLink, Selo } from '@/components/ui';
+import { Aviso, CabecalhoPagina, Cartao, classeBotaoLink, Selo } from '@/components/ui';
 import { exigirUsuario, linhas } from '@/lib/contexto';
 import { diasAte, FILTROS, filtrar, lerFiltro, lerMes, mesVizinho, ordenarPorAtencao, pendencias, resumir, type LinhaCarteira } from '@/lib/carteira';
 import { lerDaterange } from '@/lib/cobertura';
@@ -34,13 +34,8 @@ export default async function Carteira({ searchParams }: { searchParams: Promise
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold leading-tight sm:text-3xl">Carteira</h1>
-          <p className="mt-1 text-suave">Suas empresas, das que mais precisam de atenção para as que estão em dia.</p>
-        </div>
-        <a href={`/api/v1/carteira?mes=${mes}`} className={classeBotaoLink}>Baixar planilha</a>
-      </div>
+      <CabecalhoPagina icone="carteira" titulo="Carteira" descricao="Suas empresas, das que mais precisam de atenção para as que estão em dia."
+        acoes={<a href={`/api/v1/carteira?mes=${mes}`} className={classeBotaoLink}>Baixar planilha</a>} />
 
       {faltam != null && prazo ? (
         <Aviso tipo={faltam <= 0 ? 'ok' : faltam <= 45 ? 'erro' : 'info'}>

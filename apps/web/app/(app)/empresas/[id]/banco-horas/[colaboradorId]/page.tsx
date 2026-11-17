@@ -27,9 +27,9 @@ export default async function BancoHorasColaborador({ params }: { params: Promis
     <>
       <Link href={`/empresas/${empresaId}/banco-horas`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Banco de horas</Link>
       <h2 className="text-xl font-bold">{colab.nome}</h2>
-      <Cartao titulo="Situação"><ResumoSaldo saldo={saldo} /></Cartao>
-      {podeGerir ? <Cartao titulo="Novo lançamento" subtitulo="O livro é imutável: se errar, estorne o lançamento (fica registrado quem, quando e por quê)."><FormLancamento empresaId={empresaId} colaboradorId={colabId} hoje={hoje} vencidoMin={saldo.vencidoMin} /></Cartao> : null}
-      <Cartao titulo="Extrato">{lancamentos.length === 0 ? <p className="text-sm text-suave">Nenhum lançamento.</p> : <Extrato lancamentos={lancamentos} empresaId={podeGerir ? empresaId : undefined} />}</Cartao>
+      <Cartao icone="banco" titulo="Situação"><ResumoSaldo saldo={saldo} /></Cartao>
+      {podeGerir ? <Cartao icone="mais" titulo="Novo lançamento" subtitulo="O livro é imutável: se errar, estorne o lançamento (fica registrado quem, quando e por quê)."><FormLancamento empresaId={empresaId} colaboradorId={colabId} hoje={hoje} vencidoMin={saldo.vencidoMin} /></Cartao> : null}
+      <Cartao icone="folha" titulo="Extrato">{lancamentos.length === 0 ? <p className="text-sm text-suave">Nenhum lançamento.</p> : <Extrato lancamentos={lancamentos} empresaId={podeGerir ? empresaId : undefined} />}</Cartao>
     </>
   );
 }

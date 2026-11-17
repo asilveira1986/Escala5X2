@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { caminhoParaEmpresa, empresaDoCaminho, gravarEstadoMenu, lerEstadoMenu, migalhas, montarMenu, posicaoAtual, type ContextoMenu } from './menu';
+import { caminhoParaEmpresa, empresaDoCaminho, entradaAtual, gravarEstadoMenu, lerEstadoMenu, migalhas, montarMenu, posicaoAtual, type ContextoMenu } from './menu';
 
 const E = '11111111-1111-1111-1111-111111111111';
 const E2 = '22222222-2222-2222-2222-222222222222';
@@ -124,5 +124,20 @@ describe('estado do menu (cookie)', () => {
     for (const ruim of [undefined, null, '', 'lixo', '%7B', '{"r":"x","a":"y"}']) expect(lerEstadoMenu(ruim as string | undefined), String(ruim)).toEqual({ recolhido: false, abertos: [] });
     expect(lerEstadoMenu(encodeURIComponent('{"r":1,"a":["ok",5,null,"b"]}'))).toEqual({ recolhido: true, abertos: ['ok', 'b'] });
     expect(lerEstadoMenu(encodeURIComponent(JSON.stringify({ r: 0, a: Array.from({ length: 50 }, (_, i) => `g${i}`) }))).abertos).toHaveLength(20);
+  });
+});
+
+describe('entradaAtual (cabeçalho automático)', () => {
+  const m = montarMenu(ctx({ temMinhaEscala: false }));
+  it('devolve título, descrição e ícone de itens e de grupos sem subitens', () => {
+    expect(entradaAtual(m, posicaoAtual(m, `/empresas/${E}/escalas/turnos`))).toMatchObject({ rotulo: 'Turnos', icone: 'turnos' });
+    expect(entradaAtual(m, posicaoAtual(m, `/empresas/${E}/solicitacoes`))).toMatchObject({ rotulo: 'Pedidos', icone: 'pedidos' });
+    expect(entradaAtual(m, null)).toBeNull();
+  });
+  it('todo destino do menu tem descrição; as páginas com título próprio estão marcadas', () => {
+    const todos: { rotulo: string; descricao?: string; proprioTitulo?: boolean }[] = m.flatMap((s) => s.grupos.flatMap((g) => (g.itens ?? [g])));
+    expect(todos.filter((d) => !d.descricao).map((d) => d.rotulo)).toEqual([]);
+    const proprios = todos.filter((d) => d.proprioTitulo).map((d) => d.rotulo).sort();
+    expect(proprios).toEqual(['Carteira', 'Empresas', 'Nova empresa', 'Novo colaborador', 'Visão geral']);
   });
 });

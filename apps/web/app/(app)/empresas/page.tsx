@@ -28,8 +28,7 @@ export default async function Empresas() {
     <>
       {nome ? <p className="-mb-1 text-sm font-semibold text-marca">Olá, {nome}!</p> : <p className="-mb-1 text-sm font-semibold text-marca">Olá!</p>}
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <Titulo descricao="Escolha uma empresa para abrir o sistema dela.">Suas empresas</Titulo>
-        {organizacoes.length > 0 ? <Link href="/empresas/nova" className={classeBotaoLinkPrimario}>Nova empresa</Link> : null}
+        <Titulo icone="empresas" descricao="Escolha uma empresa para abrir o sistema dela." acoes={organizacoes.length > 0 ? <Link href="/empresas/nova" className={classeBotaoLinkPrimario}>Nova empresa</Link> : null}>Suas empresas</Titulo>
       </div>
       {empresas.length > 0 ? (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

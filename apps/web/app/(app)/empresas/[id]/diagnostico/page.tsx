@@ -27,7 +27,7 @@ export default async function Diagnosticos({ params }: { params: Promise<{ id: s
         { rotulo: 'Rode o diagnóstico', descricao: 'Veja quem precisa mudar de escala.', feito: lista.length > 0 },
         { rotulo: 'Compare soluções', descricao: 'Simule e baixe o relatório em PDF ou planilha.', feito: (qtdCenarios ?? 0) > 0, href: lista[0] ? `/empresas/${empresaId}/diagnostico/${lista[0].id}` : undefined },
       ]} />
-      <Cartao titulo="Novo diagnóstico" subtitulo="Classifica cada pessoa pelas regras da EC 141/2026, calcula o novo valor da hora e as horas a cobrir. Nenhum cenário reduz salário.">
+      <Cartao icone="mais" titulo="Novo diagnóstico" subtitulo="Classifica cada pessoa pelas regras da EC 141/2026, calcula o novo valor da hora e as horas a cobrir. Nenhum cenário reduz salário.">
         {temEquipe ? <FormDiagnostico empresaId={empresaId} hoje={dataDeInstante(new Date())} /> : (
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm text-suave">Antes de rodar, cadastre a equipe.</p>
@@ -35,7 +35,7 @@ export default async function Diagnosticos({ params }: { params: Promise<{ id: s
           </div>
         )}
       </Cartao>
-      <Cartao titulo="Diagnósticos anteriores">
+      <Cartao icone="diagnostico" titulo="Diagnósticos anteriores">
         {lista.length === 0 ? <EstadoVazio titulo="Ainda não há diagnósticos">Que tal rodar o primeiro? Leva alguns segundos.</EstadoVazio> : (
           <ul className="divide-y divide-linha">
             {lista.map((d) => {
