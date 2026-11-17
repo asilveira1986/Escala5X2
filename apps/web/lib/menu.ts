@@ -61,6 +61,7 @@ export function montarMenu(c: ContextoMenu): SecaoMenu[] {
       id: 'configuracoes', titulo: 'Sistema',
       grupos: [{ id: 'config', rotulo: 'Configurações', icone: 'config', itens: [
         { id: 'config-empresas', rotulo: 'Empresas', href: '/empresas', icone: 'empresas', descricao: 'As empresas que você atende.', proprioTitulo: true },
+        { id: 'config-cobranca', rotulo: 'Plano e cobrança', href: '/cobranca', icone: 'folha', descricao: 'Seu plano, as faturas e a forma de pagamento.' },
         { id: 'config-nova-empresa', rotulo: 'Nova empresa', href: '/empresas/nova', icone: 'mais', descricao: 'Cadastre uma empresa para começar.', proprioTitulo: true },
       ] }],
     });

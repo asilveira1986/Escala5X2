@@ -17,9 +17,9 @@ describe('montarMenu', () => {
     expect(emp.find((g) => g.id === 'ponto-folha')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/ponto`, `/empresas/${E}/banco-horas`, `/empresas/${E}/banco-horas/ponto`, `/empresas/${E}/folha`]);
     expect(emp.find((g) => g.id === 'equipe')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/colaboradores`, `/empresas/${E}/colaboradores/novo`, `/empresas/${E}/importar`]);
   });
-  it('Configurações reúne a lista de empresas e o cadastro de nova empresa', () => {
+  it('Configurações reúne a lista de empresas, o plano e cobrança e o cadastro de nova empresa', () => {
     const cfg = montarMenu(ctx()).find((s) => s.id === 'configuracoes')!;
-    expect(cfg.grupos[0]!.itens!.map((i) => [i.rotulo, i.href])).toEqual([['Empresas', '/empresas'], ['Nova empresa', '/empresas/nova']]);
+    expect(cfg.grupos[0]!.itens!.map((i) => [i.rotulo, i.href])).toEqual([['Empresas', '/empresas'], ['Plano e cobrança', '/cobranca'], ['Nova empresa', '/empresas/nova']]);
   });
   it('fora de uma empresa não há seção da empresa; sem carteira, o item some', () => {
     expect(ids(ctx({ empresaId: null }))).toEqual(['geral:carteira', 'configuracoes:config']);

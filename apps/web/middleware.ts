@@ -50,4 +50,4 @@ export async function middleware(req: NextRequest) {
 
 export const config = { // api/health: verificação de saúde do Railway, sem login
 // Fora do login: arquivos estáticos, verificação de saúde e tudo o que o navegador busca antes de entrar (PWA).
-matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health|manifest.webmanifest|icons/|icon|apple-icon|sw.js|sw-core.js|offline).*)'] };
+matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health|api/webhooks/|manifest.webmanifest|icons/|icon|apple-icon|sw.js|sw-core.js|offline).*)'] };
