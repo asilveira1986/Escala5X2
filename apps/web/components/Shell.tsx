@@ -11,8 +11,10 @@ import { IconeChevron, IconeEmpresa, IconeExpandir, IconeFechar, IconeMenu, Icon
 import { ICONES_MENU } from './menu-icones';
 
 export type EmpresaDoMenu = { id: string; nome: string };
+export type AvisoCobranca = { tom: 'info' | 'atencao' | 'risco'; texto: string };
+export type EstadoCobranca = { aviso: AvisoCobranca | null; bloqueado: boolean };
 type Props = {
-  naoLidas?: number; email: string; empresas: EmpresaDoMenu[]; ehGestor: boolean; temMinhaEscala: boolean; temCarteira: boolean; estadoInicial: EstadoMenu;
+  cobranca?: EstadoCobranca; naoLidas?: number; email: string; empresas: EmpresaDoMenu[]; ehGestor: boolean; temMinhaEscala: boolean; temCarteira: boolean; estadoInicial: EstadoMenu;
   aviso?: ReactNode; children: ReactNode;
 };
 
@@ -27,7 +29,7 @@ function gravar(e: EstadoMenu) {
 }
 
 /** Menu lateral recolhível, com grupos e subitens, que vira gaveta no celular. */
-export function Shell({ naoLidas = 0, email, empresas, ehGestor, temMinhaEscala, temCarteira, estadoInicial, aviso, children }: Props) {
+export function Shell({ cobranca, naoLidas = 0, email, empresas, ehGestor, temMinhaEscala, temCarteira, estadoInicial, aviso, children }: Props) {
   const pathname = usePathname() ?? '/';
   const router = useRouter();
   const [recolhido, setRecolhido] = useState(estadoInicial.recolhido);
@@ -69,6 +71,8 @@ export function Shell({ naoLidas = 0, email, empresas, ehGestor, temMinhaEscala,
   );
 
   const soColaborador = !ehGestor && temMinhaEscala;
+  // conta bloqueada por falta de pagamento: só a tela de Plano e cobrança continua acessível
+  const bloqueioAtivo = !!cobranca?.bloqueado && !pathname.startsWith('/cobranca');
   return (
     <>
       {aviso}
@@ -100,7 +104,12 @@ export function Shell({ naoLidas = 0, email, empresas, ehGestor, temMinhaEscala,
             </nav>
             <Sino naoLidasInicial={naoLidas} />
           </header>
-          <main className={`mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 pt-4 sm:px-6 sm:pt-6 ${soColaborador ? 'pb-24 lg:pb-10' : 'pb-10'}`}>{cabecalho ? <CabecalhoPagina titulo={cabecalho.rotulo} descricao={cabecalho.descricao} icone={cabecalho.icone} /> : null}{children}</main>
+          {cobranca?.aviso && !cobranca.bloqueado ? (
+            <div role="status" className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-sm font-semibold ${cobranca.aviso.tom === 'risco' ? 'bg-risco-bg text-risco-fg' : cobranca.aviso.tom === 'atencao' ? 'bg-atencao-bg text-atencao-fg' : 'bg-marca-suave text-marca'}`}>
+              {cobranca.aviso.texto}<Link href="/cobranca" className="underline">Plano e cobrança</Link>
+            </div>
+          ) : null}
+          <main className={`mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 pt-4 sm:px-6 sm:pt-6 ${soColaborador ? 'pb-24 lg:pb-10' : 'pb-10'}`}>{bloqueioAtivo ? <BloqueioCobranca texto={cobranca!.aviso?.texto ?? 'O acesso está suspenso por falta de pagamento.'} /> : <>{cabecalho ? <CabecalhoPagina titulo={cabecalho.rotulo} descricao={cabecalho.descricao} icone={cabecalho.icone} /> : null}{children}</>}</main>
           {soColaborador ? <BarraInferior secoes={secoes} pos={pos} /> : null}
         </div>
       </div>
@@ -266,5 +275,17 @@ function BarraInferior({ secoes, pos }: { secoes: SecaoMenu[]; pos: PosicaoMenu 
         })}
       </ul>
     </nav>
+  );
+}
+
+/** Tela no lugar do conteúdo quando a conta está bloqueada (teste vencido, assinatura cancelada ou fatura vencida há muito). */
+function BloqueioCobranca({ texto }: { texto: string }) {
+  return (
+    <div role="alert" className="mx-auto mt-8 max-w-lg space-y-3 rounded-3xl border border-linha bg-cartao p-6 text-center shadow-sm">
+      <h1 className="text-xl font-bold">Acesso suspenso</h1>
+      <p className="text-sm text-suave">{texto}</p>
+      <p className="text-sm text-suave">Seus dados estão guardados e voltam a aparecer assim que a assinatura for regularizada.</p>
+      <Link href="/cobranca" className="inline-flex min-h-11 items-center justify-center rounded-full bg-marca px-5 text-sm font-semibold text-sobre-marca hover:bg-marca-escuro">Ir para Plano e cobrança</Link>
+    </div>
   );
 }

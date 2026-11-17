@@ -212,4 +212,14 @@ INC21=$DB/setup/supabase_atualizar_aviso_banco.sql
   echo "commit;"
 } > "$INC21"
 echo "gerado: $INC21"
+# Cobrança da plataforma (migration 0022) para bancos com as migrations 0001 a 0021.
+INC22=$DB/setup/supabase_atualizar_cobranca.sql
+{
+  echo "-- JornadaCerta: cobrança da plataforma (migration 0022) em um banco que já tem as migrations 0001 a 0021."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0022_cobranca.up.sql"
+  echo "commit;"
+} > "$INC22"
+echo "gerado: $INC22"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"
