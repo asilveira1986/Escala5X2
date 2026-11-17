@@ -149,3 +149,12 @@ export function lerEstadoMenu(valor: string | undefined | null): EstadoMenu {
   } catch { return { recolhido: false, abertos: [] }; }
 }
 export const gravarEstadoMenu = (e: EstadoMenu): string => encodeURIComponent(JSON.stringify({ r: e.recolhido ? 1 : 0, a: e.abertos }));
+
+/** Cor de apoio de cada área do sistema (o ícone herda a cor da sua área). */
+export type TomCor = 'marca' | 'azul' | 'violeta' | 'verde' | 'ambar' | 'rosa' | 'neutro';
+const TOM_DO_ICONE: Record<IconeId, TomCor> = {
+  inicio: 'marca', carteira: 'azul', empresas: 'marca', diagnostico: 'rosa', equipe: 'azul', pessoas: 'azul', importar: 'azul', escalas: 'violeta',
+  calendario: 'violeta', turnos: 'violeta', cobertura: 'violeta', ferias: 'violeta', pedidos: 'ambar', ponto: 'verde', relogio: 'verde', banco: 'verde',
+  folha: 'verde', 'minha-escala': 'violeta', config: 'neutro', mais: 'verde',
+};
+export const tomDoIcone = (icone: IconeId): TomCor => TOM_DO_ICONE[icone];

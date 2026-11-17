@@ -25,3 +25,7 @@ O menu usa um **índigo profundo** (`#1E1B4B`) nos dois temas para se separar do
 - **Cabeçalho de página:** toda tela do menu abre com ícone, título e uma frase de apoio (`CabecalhoPagina`), vindos do próprio menu (`lib/menu.ts`: `descricao`). Telas com título próprio (Visão geral, Carteira, cadastros) ficam marcadas com `proprioTitulo`.
 - **Cartões:** `Cartao` aceita `icone` e `acoes` (botões no canto). `Metrica` mostra número + ícone. `IconeCaixa` é o quadradinho colorido do ícone.
 - **Visão geral da empresa:** identificação, quatro números, "Primeiros passos" com barra de progresso e as áreas do sistema (montadas a partir do menu, então novas telas aparecem lá sozinhas).
+
+## Cores por área
+
+Cada área do sistema tem uma cor de apoio, aplicada ao ícone (menu, cabeçalhos, cartões, números): **Equipe e Carteira = azul**, **Escalas = violeta**, **Pedidos = âmbar**, **Ponto e folha = verde**, **Diagnóstico = rosa**, empresa/início = índigo da marca. O mapa está em `tomDoIcone` (`lib/menu.ts`); os tons são tokens em `globals.css` (`--c-azul-*`, `--c-violeta-*`, `--c-verde-*`, `--c-ambar-*`, `--c-rosa-*`), com versões para o tema escuro e para o menu lateral. Os números têm uma faixa colorida no topo; a Visão geral tem degradê índigo→violeta; a área de conteúdo tem um leve degradê no topo.

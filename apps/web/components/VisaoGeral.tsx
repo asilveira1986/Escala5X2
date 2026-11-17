@@ -29,7 +29,7 @@ export function VisaoGeral({ empresaId, empresa, resumo }: { empresaId: string; 
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-3xl border border-linha bg-cartao p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.10)] sm:p-6">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-3xl border border-marca/15 bg-[linear-gradient(120deg,var(--c-marca-suave),var(--c-cartao)_55%,var(--c-violeta-bg))] p-4 shadow-[0_8px_24px_-12px_rgba(79,70,229,0.25)] sm:p-6">
         <IconeCaixa icone="empresas" tamanho="lg" />
         <div className="min-w-0 flex-1 basis-40">
           <h1 className="text-xl font-bold leading-tight tracking-tight sm:text-2xl" title={empresa.razao_social}>{empresa.razao_social}</h1>
@@ -40,9 +40,9 @@ export function VisaoGeral({ empresaId, empresa, resumo }: { empresaId: string; 
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Metrica href={`${base}/colaboradores`} icone="pessoas" rotulo="Colaboradores ativos" valor={colab} texto="Ver e cadastrar equipe" />
-        <Metrica href={`${base}/escalas`} icone="calendario" rotulo="Escalas publicadas" valor={publicadas} tom="ok" texto={rascunhos > 0 ? `${rascunhos} em rascunho` : 'Montar o mês'} />
-        <Metrica href={`${base}/solicitacoes`} icone="pedidos" rotulo="Pedidos para decidir" valor={pendentes} tom={pendentes > 0 ? 'atencao' : 'neutro'} texto={pendentes > 0 ? 'Há pedidos esperando' : 'Nada pendente'} />
-        <Metrica href={`${base}/escalas/turnos`} icone="turnos" rotulo="Turnos" valor={turnos} tom="neutro" texto="Modelos de horário" />
+        <Metrica href={`${base}/escalas`} icone="calendario" rotulo="Escalas publicadas" valor={publicadas} texto={rascunhos > 0 ? `${rascunhos} em rascunho` : 'Montar o mês'} />
+        <Metrica href={`${base}/solicitacoes`} icone="pedidos" rotulo="Pedidos para decidir" valor={pendentes} tom={pendentes > 0 ? 'ambar' : 'neutro'} texto={pendentes > 0 ? 'Há pedidos esperando' : 'Nada pendente'} />
+        <Metrica href={`${base}/escalas/turnos`} icone="turnos" rotulo="Turnos" valor={turnos} texto="Modelos de horário" />
       </div>
 
       {feitos < passos.length ? (
@@ -71,7 +71,7 @@ export function VisaoGeral({ empresaId, empresa, resumo }: { empresaId: string; 
                 {itens.map((i) => (
                   <li key={i.id}>
                     <Link href={i.href} className="group flex items-center gap-3 rounded-2xl px-2 py-2 transition-colors hover:bg-fundo">
-                      <IconeCaixa icone={i.icone} tom="neutro" tamanho="sm" />
+                      <IconeCaixa icone={i.icone} tamanho="sm" />
                       <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{i.rotulo}</span>{i.descricao ? <span className="block text-xs text-suave">{i.descricao}</span> : null}</span>
                       <IconeSeta width={16} height={16} className="shrink-0 text-suave transition-transform group-hover:translate-x-0.5 group-hover:text-marca" />
                     </Link>

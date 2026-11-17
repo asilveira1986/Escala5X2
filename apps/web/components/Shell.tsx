@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { entradaAtual, caminhoParaEmpresa, COOKIE_EMPRESA, COOKIE_MENU, empresaDoCaminho, gravarEstadoMenu, migalhas, montarMenu, posicaoAtual, type EstadoMenu, type GrupoMenu, type ItemMenu, type PosicaoMenu, type SecaoMenu } from '@/lib/menu';
+import { tomDoIcone, entradaAtual, caminhoParaEmpresa, COOKIE_EMPRESA, COOKIE_MENU, empresaDoCaminho, gravarEstadoMenu, migalhas, montarMenu, posicaoAtual, type EstadoMenu, type GrupoMenu, type ItemMenu, type PosicaoMenu, type SecaoMenu } from '@/lib/menu';
 import { BotaoSair } from './BotaoSair';
 import { CabecalhoPagina } from './ui';
 import { IconeChevron, IconeEmpresa, IconeExpandir, IconeFechar, IconeMenu, IconeRecolher, MarcaLogo } from './icones';
@@ -15,6 +15,9 @@ type Props = {
   aviso?: ReactNode; children: ReactNode;
 };
 
+/** Cor do ícone no menu escuro, por área (o item ativo fica branco). */
+const COR_ICONE: Record<string, string> = { marca: 'text-tinta', azul: 'text-azul-fg', violeta: 'text-violeta-fg', verde: 'text-verde-fg', ambar: 'text-ambar-fg', rosa: 'text-rosa-fg', neutro: 'text-suave' };
+const corIcone = (icone: Parameters<typeof tomDoIcone>[0], ativo: boolean) => (ativo ? '' : COR_ICONE[tomDoIcone(icone)]);
 const classeItem = (ativo: boolean) =>
   `relative flex min-h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors ${ativo ? 'bg-marca-suave font-semibold text-marca' : 'text-tinta hover:bg-fundo'}`;
 
@@ -80,7 +83,7 @@ export function Shell({ email, empresas, ehGestor, temMinhaEscala, temCarteira, 
           </div>
         ) : null}
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col bg-[linear-gradient(180deg,color-mix(in_srgb,var(--c-marca)_9%,transparent),transparent_280px)]">
           <header className="sticky top-0 z-30 flex min-h-14 items-center gap-2 border-b border-linha bg-cartao/90 px-3 backdrop-blur sm:px-5">
             <button type="button" onClick={() => setGaveta(true)} aria-label="Abrir o menu" aria-expanded={gaveta} className="grid size-11 place-items-center rounded-xl text-tinta hover:bg-fundo lg:hidden"><IconeMenu /></button>
             <Link href={soColaborador ? '/minha-escala' : '/empresas'} aria-label="JornadaCerta, início" className="flex items-center gap-2 rounded-lg lg:hidden"><MarcaLogo tamanho={24} /></Link>
@@ -186,7 +189,7 @@ function Grupo({ g, rail, pos, aberto, onAlternar }: { g: GrupoMenu; rail: boole
   if (!g.itens) {
     const link = (
       <Link href={g.href!} aria-current={ativoGrupo ? 'page' : undefined} aria-label={rail ? g.rotulo : undefined} className={`${classeItem(ativoGrupo)} ${rail ? 'justify-center px-0' : ''}`}>
-        <Barra ativo={ativoGrupo} /><Icone className="shrink-0" />{!rail ? <span className="truncate">{g.rotulo}</span> : null}
+        <Barra ativo={ativoGrupo} /><Icone className={`shrink-0 ${corIcone(g.icone, ativoGrupo)}`} />{!rail ? <span className="truncate">{g.rotulo}</span> : null}
       </Link>
     );
     return rail ? <Dica rotulo={g.rotulo}>{link}</Dica> : link;
@@ -195,7 +198,7 @@ function Grupo({ g, rail, pos, aberto, onAlternar }: { g: GrupoMenu; rail: boole
   if (rail) {
     return (
       <Dica rotulo={g.rotulo} lista={g.itens} pos={pos}>
-        <button type="button" aria-haspopup="true" aria-label={`${g.rotulo}: abrir submenu`} className={`${classeItem(ativoGrupo)} justify-center px-0`}><Barra ativo={ativoGrupo} /><Icone /></button>
+        <button type="button" aria-haspopup="true" aria-label={`${g.rotulo}: abrir submenu`} className={`${classeItem(ativoGrupo)} justify-center px-0`}><Barra ativo={ativoGrupo} /><Icone className={corIcone(g.icone, ativoGrupo)} /></button>
       </Dica>
     );
   }
@@ -203,7 +206,7 @@ function Grupo({ g, rail, pos, aberto, onAlternar }: { g: GrupoMenu; rail: boole
   return (
     <>
       <button type="button" onClick={onAlternar} aria-expanded={aberto} aria-controls={idLista} className={classeItem(ativoGrupo && !aberto)}>
-        <Icone className="shrink-0" /><span className="flex-1 truncate text-left">{g.rotulo}</span>
+        <Icone className={`shrink-0 ${corIcone(g.icone, ativoGrupo && !aberto)}`} /><span className="flex-1 truncate text-left">{g.rotulo}</span>
         <IconeChevron width={16} height={16} className={`shrink-0 text-suave transition-transform ${aberto ? 'rotate-90' : ''}`} />
       </button>
       {aberto ? (
@@ -219,7 +222,7 @@ function SubItem({ i, ativo }: { i: ItemMenu; ativo: boolean }) {
   const Icone = ICONES_MENU[i.icone];
   return (
     <Link href={i.href} aria-current={ativo ? 'page' : undefined} className={`${classeItem(ativo)} min-h-9 gap-2.5 text-[13px]`}>
-      <Icone width={17} height={17} className="shrink-0" /><span className="truncate">{i.rotulo}</span>
+      <Icone width={17} height={17} className={`shrink-0 ${corIcone(i.icone, ativo)}`} /><span className="truncate">{i.rotulo}</span>
     </Link>
   );
 }
