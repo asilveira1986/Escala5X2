@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
-import { Aviso, Botao, Campo, Cartao, classeCampo, Metrica } from '@/components/ui';
+import { Aviso, Botao, Cartao, classeCampo, Metrica } from '@/components/ui';
 import { balancoDaEquipe, CORES_TURNO, DIAS_TELA, frasePessoas, FUNCIONAMENTO_PADRAO, horasTexto, inicialDoTurno, liquidoDoTurno, sugerirCobertura, type TurnoBase } from '@/lib/adequador-ui';
 import { dataBr, diaDaSemana } from '@jc/rules-engine';
 import { gerarEscalas, type DadosSetor, type ResultadoGeracao } from './actions';
@@ -93,124 +93,145 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
     setResultado(r);
   });
 
+  const resumoSetores = escolhidos.map((g) => ({ g, b: balancoDaEquipe(turnos.map((t) => ({ minimo: minimoDe(g.id, t.chave).map((m, d) => (funcionamento[d] ? m : 0)) })), g.pessoas.length, diasNum) }));
+  const pendencias = [
+    ...(abertos === 0 ? ['Marque os dias de funcionamento.'] : []),
+    ...(invalido ? ['Confira os horários dos turnos.'] : []),
+    ...(escolhidos.length === 0 ? ['Escolha ao menos um setor com pessoas.'] : []),
+    ...(escolhidos.length > 0 && semCobertura ? ['Informe quantas pessoas cada turno precisa.'] : []),
+  ];
+  const campo = `${classeCampo} !mt-0 !min-h-9`;
+
   return (
-    <div className="space-y-4">
-      <Cartao icone="escalas" titulo="1. Período e funcionamento" subtitulo="O mês, quantos dias cada pessoa trabalha por semana e em quais dias a empresa funciona.">
-        <div className="flex flex-wrap items-end gap-3">
-          <Campo rotulo="Mês"><input type="month" value={mes} onChange={(e) => setMes(e.target.value)} required className={classeCampo} /></Campo>
-          <Campo rotulo="Dias de trabalho por semana"><select value={dias} onChange={(e) => setDias(e.target.value)} className={classeCampo}>{DIAS_OPCOES.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</select></Campo>
-        </div>
-        <fieldset className="mt-4">
-          <legend className="text-sm font-semibold">Dias de funcionamento</legend>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {DIAS_TELA.map((d) => (
-              <label key={d.indice} className={`inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-full border px-3.5 text-sm font-semibold ${funcionamento[d.indice] ? 'border-marca bg-marca-suave text-marca' : 'border-linha text-suave'}`}>
-                <input type="checkbox" className="sr-only" checked={funcionamento[d.indice]} onChange={() => alternarDia(d.indice)} aria-label={`Funciona na ${d.rotulo}`} />{d.rotulo}
-              </label>
-            ))}
-          </div>
-          <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" className="size-4" checked={fecharFeriados} onChange={(e) => setFecharFeriados(e.target.checked)} />Não funciona nos feriados (ninguém é escalado)</label>
-          <p className="mt-1 text-xs text-suave">Dia fechado = folga de todos. {abertos === 0 ? 'Marque pelo menos um dia.' : `${abertos} dia(s) por semana abertos.`}</p>
-        </fieldset>
-      </Cartao>
-
-      <Cartao icone="turnos" titulo="2. Turnos" subtitulo="Os horários de cada turno. Mudar um turno cadastrado vale só para esta geração; o cadastro não muda."
-        acoes={turnos.length < 6 ? <Botao variante="secundario" onClick={adicionarTurno}>Adicionar turno</Botao> : null}>
-        <div className="space-y-2">
-          {turnos.map((t, ti) => {
-            const liq = liquidoDoTurno(t);
-            return (
-              <div key={t.chave} className="flex flex-wrap items-end gap-3 rounded-2xl border border-linha p-3">
-                <span aria-hidden className={`mb-1 grid size-9 place-items-center rounded-xl text-sm font-bold ${CORES_TURNO[ti % CORES_TURNO.length]}`}>{inicialDoTurno(t.nome, ti)}</span>
-                <Campo rotulo="Turno"><input value={t.nome} maxLength={40} onChange={(e) => alterarTurno(t.chave, { nome: e.target.value })} className={`${classeCampo} w-36`} /></Campo>
-                <Campo rotulo="Entrada"><input type="time" value={t.inicio} onChange={(e) => alterarTurno(t.chave, { inicio: e.target.value })} className={`${classeCampo} w-28`} /></Campo>
-                <Campo rotulo="Saída"><input type="time" value={t.fim} onChange={(e) => alterarTurno(t.chave, { fim: e.target.value })} className={`${classeCampo} w-28`} /></Campo>
-                <Campo rotulo="Intervalo (min)"><input type="number" min={0} max={240} step={5} value={t.intervalo} onChange={(e) => alterarTurno(t.chave, { intervalo: Math.max(0, Math.min(240, Number(e.target.value) || 0)) })} className={`${classeCampo} w-24`} /></Campo>
-                <p className="mb-2 text-sm font-semibold">{liq === null ? <span className="text-risco-fg">horário inválido</span> : <>{horasTexto(liq)} líquidas · {horasTexto(liq * diasNum)}/semana</>}</p>
-                {turnos.length > 1 ? <button type="button" onClick={() => removerTurno(t.chave)} aria-label={`Remover o turno ${t.nome}`} className="mb-1 ml-auto rounded-full px-3 py-1.5 text-sm font-semibold text-risco-fg hover:bg-risco-bg">Remover</button> : null}
+    <div className="space-y-6">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="space-y-6">
+          <Etapa n={1} titulo="Período e funcionamento" texto="O mês, quantos dias cada pessoa trabalha e em quais dias a empresa funciona.">
+            <div className="flex flex-wrap items-end gap-4">
+              <Rotulo t="Mês"><input type="month" value={mes} onChange={(e) => setMes(e.target.value)} required aria-label="Mês" className={`${campo} w-44`} /></Rotulo>
+              <Rotulo t="Dias de trabalho por semana"><select value={dias} onChange={(e) => setDias(e.target.value)} aria-label="Dias de trabalho por semana" className={`${campo} w-64`}>{DIAS_OPCOES.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</select></Rotulo>
+            </div>
+            <fieldset className="mt-5">
+              <legend className="text-xs font-semibold uppercase tracking-wide text-suave">Dias de funcionamento</legend>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {DIAS_TELA.map((d) => (
+                  <label key={d.indice} className={`inline-flex h-9 min-w-14 cursor-pointer items-center justify-center rounded-lg border text-sm font-semibold transition-colors ${funcionamento[d.indice] ? 'border-marca bg-marca text-sobre-marca' : 'border-linha bg-cartao text-suave hover:bg-fundo'}`}>
+                    <input type="checkbox" className="sr-only" checked={funcionamento[d.indice]} onChange={() => alternarDia(d.indice)} aria-label={`Funciona na ${d.rotulo}`} />{d.rotulo}
+                  </label>
+                ))}
               </div>
-            );
-          })}
-        </div>
-      </Cartao>
+              <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" className="size-4" checked={fecharFeriados} onChange={(e) => setFecharFeriados(e.target.checked)} />Não funciona nos feriados (ninguém é escalado)</label>
+            </fieldset>
+          </Etapa>
 
-      <Cartao icone="pessoas" titulo="3. Setores e pessoas necessárias" subtitulo="Para cada setor, quantas pessoas precisam estar em cada turno em cada dia. O sistema aloca a equipe do setor para completar o time nesses momentos.">
-        {semSetor > 0 ? <div className="mb-3"><Aviso>{semSetor} pessoa(s) sem setor ficam de fora. Defina o setor em <strong>Equipe › Colaboradores › Editar</strong>.</Aviso></div> : null}
-        <div className="space-y-3">
-          {grupos.map((g) => {
-            const on = incluidos.has(g.id);
-            const b = balancoDaEquipe(turnos.map((t) => ({ minimo: minimoDe(g.id, t.chave).map((m, d) => (funcionamento[d] ? m : 0)) })), g.pessoas.length, diasNum);
-            return (
-              <section key={g.id} className={`rounded-2xl border p-3 ${on ? 'border-linha' : 'border-linha opacity-60'}`} aria-label={`Setor ${g.nome}`}>
-                <div className="flex flex-wrap items-center gap-3">
-                  <label className="flex items-center gap-2 font-semibold"><input type="checkbox" className="size-4" checked={on} disabled={g.pessoas.length === 0} onChange={() => alternarSetor(g.id)} aria-label={`Gerar a escala do setor ${g.nome}`} />{g.nome}</label>
-                  <span className="text-sm text-suave">{g.pessoas.length} pessoa{g.pessoas.length === 1 ? '' : 's'}{g.pessoas.length === 0 ? ' · cadastre a equipe para gerar' : ''}</span>
-                  {on && g.pessoas.length > 0 ? <span className="ml-auto flex gap-1"><Botao variante="secundario" onClick={() => sugerir(g.id)}>Sugerir</Botao>{grupos.filter((x) => incluidos.has(x.id)).length > 1 ? <Botao variante="secundario" onClick={() => copiarPara(g.id)}>Copiar para os outros</Botao> : null}</span> : null}
-                </div>
-                {on && g.pessoas.length > 0 ? (
-                  <div className="mt-3 overflow-x-auto">
-                    <table className="text-center text-xs">
-                      <thead><tr><th className="pr-3 text-left font-semibold text-suave">Turno</th>{DIAS_TELA.map((d) => <th key={d.indice} className={`px-1 font-semibold ${funcionamento[d.indice] ? 'text-suave' : 'text-suave/50'}`}>{d.rotulo}</th>)}</tr></thead>
-                      <tbody>
-                        {turnos.map((t, ti) => (
-                          <tr key={t.chave}>
-                            <th scope="row" className="whitespace-nowrap pr-3 text-left text-sm"><span className={`mr-1.5 inline-grid size-5 place-items-center rounded-md text-[11px] font-bold ${CORES_TURNO[ti % CORES_TURNO.length]}`}>{inicialDoTurno(t.nome, ti)}</span>{t.nome}</th>
-                            {DIAS_TELA.map((d) => (
-                              <td key={d.indice} className="p-0.5">
-                                <input type="number" min={0} max={500} disabled={!funcionamento[d.indice]} value={funcionamento[d.indice] ? minimoDe(g.id, t.chave)[d.indice] : 0} onChange={(e) => definirMinimo(g.id, t.chave, d.indice, e.target.value)}
-                                  aria-label={`${g.nome}, ${t.nome}: pessoas na ${d.rotulo}`} className={`${classeCampo} !mt-0 !min-h-9 !w-14 text-center ${funcionamento[d.indice] ? '' : 'bg-fundo'}`} />
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    <p className={`mt-1.5 text-xs ${b.sobra < 0 ? 'font-semibold text-atencao-fg' : 'text-suave'}`}>{frasePessoas(b, g.pessoas.length, diasNum)}</p>
-                  </div>
-                ) : null}
-              </section>
-            );
-          })}
-        </div>
-      </Cartao>
-
-      <Cartao icone="ferias" titulo="4. Folgas e férias" subtitulo="Folga fixa: dia da semana em que a pessoa não trabalha (até 3). Férias e afastamentos cadastrados já entram e a equipe cobre sem a pessoa.">
-        {escolhidos.length === 0 ? <p className="text-sm text-suave">Escolha ao menos um setor com pessoas.</p> : (
-          <div className="space-y-4">
-            {escolhidos.map((g) => (
-              <div key={g.id}>
-                {grupos.length > 1 || setores.length > 0 ? <h3 className="mb-1 text-sm font-bold">{g.nome}</h3> : null}
-                <ul className="divide-y divide-linha">
-                  {g.pessoas.map((p) => {
-                    const fer = ausencias.filter((a) => a.colaboradorId === p.id && a.inicio <= mesFim && a.fim >= mesIni);
+          <Etapa n={2} titulo="Turnos" texto="Mudar um turno cadastrado vale só para esta geração; o cadastro não muda." acoes={turnos.length < 6 ? <Botao variante="secundario" onClick={adicionarTurno}>Adicionar turno</Botao> : null}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[34rem] text-left text-sm">
+                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="w-10 pb-1.5" /><th className="pb-1.5 pr-2">Turno</th><th className="pb-1.5 pr-2">Entrada</th><th className="pb-1.5 pr-2">Saída</th><th className="pb-1.5 pr-2">Intervalo (min)</th><th className="pb-1.5 pr-2">Líquidas</th><th /></tr></thead>
+                <tbody>
+                  {turnos.map((t, ti) => {
+                    const liq = liquidoDoTurno(t);
                     return (
-                      <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-1.5 py-2">
-                        <span className="min-w-40 font-semibold">{p.nome}</span>
-                        <span role="group" aria-label={`Folga fixa de ${p.nome}`} className="flex flex-wrap gap-1">
-                          {DIAS_TELA.map((d) => {
-                            const marcado = (folgasFixas[p.id] ?? []).includes(d.indice);
-                            return <button type="button" key={d.indice} aria-pressed={marcado} aria-label={`${p.nome}: folga fixa na ${d.rotulo}`} onClick={() => alternarFolga(p.id, d.indice)} className={`min-h-8 rounded-full border px-2.5 text-xs font-semibold ${marcado ? 'border-violeta-fg bg-violeta-bg text-violeta-fg' : 'border-linha text-suave hover:bg-fundo'}`}>{d.rotulo}</button>;
-                          })}
-                        </span>
-                        {fer.map((a) => <span key={`${a.inicio}${a.tipo}`} className="rounded-full bg-violeta-bg px-2.5 py-0.5 text-xs font-semibold text-violeta-fg">{a.tipo === 'ferias' ? 'Férias' : 'Afastamento'} {dataBr(a.inicio).slice(0, 5)}–{dataBr(a.fim).slice(0, 5)}</span>)}
-                      </li>
+                      <tr key={t.chave} className="border-t border-linha">
+                        <td className="py-2 pr-2"><span aria-hidden className={`grid size-8 place-items-center rounded-lg text-sm font-bold ${CORES_TURNO[ti % CORES_TURNO.length]}`}>{inicialDoTurno(t.nome, ti)}</span></td>
+                        <td className="py-2 pr-2"><input value={t.nome} maxLength={40} onChange={(e) => alterarTurno(t.chave, { nome: e.target.value })} aria-label={`Nome do turno ${ti + 1}`} className={`${campo} w-36`} /></td>
+                        <td className="py-2 pr-2"><input type="time" value={t.inicio} onChange={(e) => alterarTurno(t.chave, { inicio: e.target.value })} aria-label={`Entrada do turno ${t.nome}`} className={`${campo} w-28`} /></td>
+                        <td className="py-2 pr-2"><input type="time" value={t.fim} onChange={(e) => alterarTurno(t.chave, { fim: e.target.value })} aria-label={`Saída do turno ${t.nome}`} className={`${campo} w-28`} /></td>
+                        <td className="py-2 pr-2"><input type="number" min={0} max={240} step={5} value={t.intervalo} onChange={(e) => alterarTurno(t.chave, { intervalo: Math.max(0, Math.min(240, Number(e.target.value) || 0)) })} aria-label={`Intervalo do turno ${t.nome}`} className={`${campo} w-24`} /></td>
+                        <td className="whitespace-nowrap py-2 pr-2 font-semibold">{liq === null ? <span className="text-risco-fg">inválido</span> : <>{horasTexto(liq)}<span className="font-normal text-suave"> · {horasTexto(liq * diasNum)}/sem</span></>}</td>
+                        <td className="py-2 text-right">{turnos.length > 1 ? <button type="button" onClick={() => removerTurno(t.chave)} aria-label={`Remover o turno ${t.nome}`} className="rounded-lg px-2.5 py-1.5 text-sm font-semibold text-risco-fg hover:bg-risco-bg">Remover</button> : null}</td>
+                      </tr>
                     );
                   })}
-                </ul>
-              </div>
-            ))}
-            <p className="text-xs text-suave">Precisa lançar férias ou afastamento? Faça em <Link href={`/empresas/${empresaId}/escalas/ausencias`} className="font-semibold text-marca hover:underline">Férias e afastamentos</Link> e volte aqui.</p>
-          </div>
-        )}
-      </Cartao>
+                </tbody>
+              </table>
+            </div>
+          </Etapa>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Botao onClick={gerar} disabled={pendente || invalido || semCobertura || escolhidos.length === 0 || abertos === 0}>{pendente ? 'Gerando a escala…' : `Gerar escala${escolhidos.length > 1 ? ` dos ${escolhidos.length} setores` : ''}`}</Botao>
-        {escolhidos.length === 0 ? <span className="text-sm text-risco-fg">Nenhum setor com pessoas escolhido: cadastre a equipe e escolha o setor.</span>
-          : abertos === 0 ? <span className="text-sm text-risco-fg">Marque os dias de funcionamento.</span>
-          : invalido ? <span className="text-sm text-risco-fg">Confira os horários dos turnos.</span>
-          : semCobertura ? <span className="text-sm text-suave">Informe quantas pessoas cada turno precisa em pelo menos um dia aberto.</span>
-          : <span className="text-sm text-suave">Cria (ou atualiza) um rascunho “Adequação {mes}” por setor. Nada é publicado.</span>}
+          <Etapa n={3} titulo="Setores e pessoas necessárias" texto="Quantas pessoas precisam estar em cada turno, em cada dia. O sistema aloca a equipe do setor para completar o time nesses momentos.">
+            {semSetor > 0 ? <div className="mb-3"><Aviso>{semSetor} pessoa(s) sem setor ficam de fora. Defina o setor em <strong>Equipe › Colaboradores › Editar</strong>.</Aviso></div> : null}
+            <div className="space-y-3">
+              {grupos.map((g) => {
+                const on = incluidos.has(g.id);
+                const b = balancoDaEquipe(turnos.map((t) => ({ minimo: minimoDe(g.id, t.chave).map((m, d) => (funcionamento[d] ? m : 0)) })), g.pessoas.length, diasNum);
+                return (
+                  <section key={g.id} className={`rounded-xl border border-linha ${on ? '' : 'opacity-60'}`} aria-label={`Setor ${g.nome}`}>
+                    <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+                      <label className="flex items-center gap-2 font-semibold"><input type="checkbox" className="size-4" checked={on} disabled={g.pessoas.length === 0} onChange={() => alternarSetor(g.id)} aria-label={`Gerar a escala do setor ${g.nome}`} />{g.nome}</label>
+                      <span className="text-sm text-suave">{g.pessoas.length} pessoa{g.pessoas.length === 1 ? '' : 's'}{g.pessoas.length === 0 ? ' · cadastre a equipe para gerar' : ''}</span>
+                      {on && g.pessoas.length > 0 ? <span className="ml-auto flex gap-1"><Botao variante="secundario" onClick={() => sugerir(g.id)}>Sugerir</Botao>{grupos.filter((x) => incluidos.has(x.id)).length > 1 ? <Botao variante="secundario" onClick={() => copiarPara(g.id)}>Copiar para os outros</Botao> : null}</span> : null}
+                    </div>
+                    {on && g.pessoas.length > 0 ? (
+                      <div className="border-t border-linha px-4 py-3">
+                        <div className="overflow-x-auto">
+                          <table className="text-center text-xs">
+                            <thead><tr><th className="pr-4 text-left font-semibold uppercase tracking-wide text-suave">Turno</th>{DIAS_TELA.map((d) => <th key={d.indice} className={`px-1 pb-1 font-semibold uppercase tracking-wide ${funcionamento[d.indice] ? 'text-suave' : 'text-suave/40'}`}>{d.rotulo}</th>)}</tr></thead>
+                            <tbody>
+                              {turnos.map((t, ti) => (
+                                <tr key={t.chave}>
+                                  <th scope="row" className="whitespace-nowrap pr-4 text-left text-sm font-semibold"><span className={`mr-2 inline-grid size-5 place-items-center rounded-md text-[11px] font-bold ${CORES_TURNO[ti % CORES_TURNO.length]}`}>{inicialDoTurno(t.nome, ti)}</span>{t.nome}</th>
+                                  {DIAS_TELA.map((d) => (
+                                    <td key={d.indice} className="p-0.5">
+                                      <input type="number" min={0} max={500} disabled={!funcionamento[d.indice]} value={funcionamento[d.indice] ? minimoDe(g.id, t.chave)[d.indice] : 0} onChange={(e) => definirMinimo(g.id, t.chave, d.indice, e.target.value)}
+                                        aria-label={`${g.nome}, ${t.nome}: pessoas na ${d.rotulo}`} className={`${classeCampo} !mt-0 !min-h-9 !w-14 !px-1 text-center ${funcionamento[d.indice] ? '' : 'bg-fundo'}`} />
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <p className={`mt-2 text-xs ${b.sobra < 0 ? 'font-semibold text-atencao-fg' : 'text-suave'}`}>{frasePessoas(b, g.pessoas.length, diasNum)}</p>
+                      </div>
+                    ) : null}
+                  </section>
+                );
+              })}
+            </div>
+          </Etapa>
+
+          <Etapa n={4} titulo="Folgas e férias" texto="Folga fixa: dia da semana em que a pessoa não trabalha (até 3). Férias e afastamentos cadastrados já entram e a equipe cobre sem a pessoa.">
+            {escolhidos.length === 0 ? <p className="text-sm text-suave">Escolha ao menos um setor com pessoas.</p> : (
+              <div className="space-y-4">
+                {escolhidos.map((g) => (
+                  <div key={g.id}>
+                    {grupos.length > 1 || setores.length > 0 ? <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-suave">{g.nome}</h3> : null}
+                    <ul className="divide-y divide-linha rounded-xl border border-linha">
+                      {g.pessoas.map((p) => {
+                        const fer = ausencias.filter((a) => a.colaboradorId === p.id && a.inicio <= mesFim && a.fim >= mesIni);
+                        return (
+                          <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-2">
+                            <span className="min-w-40 text-sm font-semibold">{p.nome}</span>
+                            <span role="group" aria-label={`Folga fixa de ${p.nome}`} className="flex flex-wrap gap-1">
+                              {DIAS_TELA.map((d) => {
+                                const marcado = (folgasFixas[p.id] ?? []).includes(d.indice);
+                                return <button type="button" key={d.indice} aria-pressed={marcado} aria-label={`${p.nome}: folga fixa na ${d.rotulo}`} onClick={() => alternarFolga(p.id, d.indice)} className={`h-8 min-w-11 rounded-lg border text-xs font-semibold ${marcado ? 'border-violeta-fg bg-violeta-bg text-violeta-fg' : 'border-linha text-suave hover:bg-fundo'}`}>{d.rotulo}</button>;
+                              })}
+                            </span>
+                            {fer.map((a) => <span key={`${a.inicio}${a.tipo}`} className="rounded-md bg-violeta-bg px-2 py-0.5 text-xs font-semibold text-violeta-fg">{a.tipo === 'ferias' ? 'Férias' : 'Afastamento'} {dataBr(a.inicio).slice(0, 5)}–{dataBr(a.fim).slice(0, 5)}</span>)}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+                <p className="text-xs text-suave">Precisa lançar férias ou afastamento? Faça em <Link href={`/empresas/${empresaId}/escalas/ausencias`} className="font-semibold text-marca hover:underline">Férias e afastamentos</Link> e volte aqui.</p>
+              </div>
+            )}
+          </Etapa>
+        </div>
+
+        <aside aria-label="Resumo" className="space-y-4 rounded-2xl border border-linha bg-cartao p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] lg:sticky lg:top-20">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-suave">Resumo</h2>
+          <dl className="space-y-3 text-sm">
+            <div><dt className="text-suave">Período</dt><dd className="font-semibold">{mes.split('-').reverse().join('/')} · {abertos} dia{abertos === 1 ? '' : 's'}/semana abertos{fecharFeriados ? ' · fecha nos feriados' : ''}</dd></div>
+            <div><dt className="text-suave">Turnos</dt><dd className="space-y-1">{turnos.map((t, ti) => { const liq = liquidoDoTurno(t); return <span key={t.chave} className="flex items-center gap-2 font-semibold"><span aria-hidden className={`grid size-5 place-items-center rounded-md text-[11px] font-bold ${CORES_TURNO[ti % CORES_TURNO.length]}`}>{inicialDoTurno(t.nome, ti)}</span>{t.nome}<span className="font-normal text-suave">{t.inicio}–{t.fim}{liq ? ` · ${horasTexto(liq)}` : ''}</span></span>; })}</dd></div>
+            <div><dt className="text-suave">Setores</dt><dd className="space-y-1">{resumoSetores.length === 0 ? <span className="text-suave">Nenhum escolhido</span> : resumoSetores.map(({ g, b }) => <span key={g.id} className="flex items-center justify-between gap-2 font-semibold">{g.nome}<span className={`text-xs font-semibold ${b.sobra < 0 ? 'text-atencao-fg' : 'text-ok-fg'}`}>{g.pessoas.length} pessoas · {b.sobra < 0 ? `faltam ~${-b.sobra}` : b.sobra > 0 ? `sobram ~${b.sobra}` : 'na medida'}</span></span>)}</dd></div>
+          </dl>
+          {pendencias.length > 0 ? <ul className="space-y-1 rounded-xl bg-atencao-bg px-3 py-2 text-xs font-semibold text-atencao-fg">{pendencias.map((x) => <li key={x}>{x}</li>)}</ul> : null}
+          <Botao onClick={gerar} disabled={pendente || pendencias.length > 0} className="w-full">{pendente ? 'Gerando a escala…' : `Gerar escala${escolhidos.length > 1 ? ` dos ${escolhidos.length} setores` : ''}`}</Botao>
+          <p className="text-xs text-suave">Cria (ou atualiza) um rascunho “Adequação {mes}” por setor. Nada é publicado.</p>
+        </aside>
       </div>
 
       {resultado && !resultado.ok ? <Aviso tipo="erro">{resultado.erro}</Aviso> : null}
@@ -228,7 +249,27 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
   );
 }
 
-export function ResultadoAdequacao({ r, empresaId }: { r: DadosSetor; empresaId: string }) {
+/** Bloco numerado de um passo da geração. */
+function Etapa({ n, titulo, texto, acoes, children }: { n: number; titulo: string; texto?: string; acoes?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-linha bg-cartao p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-6">
+      <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-full bg-marca text-sm font-bold text-sobre-marca">{n}</span>
+          <div><h2 className="text-base font-semibold leading-7">{titulo}</h2>{texto ? <p className="text-sm text-suave">{texto}</p> : null}</div>
+        </div>
+        {acoes}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function Rotulo({ t, children }: { t: string; children: React.ReactNode }) {
+  return <label className="block text-sm font-medium"><span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-suave">{t}</span>{children}</label>;
+}
+
+function ResultadoAdequacao({ r, empresaId }: { r: DadosSetor; empresaId: string }) {
   const ok = r.resumo.faltaTotal === 0;
   return (
     <div className="space-y-4" aria-live="polite">

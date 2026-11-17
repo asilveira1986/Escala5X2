@@ -29,3 +29,7 @@ O menu usa um **índigo profundo** (`#1E1B4B`) nos dois temas para se separar do
 ## Cores por área
 
 Cada área do sistema tem uma cor de apoio, aplicada ao ícone (menu, cabeçalhos, cartões, números): **Equipe e Carteira = azul**, **Escalas = violeta**, **Pedidos = âmbar**, **Ponto e folha = verde**, **Diagnóstico = rosa**, empresa/início = índigo da marca. O mapa está em `tomDoIcone` (`lib/menu.ts`); os tons são tokens em `globals.css` (`--c-azul-*`, `--c-violeta-*`, `--c-verde-*`, `--c-ambar-*`, `--c-rosa-*`), com versões para o tema escuro e para o menu lateral. Os números têm uma faixa colorida no topo; a Visão geral tem degradê índigo→violeta; a área de conteúdo tem um leve degradê no topo.
+
+## Fonte
+
+Toda a interface usa **Inter** (400–700), em títulos e texto, com espaçamento levemente fechado nos títulos. A fonte vem do Google Fonts (`app/layout.tsx`) e é definida pelos tokens `--font-titulo` e `--font-texto` em `globals.css`; sem a fonte, cai para Segoe UI/sistema.
