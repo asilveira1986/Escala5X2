@@ -6,12 +6,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { tomDoIcone, entradaAtual, caminhoParaEmpresa, COOKIE_EMPRESA, COOKIE_MENU, empresaDoCaminho, gravarEstadoMenu, migalhas, montarMenu, posicaoAtual, type EstadoMenu, type GrupoMenu, type ItemMenu, type PosicaoMenu, type SecaoMenu } from '@/lib/menu';
 import { BotaoSair } from './BotaoSair';
 import { CabecalhoPagina } from './ui';
+import { Sino } from './Sino';
 import { IconeChevron, IconeEmpresa, IconeExpandir, IconeFechar, IconeMenu, IconeRecolher, MarcaLogo } from './icones';
 import { ICONES_MENU } from './menu-icones';
 
 export type EmpresaDoMenu = { id: string; nome: string };
 type Props = {
-  email: string; empresas: EmpresaDoMenu[]; ehGestor: boolean; temMinhaEscala: boolean; temCarteira: boolean; estadoInicial: EstadoMenu;
+  naoLidas?: number; email: string; empresas: EmpresaDoMenu[]; ehGestor: boolean; temMinhaEscala: boolean; temCarteira: boolean; estadoInicial: EstadoMenu;
   aviso?: ReactNode; children: ReactNode;
 };
 
@@ -26,7 +27,7 @@ function gravar(e: EstadoMenu) {
 }
 
 /** Menu lateral recolhível, com grupos e subitens, que vira gaveta no celular. */
-export function Shell({ email, empresas, ehGestor, temMinhaEscala, temCarteira, estadoInicial, aviso, children }: Props) {
+export function Shell({ naoLidas = 0, email, empresas, ehGestor, temMinhaEscala, temCarteira, estadoInicial, aviso, children }: Props) {
   const pathname = usePathname() ?? '/';
   const router = useRouter();
   const [recolhido, setRecolhido] = useState(estadoInicial.recolhido);
@@ -97,6 +98,7 @@ export function Shell({ email, empresas, ehGestor, temMinhaEscala, temCarteira, 
                 ))}
               </ol>
             </nav>
+            <Sino naoLidasInicial={naoLidas} />
           </header>
           <main className={`mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 pt-4 sm:px-6 sm:pt-6 ${soColaborador ? 'pb-24 lg:pb-10' : 'pb-10'}`}>{cabecalho ? <CabecalhoPagina titulo={cabecalho.rotulo} descricao={cabecalho.descricao} icone={cabecalho.icone} /> : null}{children}</main>
           {soColaborador ? <BarraInferior secoes={secoes} pos={pos} /> : null}

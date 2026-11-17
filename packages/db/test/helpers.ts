@@ -23,7 +23,7 @@ async function garantirBanco(): Promise<void> {
 }
 
 /** Segredo de teste; em produção vem do Vault. */
-export const migracoes = ['0001_fundacao', '0002_cadastros_regras', '0003_storage', '0004_usuario_onboarding', '0005_interruptor_mfa', '0006_escalas', '0007_escala_entrada', '0008_salvar_alocacoes', '0009_convite_colaborador', '0010_demanda_setor', '0011_painel_carteira', '0012_otimizacao', '0013_solicitacoes', '0014_banco_horas', '0015_fechamento_folha', '0016_ponto_afd', '0017_cadastro_colaborador', '0018_editar_desligar_colaborador', '0019_banco_horas_ponto'];
+export const migracoes = ['0001_fundacao', '0002_cadastros_regras', '0003_storage', '0004_usuario_onboarding', '0005_interruptor_mfa', '0006_escalas', '0007_escala_entrada', '0008_salvar_alocacoes', '0009_convite_colaborador', '0010_demanda_setor', '0011_painel_carteira', '0012_otimizacao', '0013_solicitacoes', '0014_banco_horas', '0015_fechamento_folha', '0016_ponto_afd', '0017_cadastro_colaborador', '0018_editar_desligar_colaborador', '0019_banco_horas_ponto', '0020_notificacoes'];
 
 export async function conectarAdmin(): Promise<Client> {
   await garantirBanco();
