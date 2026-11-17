@@ -202,4 +202,14 @@ INC20=$DB/setup/supabase_atualizar_notificacoes.sql
   echo "commit;"
 } > "$INC20"
 echo "gerado: $INC20"
+# Aviso de vencimento do banco de horas (migration 0021) para bancos com as migrations 0001 a 0020.
+INC21=$DB/setup/supabase_atualizar_aviso_banco.sql
+{
+  echo "-- JornadaCerta: aviso de vencimento do banco de horas (migration 0021) em um banco que já tem as migrations 0001 a 0020."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0021_aviso_vencimento_banco.up.sql"
+  echo "commit;"
+} > "$INC21"
+echo "gerado: $INC21"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"
