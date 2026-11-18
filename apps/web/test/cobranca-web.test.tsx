@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { dataDeInstante } from '@jc/rules-engine';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -43,7 +44,7 @@ describe('assinar', () => {
     await assinar(ORG, PLANO, 'boleto');
     expect(provedor.criarCliente).not.toHaveBeenCalled();
     const venc = provedor.criarAssinatura.mock.calls[0]![0].primeiroVencimento as string;
-    expect(venc > new Date().toISOString().slice(0, 10)).toBe(true);
+    expect(venc > dataDeInstante(new Date())).toBe(true);      // a data do sistema é a de Brasília, não a UTC (à noite elas diferem)
   });
   it('só admin; sem configuração; assinatura já em andamento; pedido inválido; erro do provedor', async () => {
     const { assinar } = await acoes();

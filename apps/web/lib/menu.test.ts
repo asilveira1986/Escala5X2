@@ -12,7 +12,7 @@ describe('montarMenu', () => {
     expect(m.map((s) => s.id)).toEqual(['geral', 'empresa', 'configuracoes']);
     expect(m[0]!.grupos.map((g) => g.id)).toEqual(['carteira']);
     const emp = m[1]!.grupos;
-    expect(emp.map((g) => g.id)).toEqual(['visao', 'diagnostico', 'equipe', 'escalas', 'pedidos', 'ponto-folha']);
+    expect(emp.map((g) => g.id)).toEqual(['visao', 'prontidao', 'diagnostico', 'equipe', 'escalas', 'pedidos', 'ponto-folha']);
     expect(emp.find((g) => g.id === 'escalas')!.itens!.map((i) => i.rotulo)).toEqual(['Escalas do mês', 'Gerar escala', 'Turnos', 'Cobertura mínima', 'Férias e afastamentos']);
     expect(emp.find((g) => g.id === 'ponto-folha')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/ponto`, `/empresas/${E}/banco-horas`, `/empresas/${E}/banco-horas/ponto`, `/empresas/${E}/folha`]);
     expect(emp.find((g) => g.id === 'equipe')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/colaboradores`, `/empresas/${E}/colaboradores/novo`, `/empresas/${E}/importar`]);
