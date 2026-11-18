@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { EstadoVazio } from '@/components/EstadoVazio';
 import { Aviso, CabecalhoPagina, classeBotaoLink } from '@/components/ui';
 import { exigirUsuario, idOu404 } from '@/lib/contexto';
+import { selecionarComunicados } from '@/lib/comunicados';
 import { resumirProntidao } from '@/lib/prontidao';
 import { chamar, lerEntradaDiagnostico } from '@jc/servicos';
 import { dataDeInstante, diagnosticar, type Diagnostico } from '@jc/rules-engine';
@@ -18,10 +19,14 @@ export default async function PaginaProntidao({ params }: { params: Promise<{ id
   const { supabase } = await exigirUsuario();
   const hoje = dataDeInstante(new Date());
   let diag: Diagnostico | null = null;
+  let comunicados = { F1: 0, F2: 0 };
   let falha = false;
   try {
     const entrada = lerEntradaDiagnostico(await chamar(supabase, 'diagnostico_entrada', { p_empresa: empresaId, p_data: hoje }));
-    if (entrada.colaboradores.length > 0) diag = diagnosticar(entrada.colaboradores, hoje, entrada.regras);
+    if (entrada.colaboradores.length > 0) {
+      diag = diagnosticar(entrada.colaboradores, hoje, entrada.regras);
+      comunicados = { F1: selecionarComunicados(diag, entrada.regras, 'F1', null)?.itens.length ?? 0, F2: selecionarComunicados(diag, entrada.regras, 'F2', null)?.itens.length ?? 0 };
+    }
   } catch { falha = true; }
   return (
     <>
@@ -32,7 +37,7 @@ export default async function PaginaProntidao({ params }: { params: Promise<{ id
           <Link href={`/empresas/${empresaId}/importar`} className={classeBotaoLink}>Importar planilha</Link>
         </EstadoVazio>
       ) : null}
-      {diag ? <Prontidao empresaId={empresaId} d={enxuto(diag)} p={resumirProntidao(diag, hoje)} /> : null}
+      {diag ? <Prontidao empresaId={empresaId} d={enxuto(diag)} p={resumirProntidao(diag, hoje)} comunicados={comunicados} /> : null}
     </>
   );
 }
