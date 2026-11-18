@@ -22,7 +22,7 @@ describe('lib/notificacoes', () => {
     for (const ruim of ['//evil.com', 'https://evil.com', 'javascript:alert(1)', '/a b', '/<script>', null, 5, '']) expect(hrefSeguro(ruim), String(ruim)).toBeNull();
   });
   it('ícone por tipo e leitura do corpo de "marcar como lidas"', () => {
-    expect([iconeDoTipo('pedido_decidido'), iconeDoTipo('escala_publicada'), iconeDoTipo('banco_vencendo'), iconeDoTipo('banco_gestao'), iconeDoTipo('cobranca_paga'), iconeDoTipo('outro')]).toEqual(['pedidos', 'calendario', 'banco', 'banco', 'folha', 'inicio']);
+    expect([iconeDoTipo('pedido_decidido'), iconeDoTipo('escala_publicada'), iconeDoTipo('banco_vencendo'), iconeDoTipo('banco_gestao'), iconeDoTipo('cobranca_paga'), iconeDoTipo('conformidade_ec'), iconeDoTipo('escala_pendente'), iconeDoTipo('outro')]).toEqual(['pedidos', 'calendario', 'banco', 'banco', 'folha', 'diagnostico', 'calendario', 'inicio']);
     expect(lerIdsLidas(null)).toEqual({ ok: true, ids: null });
     expect(lerIdsLidas({})).toEqual({ ok: true, ids: null });
     const id = '11111111-1111-4111-8111-111111111111';

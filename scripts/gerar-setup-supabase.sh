@@ -222,4 +222,14 @@ INC22=$DB/setup/supabase_atualizar_cobranca.sql
   echo "commit;"
 } > "$INC22"
 echo "gerado: $INC22"
+# Alertas proativos de conformidade (migration 0023) para bancos com as migrations 0001 a 0022 (exige a 0020 e a 0021 antes).
+INC23=$DB/setup/supabase_atualizar_alertas_conformidade.sql
+{
+  echo "-- JornadaCerta: alertas proativos de conformidade (migration 0023) em um banco que já tem as migrations 0001 a 0022."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0023_alertas_conformidade.up.sql"
+  echo "commit;"
+} > "$INC23"
+echo "gerado: $INC23"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"
