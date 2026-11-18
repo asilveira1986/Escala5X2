@@ -18,21 +18,31 @@ const montar = (extra: Partial<React.ComponentProps<typeof Shell>> = {}) => {
 afterEach(() => { cleanup(); push.mockClear(); caminho = ''; document.cookie = 'jc-menu=; max-age=0; path=/'; });
 
 describe('Shell', () => {
-  it('abre o grupo da página atual e marca o subitem como atual', () => {
+  it('abre o grupo da página atual (Configurações) e marca o subitem como atual', () => {
     montar();
-    expect(screen.getByRole('button', { name: 'Escalas' }).getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Configurações' }).getAttribute('aria-expanded')).toBe('true');
     const atual = screen.getAllByRole('link').filter((l) => l.getAttribute('aria-current') === 'page');
     expect(atual.map((l) => l.textContent)).toContain('Turnos');
   });
 
-  it('abre e fecha um grupo pelo botão e lembra no cookie', () => {
+  it('submenu dinâmico: só um grupo fica aberto; abrir outro fecha o anterior e clicar no aberto o fecha', () => {
     montar();
-    const equipe = screen.getByRole('button', { name: 'Equipe' });
-    expect(equipe.getAttribute('aria-expanded')).toBe('false');
-    fireEvent.click(equipe);
-    expect(equipe.getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByRole('link', { name: 'Colaboradores' })).toBeTruthy();
-    expect(decodeURIComponent(document.cookie)).toContain('"equipe"');
+    const config = screen.getByRole('button', { name: 'Configurações' });
+    const escalas = screen.getByRole('button', { name: 'Escalas' });
+    expect(escalas.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(escalas);
+    expect(escalas.getAttribute('aria-expanded')).toBe('true');
+    expect(config.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByRole('link', { name: 'Gerar escala' })).toBeTruthy();
+    fireEvent.click(escalas);
+    expect(escalas.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('Configurações tem o que é da empresa e o que é do sistema, em blocos', () => {
+    montar();
+    expect(screen.getByText('Desta empresa')).toBeTruthy();
+    expect(screen.getByText('Do sistema')).toBeTruthy();
+    for (const l of ['Turnos', 'Cobertura mínima', 'Importar planilha', 'Empresas', 'Plano e cobrança']) expect(screen.getByRole('link', { name: l })).toBeTruthy();
   });
 
   it('recolhe para o modo compacto e expande de volta', () => {
@@ -56,11 +66,28 @@ describe('Shell', () => {
     expect(push).toHaveBeenCalledWith(`/empresas/${E2}/escalas/turnos`);
   });
 
-  it('mostra o caminho (migalhas) com o nome da empresa e a página atual', () => {
+  it('a barra de cima mostra o caminho até aqui, sem repetir a página (o título dela está no cabeçalho)', () => {
     montar();
     const nav = screen.getByRole('navigation', { name: 'Você está em' });
     expect(nav.textContent).toContain('Padaria Sol');
-    expect(nav.querySelector('[aria-current="page"]')?.textContent).toBe('Turnos');
+    expect(nav.textContent).toContain('Configurações');
+    expect(nav.textContent).not.toContain('Turnos');
+    expect(nav.querySelector('[aria-current="page"]')).toBeNull();
+  });
+
+  it('em uma tela de registro (escala aberta) o item da lista aparece como último passo do caminho', () => {
+    caminho = `/empresas/${E1}/escalas/33333333-3333-4333-8333-333333333333`;
+    montar();
+    const nav = screen.getByRole('navigation', { name: 'Você está em' });
+    expect(nav.textContent).toContain('Escalas do mês');
+  });
+
+  it('a empresa não se repete: o nome aparece no seletor do menu e, no celular, só no caminho', () => {
+    montar();
+    expect(screen.getByRole('combobox', { name: 'Trocar de empresa' })).toBeTruthy();
+    const nav = screen.getByRole('navigation', { name: 'Você está em' });
+    expect(nav.querySelector('li')!.className).toContain('lg:hidden');
+    expect(screen.queryByText('Empresa', { selector: 'p' })).toBeNull();          // sem o título de seção "Empresa" em cima do seletor
   });
 
   it('abre e fecha a gaveta no celular, com Esc', () => {

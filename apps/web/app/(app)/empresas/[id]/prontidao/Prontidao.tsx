@@ -135,7 +135,6 @@ export function Prontidao({ empresaId, d, p, comunicados, emissao }: { empresaId
 
       <div className="flex flex-wrap gap-2">
         <Link href={`${base}/escalas/adequador`} className={classeBotaoLink}>Gerar a escala 5x2</Link>
-        <Link href={`${base}/diagnostico`} className={classeBotaoLink}>Diagnóstico completo e relatórios</Link>
       </div>
       <p className="text-xs text-suave">Calculado agora, com os contratos vigentes e as regras cadastradas; nada é gravado. Não substitui parecer jurídico nem contábil.</p>
     </div>

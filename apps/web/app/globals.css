@@ -84,6 +84,7 @@
   --font-texto: var(--font-texto);
 }
 
+html { font-size: 15px; }
 body { background: var(--c-fundo); color: var(--c-tinta); font-family: var(--font-texto); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; font-feature-settings: 'cv11', 'ss01'; }
 h1, h2, h3 { font-family: var(--font-titulo); letter-spacing: -0.02em; text-wrap: balance; }
 table { font-variant-numeric: tabular-nums; }

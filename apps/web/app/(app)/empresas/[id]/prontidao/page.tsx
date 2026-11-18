@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { EstadoVazio } from '@/components/EstadoVazio';
-import { Aviso, CabecalhoPagina, classeBotaoLink } from '@/components/ui';
+import { Aviso, classeBotaoLink } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
 import { selecionarComunicados } from '@/lib/comunicados';
 import { resumirProntidao } from '@/lib/prontidao';
@@ -33,7 +33,6 @@ export default async function PaginaProntidao({ params }: { params: Promise<{ id
   } catch { falha = true; }
   return (
     <>
-      <CabecalhoPagina icone="calendario" titulo="Prontidão para a EC 141" descricao="Quão preparada a empresa está para a fase 1 (42h) e para a fase 2 (40h), por setor, e quanto custa cobrir as horas." />
       {falha ? <Aviso tipo="erro">Não foi possível calcular a prontidão agora. Tente novamente.</Aviso> : null}
       {!falha && !diag ? (
         <EstadoVazio titulo="Ainda não há equipe com contrato vigente">

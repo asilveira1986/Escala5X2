@@ -1,14 +1,13 @@
 import Link from 'next/link';
-import { IconeCheck, IconeSeta } from '@/components/icones';
+import { IconeCheck } from '@/components/icones';
 import { Cartao, IconeCaixa, Metrica, Selo } from '@/components/ui';
-import { montarMenu } from '@/lib/menu';
 import { ROTULO_STATUS, type EmpresaRow } from '@/lib/tipos-db';
 import { formatarCnpj } from '@jc/connectors/parsers';
 
 const tom = { nao_iniciado: 'cinza', em_risco: 'amarelo', adequado: 'verde' } as const;
 export type ResumoEmpresa = { colab: number; turnos: number; publicadas: number; rascunhos: number; pendentes: number };
 
-/** Visão geral da empresa: identificação, números, primeiros passos e as áreas do sistema (vindas do menu). */
+/** Visão geral da empresa: identificação, números e primeiros passos. A navegação fica só no menu (nada de atalhos repetidos aqui). */
 export function VisaoGeral({ empresaId, empresa, resumo }: { empresaId: string; empresa: Pick<EmpresaRow, 'razao_social' | 'cnpj' | 'status_adequacao'>; resumo: ResumoEmpresa }) {
   const { colab, turnos, publicadas, rascunhos, pendentes } = resumo;
   const base = `/empresas/${empresaId}`;
@@ -18,27 +17,18 @@ export function VisaoGeral({ empresaId, empresa, resumo }: { empresaId: string; 
     { ok: publicadas > 0, texto: 'Montar e publicar a primeira escala', dica: 'Com a conferência da lei na hora', href: `${base}/escalas` },
   ];
   const feitos = passos.filter((p) => p.ok).length;
-  // as áreas vêm do próprio menu: um só lugar define o que existe, o nome e o ícone
-  const grupos = montarMenu({ empresaId, ehGestor: true, temMinhaEscala: false, temCarteira: false }).find((s) => s.id === 'empresa')!.grupos.filter((g) => g.id !== 'visao');
-  // grupos com subitens viram um cartão cada; os links diretos (Diagnóstico, Pedidos) ficam juntos em "Acompanhamento"
-  const diretos = grupos.filter((g) => !g.itens).map((g) => ({ id: g.id, rotulo: g.rotulo, href: g.href!, icone: g.icone, descricao: g.descricao }));
-  const blocos = [
-    ...grupos.filter((g) => g.itens).map((g) => ({ id: g.id, titulo: g.rotulo, icone: g.icone, itens: g.itens! })),
-    { id: 'acompanhamento', titulo: 'Acompanhamento', icone: 'diagnostico' as const, itens: diretos },
-  ];
-
   return (
     <>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-3xl border border-marca/15 bg-[linear-gradient(120deg,var(--c-marca-suave),var(--c-cartao)_55%,var(--c-violeta-bg))] p-4 shadow-[0_8px_24px_-12px_rgba(79,70,229,0.25)] sm:p-6">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-marca/15 bg-[linear-gradient(120deg,var(--c-marca-suave),var(--c-cartao)_55%,var(--c-violeta-bg))] p-4 shadow-[0_8px_24px_-12px_rgba(79,70,229,0.25)] sm:p-6">
         <IconeCaixa icone="empresas" tamanho="lg" />
         <div className="min-w-0 flex-1 basis-40">
-          <h1 className="text-xl font-bold leading-tight tracking-tight sm:text-2xl" title={empresa.razao_social}>{empresa.razao_social}</h1>
+          <h1 className="text-lg font-bold leading-tight tracking-tight" title={empresa.razao_social}>{empresa.razao_social}</h1>
           <p className="text-sm text-suave">CNPJ {formatarCnpj(empresa.cnpj)}</p>
         </div>
         <Selo tom={tom[empresa.status_adequacao]}>{ROTULO_STATUS[empresa.status_adequacao]}</Selo>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <Metrica href={`${base}/colaboradores`} icone="pessoas" rotulo="Colaboradores ativos" valor={colab} texto="Ver e cadastrar equipe" />
         <Metrica href={`${base}/escalas`} icone="calendario" rotulo="Escalas publicadas" valor={publicadas} texto={rascunhos > 0 ? `${rascunhos} em rascunho` : 'Montar o mês'} />
         <Metrica href={`${base}/solicitacoes`} icone="pedidos" rotulo="Pedidos para decidir" valor={pendentes} tom={pendentes > 0 ? 'ambar' : 'neutro'} texto={pendentes > 0 ? 'Há pedidos esperando' : 'Nada pendente'} />
@@ -63,25 +53,6 @@ export function VisaoGeral({ empresaId, empresa, resumo }: { empresaId: string; 
         </Cartao>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {blocos.map(({ id, titulo, icone, itens }) => {
-          return (
-            <Cartao key={id} titulo={titulo} icone={icone}>
-              <ul className="-mx-2 space-y-0.5">
-                {itens.map((i) => (
-                  <li key={i.id}>
-                    <Link href={i.href} className="group flex items-center gap-3 rounded-2xl px-2 py-2 transition-colors hover:bg-fundo">
-                      <IconeCaixa icone={i.icone} tamanho="sm" />
-                      <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{i.rotulo}</span>{i.descricao ? <span className="block text-xs text-suave">{i.descricao}</span> : null}</span>
-                      <IconeSeta width={16} height={16} className="shrink-0 text-suave transition-transform group-hover:translate-x-0.5 group-hover:text-marca" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </Cartao>
-          );
-        })}
-      </div>
     </>
   );
 }

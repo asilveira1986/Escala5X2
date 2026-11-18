@@ -12,14 +12,29 @@ describe('montarMenu', () => {
     expect(m.map((s) => s.id)).toEqual(['geral', 'empresa', 'configuracoes']);
     expect(m[0]!.grupos.map((g) => g.id)).toEqual(['carteira']);
     const emp = m[1]!.grupos;
-    expect(emp.map((g) => g.id)).toEqual(['visao', 'prontidao', 'diagnostico', 'equipe', 'escalas', 'pedidos', 'ponto-folha']);
-    expect(emp.find((g) => g.id === 'escalas')!.itens!.map((i) => i.rotulo)).toEqual(['Escalas do mês', 'Gerar escala', 'Turnos', 'Cobertura mínima', 'Férias e afastamentos']);
+    expect(emp.map((g) => g.id)).toEqual(['visao', 'ec141', 'colaboradores', 'escalas', 'pedidos', 'ponto-folha']);
+    expect(emp.find((g) => g.id === 'escalas')!.itens!.map((i) => i.rotulo)).toEqual(['Escalas do mês', 'Gerar escala', 'Férias e afastamentos']);
+    expect(emp.find((g) => g.id === 'ec141')!.itens!.map((i) => i.rotulo)).toEqual(['Prontidão', 'Diagnóstico']);
     expect(emp.find((g) => g.id === 'ponto-folha')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/ponto`, `/empresas/${E}/banco-horas`, `/empresas/${E}/banco-horas/ponto`, `/empresas/${E}/folha`]);
-    expect(emp.find((g) => g.id === 'equipe')!.itens!.map((i) => i.href)).toEqual([`/empresas/${E}/colaboradores`, `/empresas/${E}/colaboradores/novo`, `/empresas/${E}/importar`]);
+    expect(emp.find((g) => g.id === 'colaboradores')!.href).toBe(`/empresas/${E}/colaboradores`);
   });
-  it('Configurações reúne a lista de empresas, o plano e cobrança e o cadastro de nova empresa', () => {
+  it('Configurações é um submenu único: o que é da empresa aberta, em um bloco, e o que é do sistema, em outro', () => {
     const cfg = montarMenu(ctx()).find((s) => s.id === 'configuracoes')!;
-    expect(cfg.grupos[0]!.itens!.map((i) => [i.rotulo, i.href])).toEqual([['Empresas', '/empresas'], ['Plano e cobrança', '/cobranca'], ['Nova empresa', '/empresas/nova']]);
+    expect(cfg.grupos).toHaveLength(1);
+    expect(cfg.grupos[0]!.itens!.map((i) => [i.rotulo, i.href, i.secao ?? null])).toEqual([
+      ['Turnos', `/empresas/${E}/escalas/turnos`, 'Desta empresa'], ['Cobertura mínima', `/empresas/${E}/escalas/cobertura`, null], ['Importar planilha', `/empresas/${E}/importar`, null],
+      ['Empresas', '/empresas', 'Do sistema'], ['Plano e cobrança', '/cobranca', null],
+    ]);
+  });
+  it('fora de uma empresa, Configurações só tem o que é do sistema (sem blocos)', () => {
+    const itens = montarMenu(ctx({ empresaId: null })).find((s) => s.id === 'configuracoes')!.grupos[0]!.itens!;
+    expect(itens.map((i) => [i.rotulo, i.secao ?? null])).toEqual([['Empresas', null], ['Plano e cobrança', null]]);
+  });
+  it('nada repete: "Nova empresa" e "Novo colaborador" são botões das próprias telas, não itens do menu', () => {
+    const rotulos = montarMenu(ctx({ temMinhaEscala: true })).flatMap((s) => s.grupos.flatMap((g) => [g.rotulo, ...(g.itens ?? []).map((i) => i.rotulo)]));
+    expect(rotulos).not.toContain('Nova empresa');
+    expect(rotulos).not.toContain('Novo colaborador');
+    expect(new Set(rotulos).size).toBe(rotulos.length);
   });
   it('fora de uma empresa não há seção da empresa; sem carteira, o item some', () => {
     expect(ids(ctx({ empresaId: null }))).toEqual(['geral:carteira', 'configuracoes:config']);
@@ -54,7 +69,7 @@ describe('montarMenu', () => {
 describe('posicaoAtual', () => {
   const m = montarMenu(ctx({ temMinhaEscala: true }));
   it('acha o item exato', () => {
-    expect(posicaoAtual(m, `/empresas/${E}/escalas/cobertura`)).toMatchObject({ grupoId: 'escalas', itemId: 'cobertura' });
+    expect(posicaoAtual(m, `/empresas/${E}/escalas/cobertura`)).toMatchObject({ grupoId: 'config', itemId: 'cobertura' });
     expect(posicaoAtual(m, `/empresas/${E}/banco-horas`)).toMatchObject({ grupoId: 'ponto-folha', itemId: 'banco-horas' });
     expect(posicaoAtual(m, `/empresas/${E}`)).toMatchObject({ grupoId: 'visao', itemId: null });
     expect(posicaoAtual(m, '/carteira')).toMatchObject({ secaoId: 'geral', grupoId: 'carteira' });
@@ -64,13 +79,14 @@ describe('posicaoAtual', () => {
     expect(posicaoAtual(m, `/empresas/${E}/escalas/9d3c0a52-0000-0000-0000-000000000001`)).toMatchObject({ grupoId: 'escalas', itemId: 'escalas-lista' });
     expect(posicaoAtual(m, `/empresas/${E}/banco-horas/abc`)).toMatchObject({ itemId: 'banco-horas' });
     expect(posicaoAtual(m, `/empresas/${E}/banco-horas/ponto`)).toMatchObject({ itemId: 'banco-ponto' });
-    expect(posicaoAtual(m, `/empresas/${E}/diagnostico/abc`)).toMatchObject({ grupoId: 'diagnostico' });
+    expect(posicaoAtual(m, `/empresas/${E}/diagnostico/abc`)).toMatchObject({ grupoId: 'ec141', itemId: 'diagnostico' });
     expect(posicaoAtual(m, `/empresas/${E}/importar/xyz`)).toMatchObject({ itemId: 'importar' });
-    expect(posicaoAtual(m, `/empresas/${E}/colaboradores/novo`)).toMatchObject({ itemId: 'novo-colaborador' });
-    expect(posicaoAtual(m, `/empresas/${E}/colaboradores`)).toMatchObject({ itemId: 'colaboradores' });
+    expect(posicaoAtual(m, `/empresas/${E}/colaboradores/novo`)).toMatchObject({ grupoId: 'colaboradores' });
+    expect(posicaoAtual(m, `/empresas/${E}/colaboradores`)).toMatchObject({ grupoId: 'colaboradores' });
+    expect(posicaoAtual(m, `/empresas/${E}/prontidao`)).toMatchObject({ grupoId: 'ec141', itemId: 'prontidao' });
   });
   it('o destino mais específico vence (Turnos não acende Escalas do mês)', () => {
-    expect(posicaoAtual(m, `/empresas/${E}/escalas/turnos`)).toMatchObject({ itemId: 'turnos' });
+    expect(posicaoAtual(m, `/empresas/${E}/escalas/turnos`)).toMatchObject({ grupoId: 'config', itemId: 'turnos' });
     expect(posicaoAtual(m, `/empresas/${E}/escalas/adequador`)).toMatchObject({ itemId: 'adequador' });
     expect(posicaoAtual(m, `/empresas/${E}/escalas`)).toMatchObject({ itemId: 'escalas-lista' });
   });
@@ -79,7 +95,7 @@ describe('posicaoAtual', () => {
     expect(posicaoAtual(m, `/empresas/${E}/folha?mes=2027-02`)).toMatchObject({ itemId: 'folha' });
     expect(posicaoAtual(m, '/minha-escala')).toMatchObject({ grupoId: 'minha-escala' });
     expect(posicaoAtual(m, '/empresas')).toMatchObject({ grupoId: 'config', itemId: 'config-empresas' });
-    expect(posicaoAtual(m, '/empresas/nova')).toMatchObject({ grupoId: 'config', itemId: 'config-nova-empresa' });
+    expect(posicaoAtual(m, '/empresas/nova')).toMatchObject({ grupoId: 'config', itemId: 'config-empresas' });      // tela de cadastro: acende Empresas
   });
   it('caminho desconhecido não marca nada', () => {
     expect(posicaoAtual(m, '/qualquer/coisa')).toBeNull();
@@ -112,7 +128,7 @@ describe('empresa na URL e troca de empresa', () => {
 describe('migalhas', () => {
   const m = montarMenu(ctx({ temMinhaEscala: true }));
   it('Empresa › Grupo › Página', () => {
-    expect(migalhas(m, `/empresas/${E}/escalas/cobertura`, 'Loja Alfa').map((x) => x.rotulo)).toEqual(['Loja Alfa', 'Escalas', 'Cobertura mínima']);
+    expect(migalhas(m, `/empresas/${E}/escalas/cobertura`, 'Loja Alfa').map((x) => x.rotulo)).toEqual(['Loja Alfa', 'Configurações', 'Cobertura mínima']);
     expect(migalhas(m, `/empresas/${E}/pedidos`.replace('pedidos', 'solicitacoes'), 'Loja Alfa').map((x) => x.rotulo)).toEqual(['Loja Alfa', 'Pedidos']);
     expect(migalhas(m, `/empresas/${E}`, 'Loja Alfa').map((x) => x.rotulo)).toEqual(['Loja Alfa']);
     expect(migalhas(m, '/carteira', null).map((x) => x.rotulo)).toEqual(['Carteira']);
@@ -135,6 +151,7 @@ describe('entradaAtual (cabeçalho automático)', () => {
   const m = montarMenu(ctx({ temMinhaEscala: false }));
   it('devolve título, descrição e ícone de itens e de grupos sem subitens', () => {
     expect(entradaAtual(m, posicaoAtual(m, `/empresas/${E}/escalas/turnos`))).toMatchObject({ rotulo: 'Turnos', icone: 'turnos' });
+    expect(entradaAtual(m, posicaoAtual(m, `/empresas/${E}/prontidao`))).toMatchObject({ rotulo: 'Prontidão', icone: 'calendario' });
     expect(entradaAtual(m, posicaoAtual(m, `/empresas/${E}/solicitacoes`))).toMatchObject({ rotulo: 'Pedidos', icone: 'pedidos' });
     expect(entradaAtual(m, null)).toBeNull();
   });
@@ -142,7 +159,7 @@ describe('entradaAtual (cabeçalho automático)', () => {
     const todos = m.flatMap((s) => s.grupos.flatMap((g): { rotulo: string; descricao?: string; proprioTitulo?: boolean }[] => (g.itens ? g.itens : [g])));
     expect(todos.filter((d) => !d.descricao).map((d) => d.rotulo)).toEqual([]);
     const proprios = todos.filter((d) => d.proprioTitulo).map((d) => d.rotulo).sort();
-    expect(proprios).toEqual(['Carteira', 'Empresas', 'Nova empresa', 'Novo colaborador', 'Visão geral']);
+    expect(proprios).toEqual(['Carteira', 'Empresas', 'Visão geral']);
   });
 });
 
