@@ -1,0 +1,38 @@
+import Link from 'next/link';
+import { EstadoVazio } from '@/components/EstadoVazio';
+import { Aviso, CabecalhoPagina, classeBotaoLink } from '@/components/ui';
+import { exigirUsuario, idOu404 } from '@/lib/contexto';
+import { resumirProntidao } from '@/lib/prontidao';
+import { chamar, lerEntradaDiagnostico } from '@jc/servicos';
+import { dataDeInstante, diagnosticar, type Diagnostico } from '@jc/rules-engine';
+import { Prontidao } from './Prontidao';
+
+/** Só o que a simulação de custo usa; nomes e textos ficam no servidor para a página continuar leve com equipes grandes. */
+const enxuto = (d: Diagnostico): Diagnostico => ({
+  ...d,
+  itens: d.itens.map((i) => ({ ...i, nome: '', alertas: [], f1: i.f1 ? { ...i.f1, motivos: [], regrasAplicadas: [] } : null, f2: { ...i.f2, motivos: [], regrasAplicadas: [] } })),
+});
+
+export default async function PaginaProntidao({ params }: { params: Promise<{ id: string }> }) {
+  const empresaId = idOu404((await params).id);
+  const { supabase } = await exigirUsuario();
+  const hoje = dataDeInstante(new Date());
+  let diag: Diagnostico | null = null;
+  let falha = false;
+  try {
+    const entrada = lerEntradaDiagnostico(await chamar(supabase, 'diagnostico_entrada', { p_empresa: empresaId, p_data: hoje }));
+    if (entrada.colaboradores.length > 0) diag = diagnosticar(entrada.colaboradores, hoje, entrada.regras);
+  } catch { falha = true; }
+  return (
+    <>
+      <CabecalhoPagina icone="calendario" titulo="Prontidão para a EC 141" descricao="Quão preparada a empresa está para a fase 1 (42h) e para a fase 2 (40h), por setor, e quanto custa cobrir as horas." />
+      {falha ? <Aviso tipo="erro">Não foi possível calcular a prontidão agora. Tente novamente.</Aviso> : null}
+      {!falha && !diag ? (
+        <EstadoVazio titulo="Ainda não há equipe com contrato vigente">
+          <Link href={`/empresas/${empresaId}/importar`} className={classeBotaoLink}>Importar planilha</Link>
+        </EstadoVazio>
+      ) : null}
+      {diag ? <Prontidao empresaId={empresaId} d={enxuto(diag)} p={resumirProntidao(diag, hoje)} /> : null}
+    </>
+  );
+}

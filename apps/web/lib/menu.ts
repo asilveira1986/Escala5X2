@@ -33,6 +33,7 @@ export function montarMenu(c: ContextoMenu): SecaoMenu[] {
       id: 'empresa', titulo: 'Empresa',
       grupos: [
         { id: 'visao', rotulo: 'Visão geral', icone: 'inicio', href: e, descricao: 'Resumo da empresa e atalhos para tudo.', proprioTitulo: true },
+        { id: 'prontidao', rotulo: 'Prontidão EC 141', icone: 'calendario', href: `${e}/prontidao`, descricao: 'Quão preparada a empresa está para as fases da nova jornada e quanto custa cobrir as horas.' },
         { id: 'diagnostico', rotulo: 'Diagnóstico', icone: 'diagnostico', href: `${e}/diagnostico`, descricao: 'Quem precisa se adequar à escala 5x2 e quanto cada caminho custa.' },
         { id: 'equipe', rotulo: 'Equipe', icone: 'equipe', itens: [
           { id: 'colaboradores', rotulo: 'Colaboradores', href: `${e}/colaboradores`, icone: 'pessoas', descricao: 'Equipe, contratos e acesso ao aplicativo.' },
