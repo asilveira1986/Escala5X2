@@ -56,3 +56,7 @@ Na etapa 4 dá para escolher **Por faixa de horário** em vez de "Por turno": em
 - O motor (`adequarEscala`, parâmetro `faixas`) passa a ignorar o mínimo por turno. A equipe é distribuída entre os turnos pela demanda de cada faixa, e a busca local troca dias de trabalho/folga para fechar a presença de cada faixa. Presença na faixa = o menor número de pessoas de turno em qualquer trecho dela; por isso turnos parciais (manhã + tarde) cobrem juntos uma faixa longa.
 - O resultado mostra "onde falta gente" por faixa e dia, e o motor de regras confere a cobertura mínima nas mesmas faixas.
 - Limites: o intervalo de refeição não é descontado da presença (todos contam presentes durante o turno, incluindo o intervalo); cada pessoa continua fixa em um único turno no mês. Faixa que nenhum turno cobre inteira gera aviso.
+
+## Um passo por vez
+
+A tela **Gerar escala** mostra um passo por vez, com um menu de passos no topo (Período · Jornada · Turnos · Pessoas · Folgas · Revisar) e os botões Voltar/Continuar. O que foi escolhido fica guardado ao andar entre os passos. O último passo, **Revisar**, resume as escolhas (jornada, período, turnos e setores com a equipe), mostra as pendências e tem o botão de gerar. Depois de gerar, o resultado ocupa a tela e "Ajustar e gerar de novo" volta à revisão. O painel do fim da 6x1 ficou mais enxuto e as notas sobre datas e exceções ficam recolhidas.

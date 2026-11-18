@@ -12,12 +12,13 @@ export type ModeloBase = { id: string; nome: string; inicio: string; fim: string
 type Pessoa = { id: string; nome: string };
 type SetorProp = { id: string; nome: string; pessoas: Pessoa[] };
 type Ausencia = { colaboradorId: string; inicio: string; fim: string; tipo: 'ferias' | 'afastamento' };
-type Props = { empresaId: string; mesPadrao: string; modelos: ModeloBase[]; setores: SetorProp[]; semSetor: number; todos: Pessoa[]; ausencias: Ausencia[]; fases?: FaseJornada[]; em6x1?: number; totalEquipe?: number; hoje?: string };
+type Props = { empresaId: string; mesPadrao: string; modelos: ModeloBase[]; setores: SetorProp[]; semSetor: number; todos: Pessoa[]; ausencias: Ausencia[]; fases?: FaseJornada[]; em6x1?: number; totalEquipe?: number; hoje?: string; /** Passo em que a tela abre (1 a 6); usado nos testes. */ passoInicial?: number };
 
 const DIAS_OPCOES = [{ v: '', t: 'Automático (o que a lei permite)' }, { v: '5', t: '5 dias (escala 5x2)' }, { v: '6', t: '6 dias (escala 6x1)' }, { v: '4', t: '4 dias' }];
 let seq = 0;
 const novaChave = () => `t${++seq}`;
 const CHAVE_TODOS = '__todos__';
+const NOMES_PASSOS = ['Período', 'Jornada', 'Turnos', 'Pessoas', 'Folgas', 'Revisar'];
 
 function turnosIniciais(modelos: ModeloBase[]): TurnoBase[] {
   const base = modelos.length > 0 ? modelos.slice(0, 4) : [{ id: '', nome: 'Turno 1', inicio: '08:00', fim: '17:00', intervalo: 60 }];
@@ -30,7 +31,8 @@ const limitesMes = (mes: string) => { const [a, m] = mes.split('-').map(Number) 
  * "Gerar escala": a gestão informa o mês, os dias de funcionamento, os turnos, quantas pessoas cada setor precisa em cada turno e dia,
  * as folgas fixas e vê as férias; o sistema aloca cada setor e grava um rascunho por setor.
  */
-export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, todos, ausencias, fases = [], em6x1 = 0, totalEquipe = 0, hoje }: Props) {
+export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, todos, ausencias, fases = [], em6x1 = 0, totalEquipe = 0, hoje, passoInicial = 1 }: Props) {
+  const [passo, setPasso] = useState(Math.min(6, Math.max(1, passoInicial)));
   const grupos: SetorProp[] = useMemo(() => (setores.length > 0 ? setores : [{ id: CHAVE_TODOS, nome: 'Empresa toda', pessoas: todos }]), [setores, todos]);
   const [mes, setMes] = useState(mesPadrao);
   const [dias, setDias] = useState('');
@@ -131,11 +133,28 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
     ...(escolhidos.length > 0 && semCobertura ? ['Informe quantas pessoas cada turno precisa.'] : []),
   ];
   const campo = `${classeCampo} !mt-0 !min-h-9`;
+  const mostrandoResultado = !!resultado && resultado.ok;
 
   return (
-    <div className="space-y-6">
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="space-y-6">
+    <div className="mx-auto max-w-3xl space-y-4">
+      {!mostrandoResultado ? (
+        <>
+          <nav aria-label="Passos" className="-mx-1 overflow-x-auto px-1">
+            <ol className="inline-flex min-w-full gap-1 rounded-xl border border-linha bg-cartao p-1 sm:min-w-0">
+              {NOMES_PASSOS.map((nome, i) => {
+                const n = i + 1, ativo = n === passo;
+                return (
+                  <li key={nome}>
+                    <button type="button" onClick={() => setPasso(n)} aria-current={ativo ? 'step' : undefined} className={`inline-flex min-h-9 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-[13px] font-semibold transition-colors ${ativo ? 'bg-marca text-sobre-marca' : 'text-suave hover:bg-marca-suave hover:text-marca'}`}>
+                      <span aria-hidden className={`grid size-5 place-items-center rounded-full text-[11px] ${ativo ? 'bg-sobre-marca/20' : n < passo ? 'bg-ok-bg text-ok-fg' : 'bg-neutro-bg text-neutro-fg'}`}>{n < passo ? '✓' : n}</span>{nome}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
+
+          {passo === 1 ? (
           <Etapa n={1} titulo="Período e funcionamento" texto="O mês e em quais dias da semana a empresa funciona.">
             <div className="flex flex-wrap items-end gap-4">
               <Rotulo t="Mês"><input type="month" value={mes} onChange={(e) => setMes(e.target.value)} required aria-label="Mês" className={`${campo} w-44`} /></Rotulo>
@@ -152,19 +171,16 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
               <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" className="size-4" checked={fecharFeriados} onChange={(e) => setFecharFeriados(e.target.checked)} />Não funciona nos feriados (ninguém é escalado)</label>
             </fieldset>
           </Etapa>
-
+          ) : null}
+          {passo === 2 ? (
           <Etapa n={2} titulo="Jornada de trabalho" texto="Aumente ou reduza a jornada e veja na hora quantas pessoas cada uma exige. Os turnos que seguem a jornada têm a saída ajustada sozinha.">
             {fases.length > 1 ? (
-              <section aria-label="Fim da escala 6x1" className="mb-6 rounded-2xl border border-linha bg-fundo/60 p-4 sm:p-5">
-                <div className="flex flex-wrap items-center gap-3">
-                  <IconeCaixa icone="calendario" tom="violeta" />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-base font-semibold">Adequar ao fim da escala 6x1</h3>
-                    <p className="text-sm text-suave">Emenda Constitucional 141/2026: escolha a fase e a jornada e os dias já são preenchidos.</p>
-                  </div>
+              <section aria-label="Fim da escala 6x1" className="mb-4 rounded-xl border border-linha bg-fundo/60 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold">Fim da escala 6x1 (EC 141/2026)</h3>
                   {em6x1 > 0 ? <span className="rounded-full bg-ambar-bg px-3 py-1 text-xs font-semibold text-ambar-fg">{em6x1} de {totalEquipe} pessoas em 6x1</span> : null}
                 </div>
-                <ol className="mt-4 space-y-2.5">
+                <ol className="mt-3 space-y-2">
                   {fases.map((f, fi) => {
                     const ex = exigenciaDaFase(f);
                     const vigente = !!hoje && faseNaData(fases, hoje)?.codigo === f.codigo;
@@ -191,7 +207,7 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
                   })}
                 </ol>
                 {foraDoTeto && faseDoMes ? <p role="alert" className="mt-3 rounded-lg bg-ambar-bg px-3 py-2 text-sm text-ambar-fg">Em {mes.split('-').reverse().join('/')} vale a “{faseDoMes.nome}”, com teto de {faseDoMes.horas.toLocaleString('pt-BR')}h por semana: a jornada escolhida ({jornadaNum?.toLocaleString('pt-BR')}h) passa do limite desse mês.</p> : null}
-                <p className="mt-3 text-xs text-suave">Datas e limites vêm das regras cadastradas. Terceirizada pública, regime compensatório e alta renda têm regras próprias: confirme com o jurídico. A data de início da fase 2 ainda deve ser confirmada.</p>
+                <details className="mt-2 text-xs text-suave"><summary className="cursor-pointer font-semibold">Sobre as datas e as exceções</summary><p className="mt-1">Datas e limites vêm das regras cadastradas. Terceirizada pública, regime compensatório e alta renda têm regras próprias: confirme com o jurídico. A data de início da fase 2 ainda deve ser confirmada.</p></details>
               </section>
             ) : null}
             <div className="flex flex-wrap items-end gap-4">
@@ -225,7 +241,8 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
             </div>
             <p className="mt-2 text-xs text-suave">“Pessoas necessárias” = pessoas pedidas por semana (passo 4) ÷ dias de trabalho, por setor. Reduzir a jornada em menos dias por semana exige mais gente para cobrir o mesmo time.</p>
           </Etapa>
-
+          ) : null}
+          {passo === 3 ? (
           <Etapa n={3} titulo="Turnos" texto="Mudar um turno cadastrado vale só para esta geração; o cadastro não muda." acoes={turnos.length < 6 ? <Botao variante="secundario" onClick={adicionarTurno}>Adicionar turno</Botao> : null}>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[34rem] text-left text-sm">
@@ -252,7 +269,8 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
               </table>
             </div>
           </Etapa>
-
+          ) : null}
+          {passo === 4 ? (
           <Etapa n={4} titulo="Setores e pessoas necessárias" texto="Quantas pessoas precisam estar em cada turno, em cada dia. O sistema aloca a equipe do setor para completar o time nesses momentos.">
             <fieldset className="mb-4">
               <legend className="text-sm font-semibold">Como informar a cobertura</legend>
@@ -349,7 +367,8 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
               })}
             </div>
           </Etapa>
-
+          ) : null}
+          {passo === 5 ? (
           <Etapa n={5} titulo="Folgas e férias" texto="Folga fixa: dia da semana em que a pessoa não trabalha (até 3). Férias e afastamentos cadastrados já entram e a equipe cobre sem a pessoa.">
             {escolhidos.length === 0 ? <p className="text-sm text-suave">Escolha ao menos um setor com pessoas.</p> : (
               <div className="space-y-4">
@@ -379,10 +398,9 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
               </div>
             )}
           </Etapa>
-        </div>
-
-        <aside aria-label="Resumo" className="space-y-4 rounded-2xl border border-linha bg-cartao p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] lg:sticky lg:top-20">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-suave">Resumo</h2>
+          ) : null}
+          {passo === 6 ? (
+          <Etapa n={6} titulo="Revisar e gerar" texto="Confira as escolhas. O resultado vira um rascunho por setor; nada é publicado.">
           <dl className="space-y-3 text-sm">
             <div><dt className="text-suave">Jornada</dt><dd className="font-semibold">{jornadaNum ? `${jornadaNum.toLocaleString('pt-BR')}h/semana · ${diasNum} dias · ${horasTexto(liquidaDiariaMin(jornadaNum, diasNum))}/dia` : `Turnos como estão · ${diasNum} dias`}</dd></div>
             <div><dt className="text-suave">Período</dt><dd className="font-semibold">{mes.split('-').reverse().join('/')} · {abertos} dia{abertos === 1 ? '' : 's'}/semana abertos{fecharFeriados ? ' · fecha nos feriados' : ''}</dd></div>
@@ -390,14 +408,20 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
             <div><dt className="text-suave">Setores</dt><dd className="space-y-1">{resumoSetores.length === 0 ? <span className="text-suave">Nenhum escolhido</span> : resumoSetores.map(({ g, b }) => <span key={g.id} className="flex items-center justify-between gap-2 font-semibold">{g.nome}<span className={`text-xs font-semibold ${b.sobra < 0 ? 'text-atencao-fg' : 'text-ok-fg'}`}>{g.pessoas.length} pessoas · {b.sobra < 0 ? `faltam ~${-b.sobra}` : b.sobra > 0 ? `sobram ~${b.sobra}` : 'na medida'}</span></span>)}</dd></div>
           </dl>
           {pendencias.length > 0 ? <ul className="space-y-1 rounded-xl bg-atencao-bg px-3 py-2 text-xs font-semibold text-atencao-fg">{pendencias.map((x) => <li key={x}>{x}</li>)}</ul> : null}
-          <Botao onClick={gerar} disabled={pendente || pendencias.length > 0} className="w-full">{pendente ? 'Gerando a escala…' : `Gerar escala${escolhidos.length > 1 ? ` dos ${escolhidos.length} setores` : ''}`}</Botao>
-          <p className="text-xs text-suave">Cria (ou atualiza) um rascunho “Adequação {mes}” por setor. Nada é publicado.</p>
-        </aside>
-      </div>
+          <Botao onClick={gerar} disabled={pendente || pendencias.length > 0} className="mt-4 w-full">{pendente ? 'Gerando a escala…' : `Gerar escala${escolhidos.length > 1 ? ` dos ${escolhidos.length} setores` : ''}`}</Botao>
+          </Etapa>
+          ) : null}
+          <div className="flex items-center justify-between gap-2">
+            <Botao variante="secundario" onClick={() => setPasso((n) => Math.max(1, n - 1))} disabled={passo === 1}>Voltar</Botao>
+            {passo < 6 ? <Botao onClick={() => setPasso((n) => Math.min(6, n + 1))}>Continuar</Botao> : null}
+          </div>
+        </>
+      ) : null}
 
       {resultado && !resultado.ok ? <Aviso tipo="erro">{resultado.erro}</Aviso> : null}
       {resultado && resultado.ok ? (
-        <div className="space-y-8">
+        <div className="space-y-6">
+          <div className="flex justify-end"><Botao variante="secundario" onClick={() => { setResultado(null); setPasso(6); }}>Ajustar e gerar de novo</Botao></div>
           {jornadaNum ? <Aviso>Gerada com jornada de {jornadaNum.toLocaleString('pt-BR')}h por semana em {diasNum} dias ({horasTexto(liquidaDiariaMin(jornadaNum, diasNum))} líquidas por dia).</Aviso> : null}
           {resultado.setores.map((s) => (
             <section key={s.setorId ?? CHAVE_TODOS} aria-label={`Resultado: ${s.setorNome}`} className="space-y-3">
@@ -414,7 +438,7 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
 /** Bloco numerado de um passo da geração. */
 function Etapa({ n, titulo, texto, acoes, children }: { n: number; titulo: string; texto?: string; acoes?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-linha bg-cartao p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-6">
+    <section className="rounded-2xl border border-linha bg-cartao p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5">
       <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-full bg-marca text-sm font-bold text-sobre-marca">{n}</span>

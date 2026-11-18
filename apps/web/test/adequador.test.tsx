@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const E = '11111111-1111-4111-8111-111111111111', M1 = '22222222-2222-4222-8222-222222222222', M2 = '55555555-5555-4555-8555-555555555555', ESC = '33333333-3333-4333-8333-333333333333';
@@ -26,12 +26,16 @@ const montar = async (props: Record<string, unknown> = {}) => {
     modelos={[{ id: M1, nome: 'Manhã', inicio: '08:00', fim: '17:00', intervalo: 60 }, { id: M2, nome: 'Tarde', inicio: '14:00', fim: '23:00', intervalo: 60 }]}
     setores={[{ id: S1, nome: 'Loja', pessoas: [{ id: P1, nome: 'Ana' }, { id: 'p2', nome: 'Bia' }, { id: 'p3', nome: 'Caio' }, { id: 'p4', nome: 'Dani' }, { id: 'p5', nome: 'Edu' }, { id: 'p6', nome: 'Fabi' }] }, { id: S2, nome: 'Estoque', pessoas: [{ id: 'q1', nome: 'Gil' }, { id: 'q2', nome: 'Hana' }] }]} {...props} />);
 };
-const botaoGerar = () => screen.getByRole('button', { name: /^Gerar escala/ });
+const botaoGerar = () => { ir('Revisar'); return screen.getByRole('button', { name: /^Gerar escala/ }); };
+/** Vai a um passo da tela pelo menu de passos. */
+const ir = (nome: string) => fireEvent.click(within(screen.getByRole('navigation', { name: 'Passos' })).getByRole('button', { name: nome }));
 
 describe('Gerar escala (tela)', () => {
   it('mostra os setores com a equipe, os turnos com as horas e sugere a cobertura pela equipe de cada setor', async () => {
     await montar();
+    ir('Turnos');
     expect(screen.getAllByText(/· 40h\/sem/)).toHaveLength(2);
+    ir('Pessoas');
     expect(screen.getByText('6 pessoas')).toBeTruthy();
     expect(screen.getByText('2 pessoas')).toBeTruthy();
     expect(screen.getByLabelText('Loja, Manhã: pessoas na Seg')).toHaveProperty('value', '2');      // 6 ÷ 2 turnos × 5 ÷ 7
@@ -41,20 +45,30 @@ describe('Gerar escala (tela)', () => {
 
   it('dias de funcionamento: fechar um dia desabilita a cobertura dele; abrir devolve a sugestão', async () => {
     await montar();
+    ir('Pessoas');
     expect((screen.getByLabelText('Loja, Manhã: pessoas na Dom') as HTMLInputElement).disabled).toBe(true);
+    ir('Período');
     fireEvent.click(screen.getByLabelText('Funciona na Sáb'));
+    ir('Pessoas');
     expect((screen.getByLabelText('Loja, Manhã: pessoas na Sáb') as HTMLInputElement).disabled).toBe(true);
+    ir('Período');
     fireEvent.click(screen.getByLabelText('Funciona na Dom'));
+    ir('Pessoas');
     expect((screen.getByLabelText('Loja, Manhã: pessoas na Dom') as HTMLInputElement).disabled).toBe(false);
   });
 
   it('o pedido leva funcionamento, feriados, turnos, cobertura por setor e folgas fixas; horário editado desliga o turno do cadastro', async () => {
     await montar();
+    ir('Turnos');
     fireEvent.change(screen.getByLabelText('Saída do turno Manhã'), { target: { value: '16:00' } });
+    ir('Pessoas');
     fireEvent.change(screen.getByLabelText('Loja, Manhã: pessoas na Ter'), { target: { value: '4' } });
+    ir('Período');
     fireEvent.click(screen.getByLabelText('Não funciona nos feriados (ninguém é escalado)'));
-    fireEvent.click(screen.getByLabelText('Ana: folga fixa na Sáb'));
     fireEvent.change(screen.getByLabelText('Mês'), { target: { value: '2027-04' } });
+    ir('Folgas');
+    fireEvent.click(screen.getByLabelText('Ana: folga fixa na Sáb'));
+    ir('Jornada');
     fireEvent.change(screen.getByLabelText('Dias de trabalho por semana'), { target: { value: '6' } });
     fireEvent.click(botaoGerar());
     await waitFor(() => expect(gerar).toHaveBeenCalled());
@@ -69,6 +83,7 @@ describe('Gerar escala (tela)', () => {
 
   it('desmarcar um setor o tira da geração (e das folgas fixas)', async () => {
     await montar();
+    ir('Pessoas');
     fireEvent.click(screen.getByLabelText('Gerar a escala do setor Estoque'));
     fireEvent.click(botaoGerar());
     await waitFor(() => expect(gerar).toHaveBeenCalled());
@@ -77,9 +92,12 @@ describe('Gerar escala (tela)', () => {
 
   it('mostra as férias do mês ao lado de cada pessoa', async () => {
     await montar({ ausencias: [{ colaboradorId: P1, inicio: '2027-03-10', fim: '2027-03-16', tipo: 'ferias' }, { colaboradorId: 'p2', inicio: '2027-05-01', fim: '2027-05-10', tipo: 'ferias' }] });
+    ir('Folgas');
     expect(screen.getByText('Férias 10/03–16/03')).toBeTruthy();
     expect(screen.queryByText(/01\/05–10\/05/)).toBeNull();                      // fora do mês escolhido
+    ir('Período');
     fireEvent.change(screen.getByLabelText('Mês'), { target: { value: '2027-05' } });
+    ir('Folgas');
     expect(screen.getByText('Férias 01/05–10/05')).toBeTruthy();
   });
 
@@ -116,14 +134,17 @@ describe('Gerar escala (tela)', () => {
 
   it('avisa quem está sem setor', async () => {
     await montar({ semSetor: 3 });
+    ir('Pessoas');
     expect(screen.getByText(/3 pessoa\(s\) sem setor ficam de fora/)).toBeTruthy();
   });
 
   it('jornada: informar as horas ajusta a saída dos turnos que seguem a jornada e o pedido leva os horários ajustados e os dias', async () => {
     await montar();
+    ir('Jornada');
     fireEvent.change(screen.getByLabelText('Jornada semanal (horas)'), { target: { value: '36' } });
     fireEvent.change(screen.getByLabelText('Dias de trabalho por semana'), { target: { value: '5' } });
     expect(screen.getByText(/5 dias de 7h10/)).toBeTruthy();                               // 36h ÷ 5 = 7h12 → 7h10
+    ir('Turnos');
     expect(screen.getByLabelText('Saída do turno Manhã, ajustada pela jornada').textContent).toContain('16:10');
     expect(screen.getByLabelText('Saída do turno Tarde, ajustada pela jornada').textContent).toContain('22:10');     // 14:00 + 7h10 + 1h
     fireEvent.click(botaoGerar());
@@ -136,7 +157,9 @@ describe('Gerar escala (tela)', () => {
 
   it('jornada: turno que não segue a jornada mantém o horário digitado; sem jornada nada muda', async () => {
     await montar();
+    ir('Jornada');
     fireEvent.change(screen.getByLabelText('Jornada semanal (horas)'), { target: { value: '30' } });
+    ir('Turnos');
     fireEvent.click(screen.getByLabelText('Tarde segue a jornada'));
     expect((screen.getByLabelText('Saída do turno Tarde') as HTMLInputElement).value).toBe('23:00');
     fireEvent.click(botaoGerar());
@@ -155,6 +178,7 @@ describe('Gerar escala (tela)', () => {
 
   it('impacto da jornada: a tabela mostra pessoas necessárias × equipe e "Usar" aplica a jornada e os dias', async () => {
     await montar();
+    ir('Jornada');
     const tabela = screen.getByRole('table', { name: 'Impacto da jornada' });
     const linha = (rotulo: RegExp) => Array.from(tabela.querySelectorAll('tbody tr')).find((r) => rotulo.test(r.textContent ?? ''))!;
     // Loja: 2 turnos × 2 pessoas × 6 dias abertos = 24 posições; Estoque: 2 × 1 × 6 = 12 (cobertura sugerida). Equipe: 6 + 2 = 8.
@@ -175,14 +199,18 @@ describe('Gerar escala (tela)', () => {
 
   it('jornada fora do que a tela aceita (muito baixa) é ignorada', async () => {
     await montar();
+    ir('Jornada');
     fireEvent.change(screen.getByLabelText('Jornada semanal (horas)'), { target: { value: '3' } });
     expect(screen.getByText(/Sem jornada informada/)).toBeTruthy();
+    ir('Turnos');
     expect(screen.queryByLabelText('Saída do turno Manhã, ajustada pela jornada')).toBeNull();
   });
 
   it('jornada acima do máximo legal (44h) bloqueia a geração com o motivo', async () => {
     await montar();
+    ir('Jornada');
     fireEvent.change(screen.getByLabelText('Jornada semanal (horas)'), { target: { value: '48' } });
+    ir('Revisar');
     expect(screen.getByText('A jornada máxima legal é de 44 horas por semana.')).toBeTruthy();
     expect((botaoGerar() as HTMLButtonElement).disabled).toBe(true);
   });
@@ -195,7 +223,7 @@ describe('Gerar escala: fim da 6x1', () => {
     { codigo: 'EC141_F2', nome: 'Fase 2: 5x2 com 40h', inicio: '2027-12-15', fim: null, horas: 40, dias: 5, folgas: 2, maxDiariaMin: 480 },
   ];
   it('mostra as fases, quantos estão em 6x1 e preenche jornada e dias ao adequar', async () => {
-    await montar({ fases, em6x1: 5, totalEquipe: 8, hoje: '2026-11-17', mesPadrao: '2027-01' });
+    await montar({ fases, em6x1: 5, totalEquipe: 8, hoje: '2026-11-17', mesPadrao: '2027-01', passoInicial: 2 });
     expect(screen.getByText(/5 de 8/)).toBeTruthy();
     expect(screen.getByText('hoje')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Adequar à Fase 2: 5x2 com 40h' }));
@@ -203,7 +231,7 @@ describe('Gerar escala: fim da 6x1', () => {
     expect(screen.getByLabelText('Dias de trabalho por semana')).toHaveProperty('value', '5');
   });
   it('avisa se a jornada passa do teto da fase do mês', async () => {
-    await montar({ fases, em6x1: 0, totalEquipe: 8, hoje: '2026-11-17', mesPadrao: '2027-01' });
+    await montar({ fases, em6x1: 0, totalEquipe: 8, hoje: '2026-11-17', mesPadrao: '2027-01', passoInicial: 2 });
     expect(screen.queryByText(/acordo coletivo/)).toBeNull();
     fireEvent.change(screen.getByLabelText('Jornada semanal (horas)'), { target: { value: '44' } });
     expect(screen.getByRole('alert').textContent).toMatch(/teto de 42h/);
@@ -212,7 +240,7 @@ describe('Gerar escala: fim da 6x1', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
   it('sem fases cadastradas, o painel não aparece', async () => {
-    await montar();
+    await montar({ passoInicial: 2 });
     expect(screen.queryByLabelText('Fim da escala 6x1')).toBeNull();
   });
 });
@@ -220,6 +248,7 @@ describe('Gerar escala: fim da 6x1', () => {
 describe('Gerar escala: cobertura por faixa de horário', () => {
   it('alterna para faixas sugeridas pelos turnos, edita a cobertura e envia as faixas ao gerar', async () => {
     await montar();
+    ir('Pessoas');
     fireEvent.click(screen.getByRole('radio', { name: 'Por faixa de horário' }));
     // turnos 08–17 e 14–23 → faixas 08:00–14:00, 14:00–17:00 e 17:00–23:00
     expect(screen.getByLabelText('Início da faixa 1')).toHaveProperty('value', '08:00');
@@ -251,11 +280,53 @@ describe('Gerar escala: cobertura por faixa de horário', () => {
 
   it('sem faixa válida, não deixa gerar', async () => {
     await montar();
+    ir('Pessoas');
     fireEvent.click(screen.getByRole('radio', { name: 'Por faixa de horário' }));
     fireEvent.click(screen.getByRole('button', { name: 'Remover a faixa 3' }));
     fireEvent.click(screen.getByRole('button', { name: 'Remover a faixa 2' }));
     fireEvent.click(screen.getByRole('button', { name: 'Remover a faixa 1' }));
     expect(screen.getByText('Adicione ao menos uma faixa.')).toBeTruthy();
     expect(botaoGerar()).toHaveProperty('disabled', true);
+  });
+});
+
+describe('Gerar escala: um passo por vez', () => {
+  it('mostra só o passo atual; Continuar e Voltar andam, e o menu de passos pula direto', async () => {
+    await montar();
+    expect(screen.getByLabelText('Mês')).toBeTruthy();
+    expect(screen.queryByLabelText('Jornada semanal (horas)')).toBeNull();            // passo 2 não está na tela
+    expect((screen.getByRole('button', { name: 'Voltar' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(screen.getByLabelText('Jornada semanal (horas)')).toBeTruthy();
+    expect(screen.queryByLabelText('Mês')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
+    expect(screen.getByLabelText('Mês')).toBeTruthy();
+    ir('Revisar');
+    expect(screen.queryByRole('button', { name: 'Continuar' })).toBeNull();            // último passo: só o botão de gerar
+    expect(screen.getByRole('button', { name: /^Gerar escala/ })).toBeTruthy();
+    const atual = within(screen.getByRole('navigation', { name: 'Passos' })).getAllByRole('button').filter((b) => b.getAttribute('aria-current') === 'step');
+    expect(atual.map((b) => b.textContent)).toEqual(['6Revisar']);
+  });
+  it('o que foi escolhido num passo continua ao voltar; a revisão resume as escolhas', async () => {
+    await montar();
+    ir('Período');
+    fireEvent.change(screen.getByLabelText('Mês'), { target: { value: '2027-06' } });
+    ir('Jornada');
+    fireEvent.change(screen.getByLabelText('Jornada semanal (horas)'), { target: { value: '40' } });
+    ir('Período');
+    expect(screen.getByLabelText('Mês')).toHaveProperty('value', '2027-06');
+    ir('Revisar');
+    expect(screen.getByText(/40h\/semana · 5 dias/)).toBeTruthy();
+    expect(screen.getByText(/06\/2027/)).toBeTruthy();
+  });
+  it('depois de gerar, o resultado ocupa a tela e "Ajustar e gerar de novo" volta à revisão com tudo preservado', async () => {
+    await montar();
+    fireEvent.click(botaoGerar());
+    expect(await screen.findByText('95%')).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'Passos' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Ajustar e gerar de novo' }));
+    expect(screen.getByRole('navigation', { name: 'Passos' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Gerar escala/ })).toBeTruthy();
+    expect(screen.queryByText('95%')).toBeNull();
   });
 });
