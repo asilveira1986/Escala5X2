@@ -133,7 +133,7 @@ export async function novaVersao(escalaId: string): Promise<{ ok: true; escalaId
   const { supabase, user } = await exigirUsuario();
   try {
     const e = await carregarEntradaEscala(supabase, eid.data);
-    if (e.escala.status !== 'publicada') return { ok: false, erro: 'Só uma escala publicada pode ganhar nova versão.' };
+    if (e.escala.status === 'rascunho') return { ok: false, erro: 'Só uma escala publicada (ou uma versão antiga) pode ganhar nova versão.' };
     const fimExclusivo = new Date(Date.parse(`${e.escala.fim}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
     const { data, error } = await supabase.from('escala').insert({
       empresa_id: e.escala.empresaId, setor_id: e.escala.setorId, nome: e.escala.nome, periodo: `[${e.escala.inicio},${fimExclusivo})`, criado_por: user.id,
