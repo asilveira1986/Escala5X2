@@ -46,8 +46,7 @@ export default async function BancoHoras({ params }: { params: Promise<{ id: str
 
   return (
     <>
-      <Link href={`/empresas/${empresaId}/escalas`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Escalas</Link>
-      <Cartao icone="banco" titulo="Banco de horas" subtitulo="Saldo de cada colaborador, créditos que estão perto de vencer e horas vencidas a pagar como hora extra. Crédito só existe para quem tem acordo com banco de horas vigente.">
+      <Cartao icone="banco" subtitulo="Saldo de cada colaborador, créditos que estão perto de vencer e horas vencidas a pagar como hora extra. Crédito só existe para quem tem acordo com banco de horas vigente.">
         {totalVencido > 0 ? <p className="mb-3 rounded-2xl bg-risco-bg px-3.5 py-2 text-sm font-semibold text-risco-fg">{horasTexto(totalVencido)} vencidas a pagar na empresa{totalValor > 0 ? ` (≈ ${moeda(totalValor)} com adicional)` : ''}.</p> : null}
         {linhasTabela.length === 0 ? <EstadoVazio titulo="Nenhum lançamento ainda">Abra um colaborador abaixo para lançar a primeira hora no banco.</EstadoVazio> : (
           <div className="overflow-x-auto">

@@ -22,8 +22,7 @@ export default async function Cobertura({ params }: { params: Promise<{ id: stri
   const grupos = agruparPorDia(demandas);
   return (
     <>
-      <Link href={`/empresas/${empresaId}/escalas`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Escalas</Link>
-      <Cartao icone="cobertura" titulo="Cobertura mínima" subtitulo="Quantas pessoas precisam estar trabalhando em cada faixa de horário. O editor avisa quando a grade fica abaixo do mínimo (nunca impede de publicar). Faixa de um setor vale só para escalas desse setor; faixa da empresa toda vale para escalas da empresa toda.">
+      <Cartao icone="cobertura" subtitulo="Quantas pessoas precisam estar trabalhando em cada faixa de horário. O editor avisa quando a grade fica abaixo do mínimo (nunca impede de publicar). Faixa de um setor vale só para escalas desse setor; faixa da empresa toda vale para escalas da empresa toda.">
         {podeGerir ? <FormDemanda empresaId={empresaId} setores={setores} /> : <p className="text-sm text-suave">Só quem gere a empresa pode alterar a cobertura.</p>}
       </Cartao>
       <Cartao icone="cobertura" titulo="Faixas cadastradas">

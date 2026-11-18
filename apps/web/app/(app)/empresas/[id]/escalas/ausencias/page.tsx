@@ -26,8 +26,7 @@ export default async function Ausencias({ params }: { params: Promise<{ id: stri
   const podeGerir = ger.data === true;
   return (
     <>
-      <Link href={`/empresas/${empresaId}/escalas`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Escalas</Link>
-      <Cartao icone="ferias" titulo="Férias e afastamentos" subtitulo="Quem está ausente não pode ser escalado: o editor bloqueia a publicação se houver trabalho nesses dias.">
+      <Cartao icone="ferias" subtitulo="Quem está ausente não pode ser escalado: o editor bloqueia a publicação se houver trabalho nesses dias.">
         {podeGerir ? <FormAusencia empresaId={empresaId} colaboradores={colaboradores.filter((c) => !c.desligamento).map((c) => ({ id: c.id, nome: c.nome }))} /> : <p className="text-sm text-suave">Só quem gere a empresa pode lançar ausências.</p>}
       </Cartao>
       <Cartao icone="ferias" titulo="Lançamentos">

@@ -13,7 +13,7 @@ export default async function Turnos({ params }: { params: Promise<{ id: string 
   const modelos = linhas<ModeloLinha>(data);
   return (
     <>
-      <Cartao icone="turnos" titulo="Turnos cadastrados" subtitulo="Modelos de horário para pintar na grade da escala. Dá para editar ou remover.">
+      <Cartao icone="turnos">
         {modelos.length === 0 ? <EstadoVazio titulo="Nenhum turno ainda">Cadastre o primeiro abaixo.</EstadoVazio> : <ListaTurnos empresaId={empresaId} turnos={modelos} />}
       </Cartao>
       <Cartao icone="mais" titulo="Novo turno"><FormModeloTurno empresaId={empresaId} /></Cartao>
