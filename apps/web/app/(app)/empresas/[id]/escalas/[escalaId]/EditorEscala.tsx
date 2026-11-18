@@ -99,7 +99,8 @@ export function EditorEscala({ empresaId, entrada, modelos, otimizacao = null }:
             <a href={`/api/v1/escalas/${entrada.escala.id}?formato=pdf`} className={classeBotaoLink}>PDF</a>
             <a href={`/api/v1/escalas/${entrada.escala.id}?formato=xlsx`} className={classeBotaoLink}>Excel</a>
           </span>
-          {somenteLeitura ? (status === 'publicada' ? <Botao variante="secundario" onClick={criarNovaVersao} disabled={pendente}>Criar nova versão</Botao> : null) : (
+          <Link href={`/empresas/${empresaId}/escalas/${entrada.escala.id}/historico`} className={classeBotaoLink}>Histórico</Link>
+          {somenteLeitura ? (status === 'publicada' ? <Botao variante="secundario" onClick={criarNovaVersao} disabled={pendente}>Criar nova versão</Botao> : <Botao variante="secundario" onClick={criarNovaVersao} disabled={pendente}>Restaurar esta versão</Botao>) : (
             <>
               <Botao variante="secundario" onClick={() => { setAlocs((a) => repetirPrimeiraSemana(a, entrada.escala.inicio, entrada.escala.fim)); setConfirmando(false); }} disabled={pendente}>Repetir 1ª semana</Botao>
               <Botao variante="secundario" onClick={gravar} disabled={pendente || !sujo}>{pendente ? 'Salvando…' : sujo ? 'Salvar' : 'Salvo'}</Botao>

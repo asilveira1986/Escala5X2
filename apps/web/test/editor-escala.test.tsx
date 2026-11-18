@@ -107,6 +107,17 @@ describe('EditorEscala', () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith('/empresas/emp/escalas/e2'));
   });
 
+  it('versão substituída oferece restaurar (vira novo rascunho) e todo estado leva ao histórico', async () => {
+    novaVersao.mockResolvedValue({ ok: true, escalaId: 'e3' });
+    const { rerender } = render(<EditorEscala empresaId="emp" entrada={entrada('substituida')} modelos={[manha]} />);
+    expect(screen.queryByRole('button', { name: 'Criar nova versão' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Histórico' }).getAttribute('href')).toBe(`/empresas/emp/escalas/${entrada('substituida').escala.id}/historico`);
+    fireEvent.click(screen.getByRole('button', { name: 'Restaurar esta versão' }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/empresas/emp/escalas/e3'));
+    rerender(<EditorEscala empresaId="emp" entrada={entrada('rascunho')} modelos={[manha]} />);
+    expect(screen.getByRole('link', { name: 'Histórico' })).toBeTruthy();
+  });
+
   it('mostra férias lançadas na grade, bloqueia trabalho nelas e destaca dia abaixo da cobertura mínima', () => {
     const e = entrada();
     e.ausencias = [{ colaboradorId: 'ana', inicio: '2027-01-06', fim: '2027-01-07', tipo: 'ferias' }];
