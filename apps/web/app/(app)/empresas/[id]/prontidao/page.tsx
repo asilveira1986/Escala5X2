@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { EstadoVazio } from '@/components/EstadoVazio';
+import { Abas } from '@/components/Abas';
 import { Aviso, classeBotaoLink } from '@/components/ui';
+import { lerAba } from '@/lib/abas';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
 import { selecionarComunicados } from '@/lib/comunicados';
 import { resumirProntidao } from '@/lib/prontidao';
@@ -8,14 +10,17 @@ import { chamar, lerEntradaDiagnostico } from '@jc/servicos';
 import { dataDeInstante, diagnosticar, type Diagnostico } from '@jc/rules-engine';
 import { Prontidao } from './Prontidao';
 
+const ABAS = [{ id: 'resumo', rotulo: 'Resumo e setores' }, { id: 'custo', rotulo: 'Custo' }, { id: 'comunicados', rotulo: 'Comunicados' }] as const;
+
 /** Só o que a simulação de custo usa; nomes e textos ficam no servidor para a página continuar leve com equipes grandes. */
 const enxuto = (d: Diagnostico): Diagnostico => ({
   ...d,
   itens: d.itens.map((i) => ({ ...i, nome: '', alertas: [], f1: i.f1 ? { ...i.f1, motivos: [], regrasAplicadas: [] } : null, f2: { ...i.f2, motivos: [], regrasAplicadas: [] } })),
 });
 
-export default async function PaginaProntidao({ params }: { params: Promise<{ id: string }> }) {
+export default async function PaginaProntidao({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ aba?: string }> }) {
   const empresaId = idOu404((await params).id);
+  const aba = lerAba((await searchParams).aba, ABAS);
   const { supabase } = await exigirUsuario();
   const hoje = dataDeInstante(new Date());
   let diag: Diagnostico | null = null;
@@ -39,7 +44,8 @@ export default async function PaginaProntidao({ params }: { params: Promise<{ id
           <Link href={`/empresas/${empresaId}/importar`} className={classeBotaoLink}>Importar planilha</Link>
         </EstadoVazio>
       ) : null}
-      {diag ? <Prontidao empresaId={empresaId} d={enxuto(diag)} p={resumirProntidao(diag, hoje)} comunicados={comunicados} emissao={emissao} /> : null}
+      {diag ? <Abas abas={ABAS.map((a) => ({ ...a, ...(a.id === 'comunicados' ? { contagem: emissao ? emissao.filter((x) => !x.ciente).length : 0 } : {}) }))} atual={aba} base={`/empresas/${empresaId}/prontidao`} /> : null}
+      {diag ? <Prontidao aba={aba as 'resumo' | 'custo' | 'comunicados'} empresaId={empresaId} d={enxuto(diag)} p={resumirProntidao(diag, hoje)} comunicados={comunicados} emissao={emissao} /> : null}
     </>
   );
 }

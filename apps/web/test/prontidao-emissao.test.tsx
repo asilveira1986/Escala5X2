@@ -33,9 +33,9 @@ describe('emitirComunicados (ação)', () => {
 
 describe('Prontidão: emissão e ciência', () => {
   const d = diagnosticar(equipe, '2026-11-17', REGRAS_SEED);
-  const montar = async (emissao: { fase: 'F1' | 'F2'; ciente: boolean; nome: string }[] | null) => {
+  const montar = async (emissao: { fase: 'F1' | 'F2'; ciente: boolean; nome: string }[] | null, aba: 'resumo' | 'custo' | 'comunicados' = 'comunicados') => {
     const { Prontidao } = await import('@/app/(app)/empresas/[id]/prontidao/Prontidao');
-    return render(<Prontidao empresaId={E} d={d} p={resumirProntidao(d, '2026-11-17')} comunicados={{ F1: 1, F2: 1 }} emissao={emissao} />);
+    return render(<Prontidao aba={aba} empresaId={E} d={d} p={resumirProntidao(d, '2026-11-17')} comunicados={{ F1: 1, F2: 1 }} emissao={emissao} />);
   };
   it('emite pela tela e mostra o resultado', async () => {
     await montar([]);
@@ -51,5 +51,19 @@ describe('Prontidão: emissão e ciência', () => {
     await montar(null);
     expect(screen.queryByRole('button', { name: 'Emitir fase 1' })).toBeNull();
     expect(screen.getByRole('link', { name: /Fase 1 · 1 comunicado \(PDF\)/ })).toBeTruthy();
+  });
+  it('cada aba mostra só o seu assunto', async () => {
+    const r = await montar([], 'resumo');
+    expect(screen.getByRole('table', { name: 'Prontidão por setor' })).toBeTruthy();
+    expect(screen.queryByRole('table', { name: 'Custo por estratégia' })).toBeNull();
+    expect(screen.queryByText('Comunicados de adequação')).toBeNull();
+    r.unmount();
+    const c = await montar([], 'custo');
+    expect(screen.getByRole('table', { name: 'Custo por estratégia' })).toBeTruthy();
+    expect(screen.queryByRole('table', { name: 'Prontidão por setor' })).toBeNull();
+    c.unmount();
+    await montar([], 'comunicados');
+    expect(screen.getByText('Comunicados de adequação')).toBeTruthy();
+    expect(screen.queryByRole('table', { name: 'Custo por estratégia' })).toBeNull();
   });
 });

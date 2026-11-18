@@ -9,8 +9,13 @@ import { TabelaItens } from '@/components/TabelaItens';
 import { exigirUsuario, idOu404 } from '@/lib/contexto';
 import { carregarDiagnostico, ErroServico } from '@jc/servicos';
 import { Simulador } from './Simulador';
+import { Abas } from '@/components/Abas';
+import { lerAba } from '@/lib/abas';
 
-export default async function DetalheDiagnostico({ params }: { params: Promise<{ id: string; diagId: string }> }) {
+const ABAS = [{ id: 'resumo', rotulo: 'Resumo' }, { id: 'cenarios', rotulo: 'Cenários de custo' }, { id: 'pessoas', rotulo: 'Pessoas' }];
+
+export default async function DetalheDiagnostico({ params, searchParams }: { params: Promise<{ id: string; diagId: string }>; searchParams: Promise<{ aba?: string }> }) {
+  const aba = lerAba((await searchParams).aba, ABAS);
   const p = await params;
   const empresaId = idOu404(p.id);
   const diagId = idOu404(p.diagId);
@@ -33,11 +38,22 @@ export default async function DetalheDiagnostico({ params }: { params: Promise<{
           <a className={classeBotaoLink} href={`${base}?formato=xlsx`}><IconeBaixar width={18} height={18} />Baixar planilha</a>
         </div>
       </div>
+      <Abas abas={ABAS.map((x) => (x.id === 'cenarios' ? { ...x, contagem: cenarios.length } : x))} atual={aba} base={`/empresas/${empresaId}/diagnostico/${diagId}`} />
+      {aba === 'resumo' ? (
+        <>
       <PainelDiagnostico diagnostico={d} />
       <Cartao icone="cobertura" titulo="Horas a cobrir por dia da semana" subtitulo="Estimativa para a fase 2, distribuída igualmente entre os dias."><GraficoDeficit minutosPorDia={porDia} /></Cartao>
+        </>
+      ) : null}
+      {aba === 'cenarios' ? (
+        <>
       <Cartao icone="diagnostico" titulo="E se…? Simule uma solução" subtitulo="Escolha como cobrir as horas que deixam de ser trabalhadas. O sistema nunca simula redução de salário."><Simulador diagnosticoId={diagId} empresaId={empresaId} /></Cartao>
       <Cartao icone="diagnostico" titulo="Soluções lado a lado" subtitulo="O menor custo anual aparece destacado."><ComparacaoCenarios cenarios={cenarios} /></Cartao>
+        </>
+      ) : null}
+      {aba === 'pessoas' ? (
       <Cartao icone="pessoas" titulo="Situação de cada pessoa"><TabelaItens itens={d.itens} /></Cartao>
+      ) : null}
       <p className="text-xs text-suave">Estimativa para planejamento, calculada com as regras cadastradas e as premissas informadas. Não substitui parecer jurídico nem contábil. Nenhum cenário considera redução de salário.</p>
     </>
   );

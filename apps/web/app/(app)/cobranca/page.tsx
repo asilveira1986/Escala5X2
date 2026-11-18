@@ -1,3 +1,5 @@
+import { Abas } from '@/components/Abas';
+import { lerAba } from '@/lib/abas';
 import { Aviso, Cartao, Selo } from '@/components/ui';
 import { cobrancaAtiva, moeda, provedorDeCobranca, ROTULO_FATURA, ROTULO_FORMA } from '@/lib/cobranca';
 import { exigirUsuario, linhas } from '@/lib/contexto';
@@ -12,7 +14,8 @@ const tomFatura = { pendente: 'amarelo', paga: 'verde', vencida: 'vermelho', est
 const ROTULO_STATUS = { teste: 'Em teste', aguardando_pagamento: 'Aguardando pagamento', ativa: 'Ativa', inadimplente: 'Fatura vencida', cancelada: 'Cancelada' } as const;
 const tomStatus = { teste: 'azul', aguardando_pagamento: 'amarelo', ativa: 'verde', inadimplente: 'vermelho', cancelada: 'cinza' } as const;
 
-export default async function PaginaCobranca() {
+export default async function PaginaCobranca({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
+  const aba = lerAba((await searchParams).aba, [{ id: 'plano' }, { id: 'faturas' }]);
   const { supabase, user } = await exigirUsuario();
   const { data: mem } = await supabase.from('membro').select('organizacao_id, papel, organizacao:organizacao_id(nome)').eq('usuario_id', user.id).eq('papel', 'admin');
   const orgs = linhas<{ organizacao_id: string; organizacao: { nome: string } | null }>(mem);
@@ -38,6 +41,9 @@ export default async function PaginaCobranca() {
       {!configurado ? <Aviso>A cobrança ainda não está configurada neste ambiente (faltam as chaves do provedor de pagamento no servidor). Os planos abaixo são só para consulta.</Aviso> : null}
       {sit?.aviso ? <Aviso tipo={sit.aviso.tom === 'risco' ? 'erro' : 'info'}>{sit.aviso.texto}</Aviso> : null}
 
+      <Abas abas={[{ id: 'plano', rotulo: 'Assinatura e planos' }, { id: 'faturas', rotulo: 'Faturas', contagem: faturas.filter((f) => f.status === 'pendente' || f.status === 'vencida').length }]} atual={aba} base="/cobranca" />
+      {aba === 'plano' ? (
+        <>
       {assinatura ? (
         <Cartao icone="folha" titulo={`Assinatura de ${org.organizacao?.nome ?? 'sua organização'}`} acoes={<Selo tom={tomStatus[assinatura.status]}>{ROTULO_STATUS[assinatura.status]}</Selo>}>
           <dl className="grid gap-3 text-sm sm:grid-cols-4">
@@ -64,6 +70,9 @@ export default async function PaginaCobranca() {
         </ul>
       </Cartao>
 
+        </>
+      ) : (
+        <>
       <Cartao icone="relogio" titulo="Faturas">
         {faturas.length === 0 ? <p className="text-sm text-suave">Nenhuma fatura ainda. Depois de assinar, a primeira aparece aqui.</p> : (
           <div className="overflow-x-auto">
@@ -84,6 +93,8 @@ export default async function PaginaCobranca() {
           </div>
         )}
       </Cartao>
+        </>
+      )}
     </>
   );
 }
