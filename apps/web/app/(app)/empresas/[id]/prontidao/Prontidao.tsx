@@ -28,7 +28,7 @@ function Medidor({ titulo, inicio, dias, pronto, total, pct }: { titulo: string;
   );
 }
 
-export function Prontidao({ empresaId, d, p, comunicados, emissao }: { empresaId: string; d: Diagnostico; p: DadosProntidao; comunicados: { F1: number; F2: number }; emissao: SituacaoComunicado[] | null }) {
+export function Prontidao({ empresaId, d, p, comunicados, emissao, aba }: { aba: 'resumo' | 'custo' | 'comunicados'; empresaId: string; d: Diagnostico; p: DadosProntidao; comunicados: { F1: number; F2: number }; emissao: SituacaoComunicado[] | null }) {
   const [pendente, iniciar] = useTransition();
   const [retorno, setRetorno] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
   const emitir = (fase: 'F1' | 'F2') => iniciar(async () => {
@@ -44,6 +44,7 @@ export function Prontidao({ empresaId, d, p, comunicados, emissao }: { empresaId
   const api = `/api/v1/empresas/${empresaId}/comunicados`;
   return (
     <div className="space-y-4">
+      {aba === 'resumo' ? (<>
       <section aria-label="Prontidão por fase" className="grid gap-3 md:grid-cols-2">
         <Medidor titulo="Fase 1 · 42h" inicio={p.f1Inicio} dias={p.diasF1} pronto={p.prontosF1} total={p.total} pct={p.pctF1} />
         <Medidor titulo="Fase 2 · 40h" inicio={p.f2Inicio} dias={p.diasF2} pronto={p.prontosF2} total={p.total} pct={p.pctF2} />
@@ -72,6 +73,12 @@ export function Prontidao({ empresaId, d, p, comunicados, emissao }: { empresaId
         )}
       </Cartao>
 
+      <div className="flex flex-wrap gap-2">
+        <Link href={`${base}/escalas/adequador`} className={classeBotaoLink}>Gerar a escala 5x2</Link>
+      </div>
+      </>) : null}
+
+      {aba === 'custo' ? (
       <Cartao icone="folha" titulo="Quanto custa cobrir as horas" subtitulo="Compara cobrir com horas extras ou com contratação, em tempo real. Salário não é reduzido em nenhum cenário.">
         {tudoPronto ? <p className="text-sm text-ok-fg">Nenhuma hora a cobrir: toda a equipe já atende as duas fases.</p> : (
           <>
@@ -102,6 +109,9 @@ export function Prontidao({ empresaId, d, p, comunicados, emissao }: { empresaId
         )}
       </Cartao>
 
+      ) : null}
+
+      {aba === 'comunicados' ? (
       <Cartao icone="pedidos" titulo="Comunicados de adequação" subtitulo="Uma página por colaborador, com a nova jornada e campo para ciência. É uma minuta: revise com o jurídico da empresa antes de usar.">
         {comunicados.F1 + comunicados.F2 === 0 ? <p className="text-sm text-suave">Ninguém a adequar nas duas fases.</p> : (
           <div className="flex flex-wrap gap-2">
@@ -132,10 +142,8 @@ export function Prontidao({ empresaId, d, p, comunicados, emissao }: { empresaId
           </div>
         ) : null}
       </Cartao>
+      ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        <Link href={`${base}/escalas/adequador`} className={classeBotaoLink}>Gerar a escala 5x2</Link>
-      </div>
       <p className="text-xs text-suave">Calculado agora, com os contratos vigentes e as regras cadastradas; nada é gravado. Não substitui parecer jurídico nem contábil.</p>
     </div>
   );

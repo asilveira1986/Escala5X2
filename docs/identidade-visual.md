@@ -41,3 +41,13 @@ Toda a interface usa **Inter** (400–700), em títulos e texto, com espaçament
 - **Submenu dinâmico:** abre sozinho o grupo da página atual, só um grupo fica aberto (abrir outro fecha o anterior; clicar no aberto fecha) e volta ao da página ao navegar. O cookie guarda só se o menu está recolhido.
 - **Uma informação, um lugar:** ações que têm botão na própria tela ("Nova empresa", "Novo colaborador") não são itens do menu; a empresa aparece no seletor do menu (e, no celular, no caminho); o título da página aparece só no cabeçalho dela, então a barra de cima mostra apenas o caminho até ali (sem repetir a página); a Visão geral não duplica os atalhos do menu; o título de seção "Empresa" não repete o seletor.
 - **Telas de dentro:** o cartão principal não repete o título da página (que já vem do menu): Cobertura, Férias e afastamentos, Banco de horas, Banco pelo ponto, Pedidos, Turnos, Escalas e Colaboradores ficaram sem o título repetido (só com a explicação de como funciona, quando ela acrescenta algo). Os links "← Escalas" e "← Banco de horas" saíram: o menu já leva a esses lugares. O cartão "Gerar escala automaticamente" da lista de escalas saiu, porque "Gerar escala" já é item do menu.
+
+## Telas em abas
+
+Telas com muito conteúdo foram divididas em **abas por endereço** (`?aba=`, componente `Abas`, helper `lerAba`): cada aba é uma página leve, funciona sem JavaScript, mantém o mês e outros filtros e dá para compartilhar o link. A primeira aba é o endereço limpo; só a aba pedida é calculada (a conferência do ponto, por exemplo, só carrega as marcações na aba "Escala × ponto").
+
+- **Prontidão EC 141:** Resumo e setores · Custo · Comunicados (com o número de ciências pendentes).
+- **Diagnóstico (detalhe):** Resumo · Cenários de custo (com a contagem de cenários) · Pessoas.
+- **Ponto:** Escala × ponto · Importar e arquivos (com a contagem de identificadores sem colaborador).
+- **Folha:** Prévia do mês · Fechamento e versões.
+- **Plano e cobrança:** Assinatura e planos · Faturas (com as pendentes/vencidas).

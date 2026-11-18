@@ -1,4 +1,7 @@
 import Link from 'next/link';
+import { Abas } from '@/components/Abas';
+import { EstadoVazio } from '@/components/EstadoVazio';
+import { lerAba } from '@/lib/abas';
 import { Aviso, Cartao, classeBotaoLink, Selo } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
 import { horasTexto } from '@/lib/banco-horas-ui';
@@ -13,10 +16,11 @@ type FechamentoLinha = { id: string; versao: number; status: 'fechado' | 'substi
 const moeda = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const tomAviso = { bloqueio: 'erro', alerta: 'info', info: 'info' } as const;
 
-export default async function Folha({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mes?: string; origem?: string; sem?: string }> }) {
+export default async function Folha({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mes?: string; origem?: string; sem?: string; aba?: string }> }) {
   const empresaId = idOu404((await params).id);
   const hoje = dataDeInstante(new Date());
   const sp = await searchParams;
+  const aba = lerAba(sp.aba, [{ id: 'previa' }, { id: 'fechamentos' }]);
   const { mes, dia } = lerCompetencia(sp.mes, hoje);
   const { supabase } = await exigirUsuario();
   const [{ data: fech }, { data: ger }, calculo] = await Promise.all([
@@ -32,13 +36,13 @@ export default async function Folha({ params, searchParams }: { params: Promise<
   const { origem, semMarcacao } = lerOpcoesFolha(sp.origem, sp.sem, calculo.ok ? await temMarcacoes(supabase, empresaId, dia, fim) : false);
   const marc = calculo.ok && origem === 'ponto' ? await carregarMarcacoes(supabase, empresaId, dia, fim) : null;
   const f = calculo.ok ? calcularFechamento(calculo.base, calculo.entradas, { origem, marcacoes: marc?.marcacoes ?? [], semMarcacao }) : null;
-  const href = (m: string, o = origem, s2 = semMarcacao) => `/empresas/${empresaId}/folha?mes=${m}&origem=${o}&sem=${s2}`;
+  const href = (m: string, o = origem, s2 = semMarcacao) => `/empresas/${empresaId}/folha?mes=${m}&origem=${o}&sem=${s2}${aba === 'previa' ? '' : `&aba=${aba}`}`;
+  const abas = [{ id: 'previa', rotulo: 'Prévia do mês' }, { id: 'fechamentos', rotulo: 'Fechamento e versões', contagem: versoes.length }];
 
   return (
     <>
-      <Link href={`/empresas/${empresaId}/escalas`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Escalas</Link>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-bold">Fechamento para a folha</h2>
+        <Abas abas={abas} atual={aba} base={`/empresas/${empresaId}/folha`} extras={{ mes, origem, sem: semMarcacao }} />
         <div className="flex items-center gap-1 text-sm font-semibold">
           <Link href={href(mesVizinho(mes, -1))} aria-label="Mês anterior" className="grid size-9 place-items-center rounded-full hover:bg-marca-suave">‹</Link>
           <span className="min-w-40 text-center">{rotuloMes(mes)}</span>
@@ -46,6 +50,8 @@ export default async function Folha({ params, searchParams }: { params: Promise<
         </div>
       </div>
 
+      {aba === 'fechamentos' ? (
+        <>
       {vigente ? (
         <Cartao icone="folha" titulo={`Mês fechado · versão ${vigente.versao}`} subtitulo={`Fechado em ${dataBr(vigente.criado_em.slice(0, 10))}. Código de integridade ${vigente.dados_hash.slice(0, 16)}…`}>
           <div className="flex flex-wrap items-center gap-2">
@@ -57,6 +63,22 @@ export default async function Folha({ params, searchParams }: { params: Promise<
         </Cartao>
       ) : null}
 
+      {versoes.length > 1 || (versoes.length === 1 && !vigente) ? (
+        <Cartao icone="folha" titulo="Versões anteriores">
+          <ul className="divide-y divide-linha">
+            {versoes.filter((v) => v.status === 'substituido').map((v) => (
+              <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5 text-sm">
+                <span>Versão {v.versao} · {dataBr(v.criado_em.slice(0, 10))}{v.motivo ? ` · ${v.motivo}` : ''} <Selo tom="cinza">substituída</Selo></span>
+                <span className="flex gap-2"><a href={`/api/v1/folha/${v.id}?formato=xlsx`} className="font-semibold text-marca hover:underline">Excel</a><a href={`/api/v1/folha/${v.id}?formato=csv`} className="font-semibold text-marca hover:underline">CSV</a></span>
+              </li>
+            ))}
+          </ul>
+        </Cartao>
+      ) : null}
+          {!vigente && versoes.length === 0 ? <Cartao><EstadoVazio titulo="Nenhum fechamento neste mês">Feche o mês na aba Prévia, depois que ele terminar.</EstadoVazio></Cartao> : null}
+        </>
+      ) : (
+        <>
       {calculo.ok ? (
         <Cartao icone="relogio" titulo="De onde vêm as horas" subtitulo="Pela escala são as horas previstas; pelo ponto são as apuradas pelas marcações do relógio importadas em Ponto (AFD).">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -103,18 +125,8 @@ export default async function Folha({ params, searchParams }: { params: Promise<
         </>
       ) : null}
 
-      {versoes.length > 1 || (versoes.length === 1 && !vigente) ? (
-        <Cartao icone="folha" titulo="Versões anteriores">
-          <ul className="divide-y divide-linha">
-            {versoes.filter((v) => v.status === 'substituido').map((v) => (
-              <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5 text-sm">
-                <span>Versão {v.versao} · {dataBr(v.criado_em.slice(0, 10))}{v.motivo ? ` · ${v.motivo}` : ''} <Selo tom="cinza">substituída</Selo></span>
-                <span className="flex gap-2"><a href={`/api/v1/folha/${v.id}?formato=xlsx`} className="font-semibold text-marca hover:underline">Excel</a><a href={`/api/v1/folha/${v.id}?formato=csv`} className="font-semibold text-marca hover:underline">CSV</a></span>
-              </li>
-            ))}
-          </ul>
-        </Cartao>
-      ) : null}
+        </>
+      )}
     </>
   );
 }

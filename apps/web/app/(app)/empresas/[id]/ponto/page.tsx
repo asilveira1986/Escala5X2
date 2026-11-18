@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Abas } from '@/components/Abas';
+import { lerAba } from '@/lib/abas';
 import { EstadoVazio } from '@/components/EstadoVazio';
 import { Aviso, Cartao } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
@@ -14,15 +16,18 @@ import { Pendentes, type Pendente } from './Pendentes';
 
 const LIMITE_DIVERGENCIAS = 200;
 
-export default async function Ponto({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mes?: string }> }) {
+export default async function Ponto({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mes?: string; aba?: string }> }) {
   const empresaId = idOu404((await params).id);
   const hoje = dataDeInstante(new Date());
-  const q = (await searchParams).mes;
+  const sp = await searchParams;
+  const q = sp.mes;
   const mes = typeof q === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(q) ? q : hoje.slice(0, 7);
   const inicio = `${mes}-01`;
   const fim = dataDoNumero(numeroDoDia(`${mesVizinho(mes, 1)}-01`) - 1);
   const { supabase } = await exigirUsuario();
 
+  const ABAS_BASE = [{ id: 'conferencia' }, { id: 'importar' }] as const;
+  const aba = lerAba(sp.aba, ABAS_BASE);
   const [{ data: imp }, { data: pend }, { data: col }, { data: ger }, { data: ids }] = await Promise.all([
     supabase.from('afd_importacao').select('id, arquivo_nome, status, criado_em, relatorio').eq('empresa_id', empresaId).order('criado_em', { ascending: false }).limit(20),
     supabase.rpc('identificadores_pendentes', { p_empresa: empresaId }),
@@ -37,7 +42,7 @@ export default async function Ponto({ params, searchParams }: { params: Promise<
 
   // Conciliação: escala publicada do mês × marcações vinculadas (um dia a mais nas pontas, por causa de turno que vira a noite)
   const entradas: EntradaEscala[] = [];
-  for (const id of Array.isArray(ids) ? (ids as string[]) : []) entradas.push(await carregarEntradaEscala(supabase, id));
+  if (aba === 'conferencia') for (const id of Array.isArray(ids) ? (ids as string[]) : []) entradas.push(await carregarEntradaEscala(supabase, id));
   const de = `${dataDoNumero(numeroDoDia(inicio) - 1)}T00:00:00-03:00`, ate = `${dataDoNumero(numeroDoDia(fim) + 2)}T00:00:00-03:00`;
   const marc = entradas.length > 0
     ? await todasAsLinhas<MarcacaoPonto>((a, b) => supabase.from('marcacao_ponto').select('colaborador_id, momento').eq('empresa_id', empresaId).not('colaborador_id', 'is', null).gte('momento', de).lt('momento', ate).order('momento').range(a, b))
@@ -48,9 +53,12 @@ export default async function Ponto({ params, searchParams }: { params: Promise<
   const divergencias = conc.flatMap((c) => c.dias).filter((d) => d.codigos.length > 0).sort((a, b) => a.data.localeCompare(b.data) || (nomes.get(a.colaboradorId) ?? '').localeCompare(nomes.get(b.colaboradorId) ?? '', 'pt-BR'));
   const href = (m: string) => `/empresas/${empresaId}/ponto?mes=${m}`;
 
+  const abas = [{ id: 'conferencia', rotulo: 'Escala × ponto' }, { id: 'importar', rotulo: 'Importar e arquivos', contagem: pendentes.length }];
   return (
     <>
-      <Link href={`/empresas/${empresaId}/escalas`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Escalas</Link>
+      <Abas abas={abas} atual={aba} base={`/empresas/${empresaId}/ponto`} extras={{ mes: q ? mes : undefined }} />
+      {aba === 'importar' ? (
+        <>
       <Cartao icone="relogio" titulo="Importar o ponto (AFD)" subtitulo="Marcações do relógio de ponto. CPF e PIS não ficam guardados: o sistema guarda só um código e os 4 últimos dígitos.">
         {podeGerir ? <FormImportarAfd empresaId={empresaId} /> : <p className="text-sm text-suave">Só quem gere a empresa pode importar o ponto.</p>}
       </Cartao>
@@ -61,8 +69,14 @@ export default async function Ponto({ params, searchParams }: { params: Promise<
         </Cartao>
       ) : null}
 
+      <Cartao icone="relogio" titulo="Importações">
+        {importacoes.length === 0 ? <EstadoVazio titulo="Nenhum arquivo importado">Envie o AFD do relógio de ponto acima.</EstadoVazio> : <ListaImportacoes empresaId={empresaId} importacoes={importacoes} podeGerir={podeGerir} />}
+      </Cartao>
+        </>
+      ) : (
+        <>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-bold">Escala × ponto</h2>
+        <p className="text-sm text-suave">Escala publicada × marcações do relógio.</p>
         <div className="flex items-center gap-1 text-sm font-semibold">
           <Link href={href(mesVizinho(mes, -1))} aria-label="Mês anterior" className="grid size-9 place-items-center rounded-full hover:bg-marca-suave">‹</Link>
           <span className="min-w-40 text-center">{rotuloMes(mes)}</span>
@@ -109,9 +123,8 @@ export default async function Ponto({ params, searchParams }: { params: Promise<
         </>
       )}
 
-      <Cartao icone="relogio" titulo="Importações">
-        {importacoes.length === 0 ? <EstadoVazio titulo="Nenhum arquivo importado">Envie o AFD do relógio de ponto acima.</EstadoVazio> : <ListaImportacoes empresaId={empresaId} importacoes={importacoes} podeGerir={podeGerir} />}
-      </Cartao>
+        </>
+      )}
     </>
   );
 }
