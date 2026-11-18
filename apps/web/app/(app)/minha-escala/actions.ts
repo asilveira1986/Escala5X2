@@ -19,3 +19,14 @@ export async function darCiencia(escalaId: string): Promise<ResultadoCiencia> {
   revalidatePath('/minha-escala');
   return { ok: true };
 }
+
+export async function darCienciaComunicado(id: string): Promise<ResultadoCiencia> {
+  const parsed = z.string().uuid().safeParse(id);
+  if (!parsed.success) return { ok: false, erro: 'Pedido inválido.' };
+  const { supabase } = await exigirUsuario();
+  const { error } = await supabase.rpc('registrar_ciencia_comunicado', { p_id: parsed.data });
+  if (error) return { ok: false, erro: /não encontrado/i.test(error.message) ? 'Comunicado não encontrado.' : 'Não foi possível registrar a sua ciência. Tente de novo.' };
+  revalidatePath('/minha-escala/comunicados');
+  revalidatePath('/minha-escala');
+  return { ok: true };
+}

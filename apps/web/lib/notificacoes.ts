@@ -25,6 +25,7 @@ export function iconeDoTipo(tipo: string): IconeId {
   if (tipo.startsWith('pedido')) return 'pedidos';
   if (tipo === 'escala_publicada' || tipo === 'escala_pendente') return 'calendario';
   if (tipo === 'conformidade_ec') return 'diagnostico';
+  if (tipo === 'comunicado_jornada') return 'pedidos';
   if (tipo.startsWith('banco_')) return 'banco';
   if (tipo.startsWith('cobranca_')) return 'folha';
   return 'inicio';

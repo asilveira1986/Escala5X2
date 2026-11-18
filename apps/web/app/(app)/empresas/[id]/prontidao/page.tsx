@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { EstadoVazio } from '@/components/EstadoVazio';
 import { Aviso, CabecalhoPagina, classeBotaoLink } from '@/components/ui';
-import { exigirUsuario, idOu404 } from '@/lib/contexto';
+import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
 import { selecionarComunicados } from '@/lib/comunicados';
 import { resumirProntidao } from '@/lib/prontidao';
 import { chamar, lerEntradaDiagnostico } from '@jc/servicos';
@@ -21,6 +21,9 @@ export default async function PaginaProntidao({ params }: { params: Promise<{ id
   let diag: Diagnostico | null = null;
   let comunicados = { F1: 0, F2: 0 };
   let falha = false;
+  // situação dos comunicados já emitidos (se o SQL de comunicados ainda não foi aplicado, a consulta falha e a seção some)
+  const { data: emitidos } = await supabase.from('comunicado_jornada').select('fase, ciente_em, colaborador(nome)').eq('empresa_id', empresaId).limit(2000);
+  const emissao = Array.isArray(emitidos) ? linhas<{ fase: 'F1' | 'F2'; ciente_em: string | null; colaborador: { nome: string } | { nome: string }[] | null }>(emitidos).map((x) => ({ fase: x.fase, ciente: !!x.ciente_em, nome: (Array.isArray(x.colaborador) ? x.colaborador[0]?.nome : x.colaborador?.nome) ?? 'Colaborador' })) : null;
   try {
     const entrada = lerEntradaDiagnostico(await chamar(supabase, 'diagnostico_entrada', { p_empresa: empresaId, p_data: hoje }));
     if (entrada.colaboradores.length > 0) {
@@ -37,7 +40,7 @@ export default async function PaginaProntidao({ params }: { params: Promise<{ id
           <Link href={`/empresas/${empresaId}/importar`} className={classeBotaoLink}>Importar planilha</Link>
         </EstadoVazio>
       ) : null}
-      {diag ? <Prontidao empresaId={empresaId} d={enxuto(diag)} p={resumirProntidao(diag, hoje)} comunicados={comunicados} /> : null}
+      {diag ? <Prontidao empresaId={empresaId} d={enxuto(diag)} p={resumirProntidao(diag, hoje)} comunicados={comunicados} emissao={emissao} /> : null}
     </>
   );
 }
