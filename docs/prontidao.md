@@ -9,3 +9,12 @@ Página **Empresa › Prontidão EC 141** (`/empresas/[id]/prontidao`). Calcula 
 Complementa o **Diagnóstico** (que grava o resultado, simula mais cenários e gera PDF/planilha): a Prontidão é o retrato de hoje, sempre atual.
 
 Limites: estimativa de planejamento; os encargos são informados pelo usuário (sem padrão legal) e não inclui rescisão, férias e 13º além deles. Os dados vêm do cadastro de contratos: contrato desatualizado, prontidão desatualizada.
+
+## Comunicados de adequação de jornada (PDF)
+
+Na Prontidão, o cartão **Comunicados de adequação** baixa um PDF por fase (`GET /api/v1/empresas/[id]/comunicados?fase=F1|F2[&setor=Nome]`), com **uma página por colaborador** que perde horas na fase: jornada atual → nova jornada, dias de trabalho e de repouso, garantia de salário e campo de ciência. A tabela por setor também tem links por setor.
+
+- Só quem gere a empresa baixa (`pode_gerir_empresa`); os dados vêm do mesmo cálculo da Prontidão. Quem está em exceção (alta renda, acordo) fica de fora.
+- Até 500 colaboradores por PDF; acima disso, filtre por setor.
+- É uma **minuta**: o texto é padrão e deve ser revisado pelo jurídico antes de usar. O PDF traz esse aviso no rodapé.
+- Limite atual: a geração do PDF não é registrada na trilha de auditoria (o registro de exportação existente é específico do diagnóstico).

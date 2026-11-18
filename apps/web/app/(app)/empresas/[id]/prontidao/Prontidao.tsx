@@ -25,13 +25,14 @@ function Medidor({ titulo, inicio, dias, pronto, total, pct }: { titulo: string;
   );
 }
 
-export function Prontidao({ empresaId, d, p }: { empresaId: string; d: Diagnostico; p: DadosProntidao }) {
+export function Prontidao({ empresaId, d, p, comunicados }: { empresaId: string; d: Diagnostico; p: DadosProntidao; comunicados: { F1: number; F2: number } }) {
   const [encargos, setEncargos] = useState('0');
   const [he, setHe] = useState('50');
   const [contratacao, setContratacao] = useState('0');
   const custos = useMemo(() => compararCustos(d, { encargosPct: Math.min(num(encargos, 200), 200), adicionalHePct: Math.max(50, Math.min(num(he, 300), 300)), custoContratacaoCentavos: Math.round(num(contratacao, 1_000_000) * 100) }), [d, encargos, he, contratacao]);
   const tudoPronto = p.prontosF2 === p.total;
   const base = `/empresas/${empresaId}`;
+  const api = `/api/v1/empresas/${empresaId}/comunicados`;
   return (
     <div className="space-y-4">
       <section aria-label="Prontidão por fase" className="grid gap-3 md:grid-cols-2">
@@ -42,8 +43,8 @@ export function Prontidao({ empresaId, d, p }: { empresaId: string; d: Diagnosti
       <Cartao icone="pessoas" titulo="Prontidão por setor" subtitulo="Quem precisa mudar de jornada e quantas pessoas a mais a cobertura exige (em tempo integral).">
         {p.setores.length === 0 ? <p className="text-sm text-suave">Cadastre colaboradores com contrato para ver a prontidão.</p> : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[34rem] text-left text-sm" aria-label="Prontidão por setor">
-              <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="pb-1.5 pr-3">Setor</th><th className="pb-1.5 pr-3 text-right">Pessoas</th><th className="pb-1.5 pr-3 text-right">A adequar F1 · F2</th><th className="pb-1.5 pr-3 text-right">Horas a cobrir (F2)</th><th className="pb-1.5 pr-3 text-right">Pessoas a mais F1 · F2</th><th className="pb-1.5">Situação</th></tr></thead>
+            <table className="w-full min-w-[40rem] text-left text-sm" aria-label="Prontidão por setor">
+              <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="pb-1.5 pr-3">Setor</th><th className="pb-1.5 pr-3 text-right">Pessoas</th><th className="pb-1.5 pr-3 text-right">A adequar F1 · F2</th><th className="pb-1.5 pr-3 text-right">Horas a cobrir (F2)</th><th className="pb-1.5 pr-3 text-right">Pessoas a mais F1 · F2</th><th className="pb-1.5 pr-3">Situação</th><th className="pb-1.5">Comunicados</th></tr></thead>
               <tbody className="divide-y divide-linha">
                 {p.setores.map((s) => (
                   <tr key={s.setor}>
@@ -53,6 +54,7 @@ export function Prontidao({ empresaId, d, p }: { empresaId: string; d: Diagnosti
                     <td className="py-2 pr-3 text-right">{horasMin(s.horasPerdidasF2Min)}/sem</td>
                     <td className="py-2 pr-3 text-right">{decimal(s.fteF1)} · {decimal(s.fteF2)}</td>
                     <td className="py-2"><span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${s.prontoF2 ? 'bg-ok-bg text-ok-fg' : s.prontoF1 ? 'bg-atencao-bg text-atencao-fg' : 'bg-risco-bg text-risco-fg'}`}>{s.prontoF2 ? 'Pronto' : s.prontoF1 ? 'Pronto na fase 1' : 'Adequar já'}</span></td>
+                    <td className="py-2 text-xs font-semibold">{s.afetadosF1 + s.afetadosF2 === 0 ? <span className="text-suave">—</span> : <span className="flex gap-2">{s.afetadosF1 > 0 ? <a className="text-marca hover:underline" href={`${api}?fase=F1&setor=${encodeURIComponent(s.setor)}`} aria-label={`Comunicados da fase 1, setor ${s.setor}`}>Fase 1</a> : null}{s.afetadosF2 > 0 ? <a className="text-marca hover:underline" href={`${api}?fase=F2&setor=${encodeURIComponent(s.setor)}`} aria-label={`Comunicados da fase 2, setor ${s.setor}`}>Fase 2</a> : null}</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -88,6 +90,15 @@ export function Prontidao({ empresaId, d, p }: { empresaId: string; d: Diagnosti
             </div>
             <p className="mt-3 text-xs text-suave">Inclui o efeito do novo valor da hora (divisor menor) nas horas extras já praticadas. Estimativa para planejamento: não considera custo de rescisão, férias e 13º além dos encargos informados.</p>
           </>
+        )}
+      </Cartao>
+
+      <Cartao icone="pedidos" titulo="Comunicados de adequação" subtitulo="Uma página por colaborador, com a nova jornada e campo para ciência. É uma minuta: revise com o jurídico da empresa antes de usar.">
+        {comunicados.F1 + comunicados.F2 === 0 ? <p className="text-sm text-suave">Ninguém a adequar nas duas fases.</p> : (
+          <div className="flex flex-wrap gap-2">
+            {comunicados.F1 > 0 ? <a className={classeBotaoLink} href={`${api}?fase=F1`}>Fase 1 · {inteiro(comunicados.F1)} comunicado{comunicados.F1 === 1 ? '' : 's'} (PDF)</a> : null}
+            {comunicados.F2 > 0 ? <a className={classeBotaoLink} href={`${api}?fase=F2`}>Fase 2 · {inteiro(comunicados.F2)} comunicado{comunicados.F2 === 1 ? '' : 's'} (PDF)</a> : null}
+          </div>
         )}
       </Cartao>
 
