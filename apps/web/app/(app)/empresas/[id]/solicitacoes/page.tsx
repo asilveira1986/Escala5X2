@@ -47,7 +47,7 @@ export default async function Solicitacoes({ params, searchParams }: { params: P
           );
         })}
       </nav>
-      <Cartao icone="pedidos" titulo="Pedidos dos colaboradores" subtitulo="Trocas de turno e de folga, férias e afastamentos. Antes de aprovar, o sistema confere se a mudança continua dentro da lei.">
+      <Cartao icone="pedidos" subtitulo="Trocas de turno e de folga, férias e afastamentos. Antes de aprovar, o sistema confere se a mudança continua dentro da lei.">
         {lista.length === 0 ? <EstadoVazio titulo="Nenhum pedido aqui">{aba.id === 'pendentes' ? 'Quando um colaborador pedir algo, aparece nesta lista.' : 'Nada nesta aba por enquanto.'}</EstadoVazio> : (
           <ul className="grid gap-3 lg:grid-cols-2">
             {lista.map((s, i) => <CartaoDecisao key={s.id} s={s} empresaId={empresaId} previsao={previsoes[i] ?? null} />)}

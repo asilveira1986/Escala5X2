@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { EstadoVazio } from '@/components/EstadoVazio';
-import { Cartao, classeBotaoLinkPrimario, Selo } from '@/components/ui';
+import { Cartao, Selo } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
 import { dataBr, dataDeInstante } from '@jc/rules-engine';
 import { FormNovaEscala } from './FormNovaEscala';
@@ -30,14 +30,11 @@ export default async function Escalas({ params }: { params: Promise<{ id: string
   const hoje = dataDeInstante(new Date());
   return (
     <>
-      <Cartao icone="escalas" titulo="Gerar escala automaticamente" subtitulo="Informe os turnos, os setores e quantas pessoas cada um precisa: o sistema monta a escala do mês pensando nas folgas, nos dias de funcionamento e nas férias." acoes={<Link href={`/empresas/${empresaId}/escalas/adequador`} className={classeBotaoLinkPrimario}>Gerar escala</Link>}>
-        <p className="text-sm text-suave">O resultado vira um rascunho por setor, que você ajusta no editor e publica.</p>
-      </Cartao>
-      <Cartao icone="mais" titulo="Nova escala" subtitulo="Ou monte o mês à mão: veja os avisos da lei na hora e publique quando estiver tudo certo.">
+      <Cartao icone="mais" titulo="Nova escala" subtitulo="Monte o mês à mão: veja os avisos da lei na hora e publique quando estiver tudo certo.">
         {modelos.length === 0 ? <p className="mb-3 rounded-2xl bg-atencao-bg px-3.5 py-2 text-sm font-medium text-atencao-fg">Cadastre pelo menos um turno para poder montar a escala. <Link href={`/empresas/${empresaId}/escalas/turnos`} className="underline">Ir para Turnos</Link></p> : null}
         <FormNovaEscala empresaId={empresaId} mesPadrao={hoje.slice(0, 7)} setores={setores} />
       </Cartao>
-      <Cartao icone="calendario" titulo="Escalas">
+      <Cartao icone="calendario">
         {escalas.length === 0 ? <EstadoVazio titulo="Nenhuma escala ainda">Crie a primeira acima. Os turnos que você cadastrar ficam disponíveis para pintar na grade.</EstadoVazio> : (
           <ul className="divide-y divide-linha">
             {escalas.map((e) => (

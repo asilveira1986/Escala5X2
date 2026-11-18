@@ -25,8 +25,7 @@ export default async function BancoPeloPonto({ params, searchParams }: { params:
 
   return (
     <>
-      <Link href={`/empresas/${empresaId}/banco-horas`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Banco de horas</Link>
-      <Cartao icone="banco" titulo="Banco de horas pelo ponto" subtitulo="Compara o que cada pessoa trabalhou (marcações do relógio) com o que a escala previa e propõe lançar a diferença no banco de horas. Você confere e marca o que entra."
+      <Cartao icone="banco" subtitulo="Compara o que cada pessoa trabalhou (marcações do relógio) com o que a escala previa e propõe lançar a diferença no banco de horas. Você confere e marca o que entra."
         acoes={
           <div className="flex items-center gap-1 text-sm font-semibold">
             <Link href={href(mesVizinho(mes, -1))} aria-label="Mês anterior" className="grid size-9 place-items-center rounded-full hover:bg-marca-suave">‹</Link>

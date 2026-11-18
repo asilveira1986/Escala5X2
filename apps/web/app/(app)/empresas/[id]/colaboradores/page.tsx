@@ -35,7 +35,7 @@ export default async function Colaboradores({ params }: { params: Promise<{ id: 
   const desligados = linhas<{ id: string; nome: string; cargo: string | null; desligamento: string }>(deslig);
   return (
     <>
-    <Cartao icone="pessoas" titulo={`Colaboradores (${dados.length})`} subtitulo="Equipe, contratos e acesso ao aplicativo."
+    <Cartao icone="pessoas" titulo={`${dados.length} ${dados.length === 1 ? 'pessoa' : 'pessoas'}`}
       acoes={<>
         <Link className="text-sm font-semibold text-marca hover:underline" href={`/empresas/${empresaId}/importar`}>Importar planilha</Link>
         {podeGerirRpc === true ? <Link className={classeBotaoLinkPrimario} href={`/empresas/${empresaId}/colaboradores/novo`}>Novo colaborador</Link> : null}
