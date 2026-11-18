@@ -27,6 +27,8 @@ export default async function MinhaEscala() {
       .in('colaborador_id', meus.map((c) => c.id)).eq('escala.status', 'publicada').order('data'),
     supabase.from('ciencia').select('escala_id, ciente_em').eq('usuario_id', user.id),
   ]);
+  const { data: coms } = meus.length === 0 ? { data: [] } : await supabase.from('comunicado_jornada').select('id, ciente_em').in('colaborador_id', meus.map((c) => c.id));
+  const comunicadosPendentes = linhas<{ id: string; ciente_em: string | null }>(coms).filter((c) => !c.ciente_em).length;
   const nome = meus[0]?.nome;
   const escalas = agruparPorEscala(linhas<LinhaMinhaEscala>(aloc), linhas<{ escala_id: string; ciente_em: string }>(ciencias));
   const { hoje, min } = agoraEmMinutos();
@@ -46,6 +48,8 @@ export default async function MinhaEscala() {
         <Link href="/minha-escala/pedidos" className="inline-flex min-h-11 items-center rounded-full border border-linha bg-cartao px-4 text-sm font-semibold text-marca hover:bg-marca-suave sm:min-h-9">Pedir troca, folga ou férias</Link>
         <Link href="/minha-escala/banco-horas" className="inline-flex min-h-11 items-center rounded-full border border-linha bg-cartao px-4 text-sm font-semibold text-marca hover:bg-marca-suave sm:min-h-9">Meu banco de horas</Link>
       </div>
+
+      {comunicadosPendentes > 0 ? <Aviso tipo="info">{comunicadosPendentes === 1 ? 'Há um comunicado sobre a sua jornada aguardando a sua ciência.' : `Há ${comunicadosPendentes} comunicados sobre a sua jornada aguardando a sua ciência.`} <Link href="/minha-escala/comunicados" className="font-semibold underline">Ler agora</Link></Aviso> : null}
 
       {pendentes.length > 0 ? <Aviso tipo="info">{pendentes.length === 1 ? 'Há uma escala aguardando a sua ciência.' : `Há ${pendentes.length} escalas aguardando a sua ciência.`} Leia e confirme abaixo.</Aviso> : null}
 

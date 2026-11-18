@@ -1,11 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
-import { Cartao, classeBotaoLink, classeCampo } from '@/components/ui';
+import { useMemo, useState, useTransition } from 'react';
+import { Aviso, Botao, Cartao, classeBotaoLink, classeCampo } from '@/components/ui';
 import { compararCustos, type Prontidao as DadosProntidao } from '@/lib/prontidao';
 import { data as dataBr, decimal, horasMin, inteiro, moeda } from '@jc/documents/formatar';
 import type { Diagnostico } from '@jc/rules-engine';
+import { emitirComunicados } from './actions';
+
+export type SituacaoComunicado = { fase: 'F1' | 'F2'; ciente: boolean; nome: string };
 
 const num = (v: string, max: number) => { const n = Number(v.replace(',', '.')); return Number.isFinite(n) && n >= 0 ? Math.min(n, max) : 0; };
 
@@ -25,7 +28,13 @@ function Medidor({ titulo, inicio, dias, pronto, total, pct }: { titulo: string;
   );
 }
 
-export function Prontidao({ empresaId, d, p, comunicados }: { empresaId: string; d: Diagnostico; p: DadosProntidao; comunicados: { F1: number; F2: number } }) {
+export function Prontidao({ empresaId, d, p, comunicados, emissao }: { empresaId: string; d: Diagnostico; p: DadosProntidao; comunicados: { F1: number; F2: number }; emissao: SituacaoComunicado[] | null }) {
+  const [pendente, iniciar] = useTransition();
+  const [retorno, setRetorno] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
+  const emitir = (fase: 'F1' | 'F2') => iniciar(async () => {
+    const r = await emitirComunicados(empresaId, fase);
+    setRetorno(r.ok ? { tipo: 'ok', texto: r.novos + r.atualizados === 0 ? 'Nada novo: os comunicados desta fase já estavam emitidos.' : `${r.novos} emitido(s), ${r.atualizados} atualizado(s). Quem tem acesso ao sistema foi avisado.` } : { tipo: 'erro', texto: r.erro });
+  });
   const [encargos, setEncargos] = useState('0');
   const [he, setHe] = useState('50');
   const [contratacao, setContratacao] = useState('0');
@@ -100,6 +109,28 @@ export function Prontidao({ empresaId, d, p, comunicados }: { empresaId: string;
             {comunicados.F2 > 0 ? <a className={classeBotaoLink} href={`${api}?fase=F2`}>Fase 2 · {inteiro(comunicados.F2)} comunicado{comunicados.F2 === 1 ? '' : 's'} (PDF)</a> : null}
           </div>
         )}
+        {emissao !== null && comunicados.F1 + comunicados.F2 > 0 ? (
+          <div className="mt-4 border-t border-linha pt-4">
+            <p className="text-sm font-semibold">Emitir no sistema</p>
+            <p className="text-xs text-suave">Registra o comunicado (e quem emitiu), avisa os colaboradores que têm acesso e permite que confirmem a ciência pelo aplicativo. Reemitir com os mesmos valores não repete avisos nem apaga ciências.</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {comunicados.F1 > 0 ? <Botao variante="secundario" onClick={() => emitir('F1')} disabled={pendente}>Emitir fase 1</Botao> : null}
+              {comunicados.F2 > 0 ? <Botao variante="secundario" onClick={() => emitir('F2')} disabled={pendente}>Emitir fase 2</Botao> : null}
+            </div>
+            {retorno ? <div className="mt-2"><Aviso tipo={retorno.tipo}>{retorno.texto}</Aviso></div> : null}
+            {(['F1', 'F2'] as const).map((f) => {
+              const doFase = emissao.filter((x) => x.fase === f);
+              if (doFase.length === 0) return null;
+              const faltam = doFase.filter((x) => !x.ciente);
+              return (
+                <div key={f} className="mt-3 text-sm">
+                  <p><strong>{f === 'F1' ? 'Fase 1' : 'Fase 2'}</strong>: {inteiro(doFase.length)} emitido(s), {inteiro(doFase.length - faltam.length)} com ciência{faltam.length > 0 ? `, ${inteiro(faltam.length)} pendente(s)` : ''}.</p>
+                  {faltam.length > 0 ? <p className="text-xs text-suave">Pendentes: {faltam.slice(0, 15).map((x) => x.nome).join(', ')}{faltam.length > 15 ? `… e mais ${faltam.length - 15}` : ''}. Quem não tem acesso ao sistema assina o PDF impresso.</p> : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
       </Cartao>
 
       <div className="flex flex-wrap gap-2">

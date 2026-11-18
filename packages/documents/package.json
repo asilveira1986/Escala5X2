@@ -23,6 +23,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./formatar": "./src/formatar.ts"
+    "./formatar": "./src/formatar.ts",
+    "./comunicado": "./src/comunicado.ts"
   }
 }

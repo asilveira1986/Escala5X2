@@ -17,4 +17,16 @@ Na Prontidão, o cartão **Comunicados de adequação** baixa um PDF por fase (`
 - Só quem gere a empresa baixa (`pode_gerir_empresa`); os dados vêm do mesmo cálculo da Prontidão. Quem está em exceção (alta renda, acordo) fica de fora.
 - Até 500 colaboradores por PDF; acima disso, filtre por setor.
 - É uma **minuta**: o texto é padrão e deve ser revisado pelo jurídico antes de usar. O PDF traz esse aviso no rodapé.
-- Limite atual: a geração do PDF não é registrada na trilha de auditoria (o registro de exportação existente é específico do diagnóstico).
+- O download do PDF é registrado na trilha de auditoria (`baixar_pdf_f1`/`f2`), se o SQL de comunicados estiver aplicado.
+
+## Emissão e ciência dentro do sistema (migration 0024)
+
+Além do PDF, a gestão pode **Emitir fase 1/2** na própria Prontidão:
+
+- Grava um comunicado por colaborador em `comunicado_jornada` (jornada atual, nova jornada, dias de trabalho e repouso, quem emitiu e quando). A tabela só muda pelas funções `emitir_comunicados`, `registrar_ciencia_comunicado` e `registrar_download_comunicados` (sem escrita direta); a emissão e a ciência entram na trilha de auditoria encadeada.
+- Quem tem acesso ao sistema recebe um aviso no sino e vê o texto em **Minha escala › Comunicados**, onde confirma "Li e estou ciente" (só o próprio colaborador, uma vez; guarda data e usuário).
+- Reemitir com os mesmos valores não repete aviso nem apaga ciência. Se algum valor mudar (outra fase, nova jornada), o comunicado é atualizado e a ciência volta a ser exigida.
+- A Prontidão mostra, por fase, quantos foram emitidos, quantos deram ciência e os nomes dos pendentes. Quem não tem acesso ao sistema assina o PDF impresso.
+- Sem o SQL aplicado, a seção de emissão some e o PDF continua funcionando.
+
+Instalador incremental: `packages/db/setup/supabase_atualizar_comunicados.sql` (exige o das notificações e o do aviso do banco antes).

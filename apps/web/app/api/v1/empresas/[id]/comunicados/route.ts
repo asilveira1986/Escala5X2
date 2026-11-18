@@ -34,6 +34,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       empresa: { razaoSocial: empresa.razao_social, cnpj: empresa.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') },
       ...sel, geradoEm: hoje,
     });
+    await supabase.rpc('registrar_download_comunicados', { p_empresa: id.data, p_fase: fase.data });     // auditoria; se o SQL ainda não foi aplicado, o download segue sem o registro
     const nome = `comunicados-${fase.data === 'F1' ? 'fase1' : 'fase2'}${setor ? `-${setor.normalize('NFD').replace(/[^\w]+/g, '-').toLowerCase()}` : ''}.pdf`;
     return new NextResponse(Buffer.from(bytes), { headers: { 'content-type': 'application/pdf', 'content-disposition': `attachment; filename="${nome}"`, 'cache-control': 'no-store' } });
   } catch {

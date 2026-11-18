@@ -232,4 +232,14 @@ INC23=$DB/setup/supabase_atualizar_alertas_conformidade.sql
   echo "commit;"
 } > "$INC23"
 echo "gerado: $INC23"
+# Comunicados de adequação de jornada (migration 0024) para bancos com as migrations 0001 a 0023 (exige a 0020 e a 0021 antes).
+INC24=$DB/setup/supabase_atualizar_comunicados.sql
+{
+  echo "-- JornadaCerta: comunicados de adequação de jornada com ciência (migration 0024) em um banco que já tem as migrations 0001 a 0023."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0024_comunicados_jornada.up.sql"
+  echo "commit;"
+} > "$INC24"
+echo "gerado: $INC24"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"
