@@ -2,7 +2,7 @@ import { tomDoIcone, type IconeId, type TomCor } from '@/lib/menu';
 import { ICONES_MENU } from './menu-icones';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-const base = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-9';
+const base = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3.5 py-1 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-8';
 
 export function Botao({ variante = 'primario', className = '', ...p }: ButtonHTMLAttributes<HTMLButtonElement> & { variante?: 'primario' | 'secundario' | 'perigo' }) {
   const cores = {
@@ -17,7 +17,7 @@ export function Botao({ variante = 'primario', className = '', ...p }: ButtonHTM
 export const classeBotaoLink = `${base} border border-linha bg-cartao text-tinta hover:bg-marca-suave`;
 export const classeBotaoLinkPrimario = `${base} bg-marca text-sobre-marca hover:bg-marca-escuro`;
 
-export const classeCampo = 'mt-1 block min-h-11 w-full rounded-xl border border-linha bg-cartao px-3 py-1.5 text-sm sm:min-h-9 text-tinta placeholder:text-suave';
+export const classeCampo = 'mt-1 block min-h-11 w-full rounded-lg border border-linha bg-cartao px-2.5 py-1 text-[13px] sm:min-h-8 text-tinta placeholder:text-suave';
 
 export function Campo({ rotulo, children, dica }: { rotulo: string; children: ReactNode; dica?: string }) {
   return (
@@ -40,20 +40,20 @@ const COR_BARRA: Record<TomIcone, string> = { marca: 'bg-marca', azul: 'bg-azul-
 /** Quadradinho colorido com o ícone. Sem `tom`, usa a cor da área a que o ícone pertence. */
 export function IconeCaixa({ icone, tom, tamanho = 'md' }: { icone: IconeId; tom?: TomIcone; tamanho?: 'sm' | 'md' | 'lg' }) {
   const I = ICONES_MENU[icone];
-  const dim = { sm: 'size-8 rounded-xl', md: 'size-10 rounded-2xl', lg: 'size-12 rounded-2xl' }[tamanho];
-  return <span aria-hidden className={`grid shrink-0 place-items-center ${dim} ${COR_TOM[tom ?? tomDoIcone(icone)]}`}><I width={tamanho === 'sm' ? 18 : 22} height={tamanho === 'sm' ? 18 : 22} /></span>;
+  const dim = { sm: 'size-7 rounded-lg', md: 'size-8 rounded-xl', lg: 'size-9 rounded-xl' }[tamanho];
+  return <span aria-hidden className={`grid shrink-0 place-items-center ${dim} ${COR_TOM[tom ?? tomDoIcone(icone)]}`}><I width={tamanho === 'sm' ? 16 : 18} height={tamanho === 'sm' ? 16 : 18} /></span>;
 }
 
 export function Cartao({ titulo, subtitulo, icone, acoes, children, className = '' }: { titulo?: string; subtitulo?: string; icone?: IconeId; acoes?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-3xl border border-linha bg-cartao p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.10)] sm:p-6 ${className}`}>
+    <section className={`rounded-2xl border border-linha bg-cartao p-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-4 ${className}`}>
       {titulo || subtitulo || acoes ? (
-        <header className="mb-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-          <div className="flex min-w-0 items-start gap-3">
+        <header className="mb-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-1.5">
+          <div className="flex min-w-0 items-start gap-2.5">
             {icone ? <IconeCaixa icone={icone} tamanho="sm" /> : null}
             <div className="min-w-0">
-              {titulo ? <h2 className="text-base font-bold leading-8">{titulo}</h2> : null}
-              {subtitulo ? <p className={`text-sm text-suave ${titulo ? '-mt-1' : ''}`}>{subtitulo}</p> : null}
+              {titulo ? <h2 className="text-[15px] font-bold leading-7">{titulo}</h2> : null}
+              {subtitulo ? <p className={`text-[13px] text-suave ${titulo ? '-mt-1' : ''}`}>{subtitulo}</p> : null}
             </div>
           </div>
           {acoes ? <div className="flex flex-wrap items-center gap-2">{acoes}</div> : null}
@@ -67,12 +67,12 @@ export function Cartao({ titulo, subtitulo, icone, acoes, children, className = 
 /** Cabeçalho de página: ícone, título, descrição e, à direita, as ações da tela. */
 export function CabecalhoPagina({ titulo, descricao, icone, acoes, children }: { titulo: ReactNode; descricao?: string; icone?: IconeId; acoes?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-      <div className="flex min-w-0 items-start gap-3.5">
+    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+      <div className="flex min-w-0 items-start gap-3">
         {icone ? <IconeCaixa icone={icone} tamanho="lg" /> : null}
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-[1.75rem]">{titulo}</h1>
-          {descricao ? <p className="mt-1 max-w-2xl text-suave">{descricao}</p> : null}
+          <h1 className="text-xl font-bold leading-tight tracking-tight">{titulo}</h1>
+          {descricao ? <p className="max-w-2xl text-[13px] text-suave">{descricao}</p> : null}
           {children}
         </div>
       </div>
@@ -88,14 +88,14 @@ export function Metrica({ icone, rotulo, valor, texto, tom, href }: { icone: Ico
     <>
       <span aria-hidden className={`absolute inset-x-5 top-0 h-1 rounded-b-full opacity-70 ${barra}`} />
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-semibold text-suave">{rotulo}</span>
+        <span className="text-[13px] font-semibold text-suave">{rotulo}</span>
         <IconeCaixa icone={icone} tom={tom} tamanho="sm" />
       </div>
-      <span className="mt-2 block text-2xl font-bold sm:text-3xl leading-none tracking-tight">{valor}</span>
-      {texto ? <span className="mt-2 block text-sm text-suave">{texto}</span> : null}
+      <span className="mt-1.5 block text-xl font-bold leading-none tracking-tight">{valor}</span>
+      {texto ? <span className="mt-1 block text-xs text-suave">{texto}</span> : null}
     </>
   );
-  const cls = 'relative block overflow-hidden rounded-3xl border border-linha bg-cartao p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5';
+  const cls = 'relative block overflow-hidden rounded-2xl border border-linha bg-cartao p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-3.5';
   return href ? <a href={href} className={`${cls} transition hover:-translate-y-0.5 hover:border-marca hover:shadow-md`}>{corpo}</a> : <div className={cls}>{corpo}</div>;
 }
 

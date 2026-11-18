@@ -22,7 +22,7 @@ type Props = {
 const COR_ICONE: Record<string, string> = { marca: 'text-tinta', azul: 'text-azul-fg', violeta: 'text-violeta-fg', verde: 'text-verde-fg', ambar: 'text-ambar-fg', rosa: 'text-rosa-fg', neutro: 'text-suave' };
 const corIcone = (icone: Parameters<typeof tomDoIcone>[0], ativo: boolean) => (ativo ? '' : COR_ICONE[tomDoIcone(icone)]);
 const classeItem = (ativo: boolean) =>
-  `relative flex min-h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors ${ativo ? 'bg-marca-suave font-semibold text-marca' : 'text-tinta hover:bg-fundo'}`;
+  `relative flex min-h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors ${ativo ? 'bg-marca-suave font-semibold text-marca' : 'text-tinta hover:bg-fundo'}`;
 
 function gravar(e: EstadoMenu) {
   try { document.cookie = `${COOKIE_MENU}=${gravarEstadoMenu(e)}; path=/; max-age=31536000; samesite=lax`; } catch { /* sem cookie: o menu só não lembra */ }
@@ -33,7 +33,8 @@ export function Shell({ cobranca, naoLidas = 0, email, empresas, ehGestor, temMi
   const pathname = usePathname() ?? '/';
   const router = useRouter();
   const [recolhido, setRecolhido] = useState(estadoInicial.recolhido);
-  const [abertos, setAbertos] = useState<string[]>(estadoInicial.abertos);
+  // submenu dinâmico: abre sozinho o grupo da página atual e só um fica aberto; clicar em outro troca, clicar no aberto fecha
+  const [escolha, setEscolha] = useState<string | null | undefined>(undefined);
   const [gaveta, setGaveta] = useState(false);
 
   const empresaId = empresaDoCaminho(pathname);
@@ -44,10 +45,14 @@ export function Shell({ cobranca, naoLidas = 0, email, empresas, ehGestor, temMi
   const limpo = pathname.split('?')[0]!.replace(/\/+$/, '') || '/';
   // só nas páginas que são destino do menu (e têm descrição): as demais já trazem o próprio título
   const cabecalho = entrada?.descricao && !entrada.proprioTitulo && pos?.hrefAtivo === limpo ? entrada : null;
-  const crumbs = migalhas(secoes, pathname, empresa?.nome ?? (empresaId ? 'Empresa' : null));
+  const grupoAberto = escolha !== undefined ? escolha : (pos?.grupoId ?? null);
+  // o título da página já aparece no cabeçalho dela: a barra de cima mostra só o caminho até aqui (sem repetir a página)
+  const todasMigalhas = migalhas(secoes, pathname, empresa?.nome ?? (empresaId ? 'Empresa' : null));
+  const crumbs = pos?.hrefAtivo === limpo ? todasMigalhas.slice(0, -1) : todasMigalhas;
 
-  const alternarRecolhido = useCallback(() => setRecolhido((r) => { const n = !r; gravar({ recolhido: n, abertos }); return n; }), [abertos]);
-  const alternarGrupo = useCallback((id: string) => setAbertos((a) => { const n = a.includes(id) ? a.filter((x) => x !== id) : [...a, id]; gravar({ recolhido, abertos: n }); return n; }), [recolhido]);
+  const alternarRecolhido = useCallback(() => setRecolhido((r) => { const n = !r; gravar({ recolhido: n, abertos: [] }); return n; }), []);
+  const alternarGrupo = useCallback((id: string) => setEscolha(grupoAberto === id ? null : id), [grupoAberto]);
+  useEffect(() => { setEscolha(undefined); }, [pathname]);
 
   // lembra a última empresa aberta: é nela que o sistema abre da próxima vez
   useEffect(() => {
@@ -66,7 +71,7 @@ export function Shell({ cobranca, naoLidas = 0, email, empresas, ehGestor, temMi
 
   const trocarEmpresa = (id: string) => { if (id) router.push(caminhoParaEmpresa(pathname, id)); };
   const painel = (modo: 'completo' | 'rail', naGaveta = false) => (
-    <PainelMenu modo={modo} naGaveta={naGaveta} secoes={secoes} pos={pos} abertos={abertos} empresas={empresas} empresaId={empresaId} empresaNome={empresa?.nome ?? null}
+    <PainelMenu modo={modo} naGaveta={naGaveta} secoes={secoes} pos={pos} grupoAberto={grupoAberto} empresas={empresas} empresaId={empresaId} empresaNome={empresa?.nome ?? null}
       email={email} ehGestor={ehGestor} onGrupo={alternarGrupo} onRecolher={alternarRecolhido} onFechar={() => setGaveta(false)} onTrocarEmpresa={trocarEmpresa} />
   );
 
@@ -77,27 +82,27 @@ export function Shell({ cobranca, naoLidas = 0, email, empresas, ehGestor, temMi
     <>
       {aviso}
       <div className="min-h-dvh lg:flex">
-        <aside aria-label="Menu lateral" className={`sticky top-0 hidden h-dvh shrink-0 tema-menu border-r border-linha bg-cartao transition-[width] duration-200 lg:block ${recolhido ? 'w-[4.75rem]' : 'w-72'}`}>
+        <aside aria-label="Menu lateral" className={`sticky top-0 hidden h-dvh shrink-0 tema-menu border-r border-linha bg-cartao transition-[width] duration-200 lg:block ${recolhido ? 'w-16' : 'w-60'}`}>
           {painel(recolhido ? 'rail' : 'completo')}
         </aside>
 
         {gaveta ? (
           <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
             <button type="button" aria-label="Fechar o menu" className="absolute inset-0 bg-tinta/40" onClick={() => setGaveta(false)} />
-            <aside className="absolute inset-y-0 left-0 tema-menu w-[min(20rem,88vw)] border-r border-linha bg-cartao shadow-2xl">{painel('completo', true)}</aside>
+            <aside className="absolute inset-y-0 left-0 tema-menu w-[min(17rem,88vw)] border-r border-linha bg-cartao shadow-2xl">{painel('completo', true)}</aside>
           </div>
         ) : null}
 
         <div className="flex min-w-0 flex-1 flex-col bg-[linear-gradient(180deg,color-mix(in_srgb,var(--c-marca)_9%,transparent),transparent_280px)]">
-          <header className="sticky top-0 z-30 flex min-h-14 items-center gap-2 border-b border-linha bg-cartao/90 px-3 backdrop-blur sm:px-5">
+          <header className="sticky top-0 z-30 flex min-h-12 items-center gap-2 border-b border-linha bg-cartao/90 px-3 backdrop-blur sm:px-5">
             <button type="button" onClick={() => setGaveta(true)} aria-label="Abrir o menu" aria-expanded={gaveta} className="grid size-11 place-items-center rounded-xl text-tinta hover:bg-fundo lg:hidden"><IconeMenu /></button>
             <Link href={soColaborador ? '/minha-escala' : '/empresas'} aria-label="JornadaCerta, início" className="flex items-center gap-2 rounded-lg lg:hidden"><MarcaLogo tamanho={24} /></Link>
             <nav aria-label="Você está em" className="min-w-0 flex-1">
               <ol className="flex items-center gap-1.5 truncate text-sm">
                 {crumbs.map((c, i) => (
-                  <li key={`${c.rotulo}-${i}`} className="flex min-w-0 items-center gap-1.5">
-                    {i > 0 ? <IconeChevron width={14} height={14} className="shrink-0 text-suave" /> : null}
-                    <span className={`truncate ${i === crumbs.length - 1 ? 'font-semibold text-tinta' : 'text-suave'}`} {...(i === crumbs.length - 1 ? { 'aria-current': 'page' as const } : {})}>{c.rotulo}</span>
+                  <li key={`${c.rotulo}-${i}`} className={`min-w-0 items-center gap-1.5 ${i === 0 && empresa ? 'flex lg:hidden' : 'flex'}`}>
+                    {i > 0 ? <IconeChevron width={14} height={14} className={`shrink-0 text-suave ${i === 1 && empresa ? 'lg:hidden' : ''}`} /> : null}
+                    <span className={`truncate ${i === crumbs.length - 1 && crumbs.length === todasMigalhas.length ? 'font-semibold text-tinta' : 'text-suave'}`} {...(i === crumbs.length - 1 && crumbs.length === todasMigalhas.length ? { 'aria-current': 'page' as const } : {})}>{c.rotulo}</span>
                   </li>
                 ))}
               </ol>
@@ -109,7 +114,7 @@ export function Shell({ cobranca, naoLidas = 0, email, empresas, ehGestor, temMi
               {cobranca.aviso.texto}<Link href="/cobranca" className="underline">Plano e cobrança</Link>
             </div>
           ) : null}
-          <main className={`mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 pt-4 sm:px-6 sm:pt-6 ${soColaborador ? 'pb-24 lg:pb-10' : 'pb-10'}`}>{bloqueioAtivo ? <BloqueioCobranca texto={cobranca!.aviso?.texto ?? 'O acesso está suspenso por falta de pagamento.'} /> : <>{cabecalho ? <CabecalhoPagina titulo={cabecalho.rotulo} descricao={cabecalho.descricao} icone={cabecalho.icone} /> : null}{children}</>}</main>
+          <main className={`mx-auto w-full max-w-5xl flex-1 space-y-3 px-4 pt-3 sm:px-5 sm:pt-4 ${soColaborador ? 'pb-24 lg:pb-10' : 'pb-10'}`}>{bloqueioAtivo ? <BloqueioCobranca texto={cobranca!.aviso?.texto ?? 'O acesso está suspenso por falta de pagamento.'} /> : <>{cabecalho ? <CabecalhoPagina titulo={cabecalho.rotulo} descricao={cabecalho.descricao} icone={cabecalho.icone} /> : null}{children}</>}</main>
           {soColaborador ? <BarraInferior secoes={secoes} pos={pos} /> : null}
         </div>
       </div>
@@ -118,7 +123,7 @@ export function Shell({ cobranca, naoLidas = 0, email, empresas, ehGestor, temMi
 }
 
 type PainelProps = {
-  modo: 'completo' | 'rail'; naGaveta: boolean; secoes: SecaoMenu[]; pos: PosicaoMenu | null; abertos: string[]; empresas: EmpresaDoMenu[]; empresaId: string | null; empresaNome: string | null;
+  modo: 'completo' | 'rail'; naGaveta: boolean; secoes: SecaoMenu[]; pos: PosicaoMenu | null; grupoAberto: string | null; empresas: EmpresaDoMenu[]; empresaId: string | null; empresaNome: string | null;
   email: string; ehGestor: boolean; onGrupo: (id: string) => void; onRecolher: () => void; onFechar: () => void; onTrocarEmpresa: (id: string) => void;
 };
 
@@ -166,10 +171,10 @@ function PainelMenu(p: PainelProps) {
 
       <nav aria-label="Menu principal" className={`min-h-0 flex-1 px-3 pb-3 ${rail ? 'overflow-visible' : 'overflow-y-auto overflow-x-hidden'}`}>
         {p.secoes.map((s, i) => (
-          <div key={s.id} className={i > 0 ? 'mt-4' : ''}>
-            {rail ? (i > 0 ? <hr className="mx-2 mb-2 border-linha" /> : null) : <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-suave">{s.id === 'empresa' && p.empresaNome ? p.empresaNome : s.titulo}</p>}
+          <div key={s.id} className={i > 0 ? 'mt-3' : ''}>
+            {rail ? (i > 0 ? <hr className="mx-2 mb-2 border-linha" /> : null) : (s.id === 'empresa' && p.ehGestor && p.empresas.length > 0 ? null : <p className="px-2.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-suave">{s.titulo}</p>)}
             <ul className="space-y-0.5">
-              {s.grupos.map((g) => <li key={g.id}><Grupo g={g} rail={rail} pos={p.pos} aberto={p.abertos.includes(g.id) || p.pos?.grupoId === g.id} onAlternar={() => p.onGrupo(g.id)} /></li>)}
+              {s.grupos.map((g) => <li key={g.id}><Grupo g={g} rail={rail} pos={p.pos} aberto={p.grupoAberto === g.id} onAlternar={() => p.onGrupo(g.id)} /></li>)}
             </ul>
           </div>
         ))}
@@ -222,7 +227,7 @@ function Grupo({ g, rail, pos, aberto, onAlternar }: { g: GrupoMenu; rail: boole
       </button>
       {aberto ? (
         <ul id={idLista} className="ml-[1.35rem] mt-0.5 space-y-0.5 border-l border-linha pl-2.5">
-          {g.itens.map((i) => <li key={i.id}><SubItem i={i} ativo={pos?.itemId === i.id} /></li>)}
+          {g.itens.map((i) => <li key={i.id}>{i.secao ? <p className="px-2.5 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-wider text-suave">{i.secao}</p> : null}<SubItem i={i} ativo={pos?.itemId === i.id} /></li>)}
         </ul>
       ) : null}
     </>
@@ -232,8 +237,8 @@ function Grupo({ g, rail, pos, aberto, onAlternar }: { g: GrupoMenu; rail: boole
 function SubItem({ i, ativo }: { i: ItemMenu; ativo: boolean }) {
   const Icone = ICONES_MENU[i.icone];
   return (
-    <Link href={i.href} aria-current={ativo ? 'page' : undefined} className={`${classeItem(ativo)} min-h-9 gap-2.5 text-[13px]`}>
-      <Icone width={17} height={17} className={`shrink-0 ${corIcone(i.icone, ativo)}`} /><span className="truncate">{i.rotulo}</span>
+    <Link href={i.href} aria-current={ativo ? 'page' : undefined} className={`${classeItem(ativo)} min-h-8 gap-2 text-[13px]`}>
+      <Icone width={16} height={16} className={`shrink-0 ${corIcone(i.icone, ativo)}`} /><span className="truncate">{i.rotulo}</span>
     </Link>
   );
 }
@@ -249,7 +254,7 @@ function Dica({ rotulo, children, lista, pos, extra, lado = 'direita' }: { rotul
       <div className={`pointer-events-none absolute z-50 hidden pl-2 group-focus-within:pointer-events-auto group-focus-within:block group-hover:pointer-events-auto group-hover:block ${lado === 'topo' ? 'bottom-0 left-full' : 'left-full top-0'}`}>
         <div role={lista ? 'group' : 'tooltip'} aria-label={lista ? `Submenu ${rotulo}` : undefined} className="min-w-44 rounded-2xl border border-linha bg-cartao p-1.5 shadow-xl">
           <p className="px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-suave">{rotulo}</p>
-          {lista ? <ul>{lista.map((i) => <li key={i.id}><SubItem i={i} ativo={pos?.itemId === i.id} /></li>)}</ul> : null}
+          {lista ? <ul>{lista.map((i) => <li key={i.id}>{i.secao ? <p className="px-3 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-wider text-suave">{i.secao}</p> : null}<SubItem i={i} ativo={pos?.itemId === i.id} /></li>)}</ul> : null}
           {extra}
         </div>
       </div>

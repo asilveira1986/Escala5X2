@@ -24,7 +24,7 @@ O menu usa um **índigo profundo** (`#1E1B4B`) nos dois temas para se separar do
 
 - **Cabeçalho de página:** toda tela do menu abre com ícone, título e uma frase de apoio (`CabecalhoPagina`), vindos do próprio menu (`lib/menu.ts`: `descricao`). Telas com título próprio (Visão geral, Carteira, cadastros) ficam marcadas com `proprioTitulo`.
 - **Cartões:** `Cartao` aceita `icone` e `acoes` (botões no canto). `Metrica` mostra número + ícone. `IconeCaixa` é o quadradinho colorido do ícone.
-- **Visão geral da empresa:** identificação, quatro números, "Primeiros passos" com barra de progresso e as áreas do sistema (montadas a partir do menu, então novas telas aparecem lá sozinhas).
+- **Visão geral da empresa:** identificação, quatro números e "Primeiros passos" com barra de progresso. Não repete atalhos para as áreas: a navegação mora só no menu.
 
 ## Cores por área
 
@@ -33,3 +33,10 @@ Cada área do sistema tem uma cor de apoio, aplicada ao ícone (menu, cabeçalho
 ## Fonte
 
 Toda a interface usa **Inter** (400–700), em títulos e texto, com espaçamento levemente fechado nos títulos. A fonte vem do Google Fonts (`app/layout.tsx`) e é definida pelos tokens `--font-titulo` e `--font-texto` em `globals.css`; sem a fonte, cai para Segoe UI/sistema.
+
+## Layout compacto e menu (regras para não duplicar informação)
+
+- **Densidade:** raiz de 15 px, conteúdo em `max-w-5xl`, cartões `p-3.5/4`, números `text-xl`, botões e campos de 32 px no desktop (44 px no celular, por toque), itens do menu de 36/32 px e menu lateral de 15 rem (4 rem recolhido).
+- **Menu em grupos:** Visão geral · Adequação EC 141 (Prontidão, Diagnóstico) · Colaboradores · Escalas (Escalas do mês, Gerar escala, Férias e afastamentos) · Pedidos · Ponto e folha · e, no fim, **Configurações** num só submenu, em dois blocos: *Desta empresa* (Turnos, Cobertura mínima, Importar planilha) e *Do sistema* (Empresas, Plano e cobrança).
+- **Submenu dinâmico:** abre sozinho o grupo da página atual, só um grupo fica aberto (abrir outro fecha o anterior; clicar no aberto fecha) e volta ao da página ao navegar. O cookie guarda só se o menu está recolhido.
+- **Uma informação, um lugar:** ações que têm botão na própria tela ("Nova empresa", "Novo colaborador") não são itens do menu; a empresa aparece no seletor do menu (e, no celular, no caminho); o título da página aparece só no cabeçalho dela, então a barra de cima mostra apenas o caminho até ali (sem repetir a página); a Visão geral não duplica os atalhos do menu; o título de seção "Empresa" não repete o seletor.

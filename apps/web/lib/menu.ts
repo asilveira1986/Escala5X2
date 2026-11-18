@@ -6,7 +6,7 @@ export type IconeId =
   | 'inicio' | 'carteira' | 'empresas' | 'diagnostico' | 'equipe' | 'pessoas' | 'importar' | 'escalas' | 'calendario' | 'turnos' | 'cobertura'
   | 'ferias' | 'pedidos' | 'ponto' | 'relogio' | 'banco' | 'folha' | 'minha-escala' | 'config' | 'mais';
 
-export type ItemMenu = { id: string; rotulo: string; href: string; icone: IconeId; /** Frase curta que aparece no cabeçalho da página e nos cartões da Visão geral. */ descricao?: string; /** A página desenha o próprio título: o Shell não repete o cabeçalho. */ proprioTitulo?: boolean };
+export type ItemMenu = { id: string; rotulo: string; href: string; icone: IconeId; /** Frase curta que aparece no cabeçalho da página. */ descricao?: string; /** A página desenha o próprio título: o Shell não repete o cabeçalho. */ proprioTitulo?: boolean; /** Subtítulo que abre um bloco de itens no submenu (ex.: "Desta empresa"). */ secao?: string };
 /** Grupo com subitens (accordion) ou, sem `itens`, um link direto. */
 export type GrupoMenu = { id: string; rotulo: string; icone: IconeId; href?: string; itens?: ItemMenu[]; descricao?: string; proprioTitulo?: boolean };
 export type SecaoMenu = { id: 'geral' | 'empresa' | 'configuracoes' | 'colaborador'; titulo: string; grupos: GrupoMenu[] };
@@ -32,19 +32,15 @@ export function montarMenu(c: ContextoMenu): SecaoMenu[] {
     secoes.push({
       id: 'empresa', titulo: 'Empresa',
       grupos: [
-        { id: 'visao', rotulo: 'Visão geral', icone: 'inicio', href: e, descricao: 'Resumo da empresa e atalhos para tudo.', proprioTitulo: true },
-        { id: 'prontidao', rotulo: 'Prontidão EC 141', icone: 'calendario', href: `${e}/prontidao`, descricao: 'Quão preparada a empresa está para as fases da nova jornada e quanto custa cobrir as horas.' },
-        { id: 'diagnostico', rotulo: 'Diagnóstico', icone: 'diagnostico', href: `${e}/diagnostico`, descricao: 'Quem precisa se adequar à escala 5x2 e quanto cada caminho custa.' },
-        { id: 'equipe', rotulo: 'Equipe', icone: 'equipe', itens: [
-          { id: 'colaboradores', rotulo: 'Colaboradores', href: `${e}/colaboradores`, icone: 'pessoas', descricao: 'Equipe, contratos e acesso ao aplicativo.' },
-          { id: 'novo-colaborador', rotulo: 'Novo colaborador', href: `${e}/colaboradores/novo`, icone: 'mais', descricao: 'Cadastre uma pessoa e o contrato dela, sem planilha.', proprioTitulo: true },
-          { id: 'importar', rotulo: 'Importar planilha', href: `${e}/importar`, icone: 'importar', descricao: 'Traga a equipe inteira de uma planilha CSV ou Excel.' },
+        { id: 'visao', rotulo: 'Visão geral', icone: 'inicio', href: e, descricao: 'Resumo da empresa e o que precisa da sua atenção.', proprioTitulo: true },
+        { id: 'ec141', rotulo: 'Adequação EC 141', icone: 'diagnostico', itens: [
+          { id: 'prontidao', rotulo: 'Prontidão', href: `${e}/prontidao`, icone: 'calendario', descricao: 'Quão preparada a empresa está para as fases da nova jornada e quanto custa cobrir as horas.' },
+          { id: 'diagnostico', rotulo: 'Diagnóstico', href: `${e}/diagnostico`, icone: 'diagnostico', descricao: 'Quem precisa se adequar à escala 5x2 e quanto cada caminho custa.' },
         ] },
+        { id: 'colaboradores', rotulo: 'Colaboradores', icone: 'pessoas', href: `${e}/colaboradores`, descricao: 'Equipe, contratos e acesso ao aplicativo.' },
         { id: 'escalas', rotulo: 'Escalas', icone: 'escalas', itens: [
           { id: 'escalas-lista', rotulo: 'Escalas do mês', href: `${e}/escalas`, icone: 'calendario', descricao: 'Monte, confira com a lei e publique a escala.' },
           { id: 'adequador', rotulo: 'Gerar escala', href: `${e}/escalas/adequador`, icone: 'escalas', descricao: 'Informe turnos, setores e pessoas e o sistema monta a escala do mês, com folgas e férias.' },
-          { id: 'turnos', rotulo: 'Turnos', href: `${e}/escalas/turnos`, icone: 'turnos', descricao: 'Modelos de horário para pintar na grade.' },
-          { id: 'cobertura', rotulo: 'Cobertura mínima', href: `${e}/escalas/cobertura`, icone: 'cobertura', descricao: 'Quantas pessoas cada setor precisa por turno.' },
           { id: 'ausencias', rotulo: 'Férias e afastamentos', href: `${e}/escalas/ausencias`, icone: 'ferias', descricao: 'Dias em que a pessoa não pode ser escalada.' },
         ] },
         { id: 'pedidos', rotulo: 'Pedidos', icone: 'pedidos', href: `${e}/solicitacoes`, descricao: 'Trocas, folgas e férias esperando a sua decisão.' },
@@ -58,12 +54,18 @@ export function montarMenu(c: ContextoMenu): SecaoMenu[] {
     });
   }
   if (mostrarGeral) {
+    // Tudo o que se configura fica num só submenu: o que é da empresa aberta e o que é do sistema.
+    const e = c.empresaId ? `/empresas/${c.empresaId}` : null;
     secoes.push({
       id: 'configuracoes', titulo: 'Sistema',
       grupos: [{ id: 'config', rotulo: 'Configurações', icone: 'config', itens: [
-        { id: 'config-empresas', rotulo: 'Empresas', href: '/empresas', icone: 'empresas', descricao: 'As empresas que você atende.', proprioTitulo: true },
-        { id: 'config-cobranca', rotulo: 'Plano e cobrança', href: '/cobranca', icone: 'folha', descricao: 'Seu plano, as faturas e a forma de pagamento.' },
-        { id: 'config-nova-empresa', rotulo: 'Nova empresa', href: '/empresas/nova', icone: 'mais', descricao: 'Cadastre uma empresa para começar.', proprioTitulo: true },
+        ...(e ? [
+          { id: 'turnos', rotulo: 'Turnos', href: `${e}/escalas/turnos`, icone: 'turnos' as const, descricao: 'Modelos de horário para pintar na grade.', secao: 'Desta empresa' },
+          { id: 'cobertura', rotulo: 'Cobertura mínima', href: `${e}/escalas/cobertura`, icone: 'cobertura' as const, descricao: 'Quantas pessoas cada setor precisa por turno.' },
+          { id: 'importar', rotulo: 'Importar planilha', href: `${e}/importar`, icone: 'importar' as const, descricao: 'Traga a equipe inteira de uma planilha CSV ou Excel.' },
+        ] : []),
+        { id: 'config-empresas', rotulo: 'Empresas', href: '/empresas', icone: 'empresas' as const, descricao: 'As empresas que você atende.', proprioTitulo: true, ...(e ? { secao: 'Do sistema' } : {}) },
+        { id: 'config-cobranca', rotulo: 'Plano e cobrança', href: '/cobranca', icone: 'folha' as const, descricao: 'Seu plano, as faturas e a forma de pagamento.' },
       ] }],
     });
   }
@@ -120,7 +122,7 @@ export function caminhoParaEmpresa(caminho: string, novaEmpresaId: string): stri
   const atual = empresaDoCaminho(caminho);
   if (!atual) return `/empresas/${novaEmpresaId}`;
   const resto = caminho.slice(`/empresas/${atual}`.length).split('?')[0]!;
-  const base = ['/escalas/adequador', '/escalas/cobertura', '/escalas/ausencias', '/escalas/turnos', '/escalas', '/colaboradores', '/importar', '/diagnostico', '/solicitacoes', '/ponto', '/banco-horas/ponto', '/banco-horas', '/folha']
+  const base = ['/escalas/adequador', '/escalas/cobertura', '/escalas/ausencias', '/escalas/turnos', '/escalas', '/colaboradores', '/importar', '/prontidao', '/diagnostico', '/solicitacoes', '/ponto', '/banco-horas/ponto', '/banco-horas', '/folha']
     .find((b) => resto === b || resto.startsWith(`${b}/`));
   return `/empresas/${novaEmpresaId}${base ?? ''}`;
 }
@@ -134,7 +136,9 @@ export function migalhas(secoes: SecaoMenu[], caminho: string, nomeEmpresa: stri
   const grupo = secao.grupos.find((g) => g.id === pos.grupoId)!;
   const item = grupo.itens?.find((i) => i.id === pos.itemId);
   const lista: Migalha[] = [];
-  if (secao.id === 'empresa' && nomeEmpresa) lista.push({ rotulo: nomeEmpresa, href: secao.grupos[0]?.href });
+  // itens de Configurações que são da empresa aberta (Turnos, Cobertura, Importar) também mostram a empresa
+  const daEmpresa = nomeEmpresa && (secao.id === 'empresa' || (item && empresaDoCaminho(item.href)));
+  if (daEmpresa && nomeEmpresa) lista.push({ rotulo: nomeEmpresa, href: `/empresas/${empresaDoCaminho(item?.href ?? grupo.href ?? caminho)}` });
   else if (secao.id === 'colaborador') lista.push({ rotulo: 'Minha área' });
   if (item) { lista.push({ rotulo: grupo.rotulo }); lista.push({ rotulo: item.rotulo, href: item.href }); }
   else if (!(secao.id === 'empresa' && grupo.id === 'visao')) lista.push({ rotulo: grupo.rotulo, href: grupo.href });
