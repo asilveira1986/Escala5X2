@@ -23,7 +23,7 @@ async function organizacaoDaEmpresa(empresaId: string) {
 
 /**
  * Passo 1: devolve uma URL assinada para o navegador enviar o arquivo direto ao Storage.
- * (As funções da Vercel limitam o corpo da requisição a 4,5 MB; a planilha pode ter 10 MB.)
+ * (A planilha pode ter 10 MB, acima do limite de corpo das requisições ao servidor; por isso o arquivo não passa por ele.)
  * O caminho é sempre gerado aqui: <organizacao>/<uuid>.<ext>; o nome do usuário nunca vira caminho.
  */
 export async function prepararEnvio(empresaId: string, extensao: string, tamanho: number): Promise<{ ok: true; caminho: string; token: string } | { ok: false; erro: string }> {
