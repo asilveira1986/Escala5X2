@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { exigirUsuario, idOu404 } from '@/lib/contexto';
+import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
 import type { Demanda } from '@/lib/cobertura';
 import { TelaFaixa } from './TelaFaixa';
 
@@ -13,10 +13,9 @@ export default async function PaginaFaixa({ params }: { params: Promise<{ id: st
   ]);
   const demanda = data as Demanda | null;
   if (!demanda) notFound();
-  let setor: string | null = null;
-  if (demanda.setor_id) {
-    const { data: s } = await supabase.from('setor').select('nome').eq('id', demanda.setor_id).maybeSingle();
-    setor = (s as { nome: string } | null)?.nome ?? 'Setor';
-  }
-  return <TelaFaixa empresaId={empresaId} demanda={demanda} setor={setor} podeGerir={ger === true} />;
+  // setores da empresa: servem para mostrar o nome do setor e para a lista do formulário de edição
+  const { data: set } = await supabase.from('setor').select('id, nome, unidade!inner(empresa_id)').eq('unidade.empresa_id', empresaId).order('nome');
+  const setores = linhas<{ id: string; nome: string }>(set).map((x) => ({ id: x.id, nome: x.nome }));
+  const setor = demanda.setor_id ? setores.find((x) => x.id === demanda.setor_id)?.nome ?? 'Setor' : null;
+  return <TelaFaixa empresaId={empresaId} demanda={demanda} setor={setor} setores={setores} podeGerir={ger === true} />;
 }

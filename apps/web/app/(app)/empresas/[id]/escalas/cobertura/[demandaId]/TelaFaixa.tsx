@@ -3,9 +3,10 @@ import { RemoverItem } from '@/components/RemoverItem';
 import { Cartao, Selo } from '@/components/ui';
 import { DIAS_SEMANA, rotuloFaixa, type Demanda } from '@/lib/cobertura';
 import { removerDemanda } from '../actions';
+import { FormEditarFaixa } from './FormEditarFaixa';
 
-/** Tela de uma faixa de cobertura: cabeçalho, resumo e remoção. */
-export function TelaFaixa({ empresaId, demanda: d, setor, podeGerir }: { empresaId: string; demanda: Demanda; setor: string | null; podeGerir: boolean }) {
+/** Tela de uma faixa de cobertura: cabeçalho, resumo, edição e remoção. */
+export function TelaFaixa({ empresaId, demanda: d, setor, setores, podeGerir }: { empresaId: string; demanda: Demanda; setor: string | null; setores: Array<{ id: string; nome: string }>; podeGerir: boolean }) {
   const dia = DIAS_SEMANA.find((x) => x.n === d.dia_semana)?.longo ?? '—';
   return (
     <>
@@ -17,6 +18,7 @@ export function TelaFaixa({ empresaId, demanda: d, setor, podeGerir }: { empresa
         { rotulo: 'Mínimo de pessoas', valor: <span className="horario">{d.minimo}</span> },
         { rotulo: 'Ideal', valor: <span className="horario">{d.ideal ?? '—'}</span> },
       ]} />
+      {podeGerir ? <Cartao icone="cobertura" titulo="Editar faixa"><FormEditarFaixa empresaId={empresaId} demanda={d} setores={setores} /></Cartao> : null}
       {podeGerir ? (
         <Cartao titulo="Remover faixa">
           <RemoverItem acao={removerDemanda.bind(null, empresaId, d.id)} depoisPara={`/empresas/${empresaId}/escalas/cobertura`} rotulo="Remover faixa"
