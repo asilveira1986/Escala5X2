@@ -100,7 +100,7 @@ export function AssistenteImportacao({ empresaId }: { empresaId: string }) {
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-left text-xs">
             <caption className="mb-1 text-left text-sm font-medium">Prévia (5 primeiras linhas)</caption>
-            <thead><tr>{atual.colunas.map((c) => <th key={c} className="pr-3">{c}</th>)}</tr></thead>
+            <thead className="rotulo-col"><tr>{atual.colunas.map((c) => <th key={c} className="pr-3">{c}</th>)}</tr></thead>
             <tbody>{atual.previa.map((l, i) => <tr key={i}>{l.map((v, j) => <td key={j} className="pr-3">{v}</td>)}</tr>)}</tbody>
           </table>
         </div>
@@ -123,7 +123,7 @@ export function AssistenteImportacao({ empresaId }: { empresaId: string }) {
             {validacao.erros.length > 0 && (
               <div className="max-h-72 overflow-auto">
                 <table className="w-full text-left text-xs">
-                  <thead><tr><th className="pr-3">Linha</th><th className="pr-3">Campo</th><th className="pr-3">Valor</th><th>Problema</th></tr></thead>
+                  <thead className="rotulo-col"><tr><th className="pr-3">Linha</th><th className="pr-3">Campo</th><th className="pr-3">Valor</th><th>Problema</th></tr></thead>
                   <tbody>{validacao.erros.map((e, i) => <tr key={i}><td className="pr-3">{e.linha}</td><td className="pr-3">{e.campo}</td><td className="pr-3">{e.valor}</td><td>{e.mensagem}</td></tr>)}</tbody>
                 </table>
                 {validacao.errosTotal > validacao.erros.length ? <p className="mt-1 text-xs">Mostrando {validacao.erros.length} de {validacao.errosTotal} erros.</p> : null}
