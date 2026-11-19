@@ -1,12 +1,12 @@
 import type { MetadataRoute } from 'next';
 
-/** PWA do colaborador: abre direto na escala. Cores do tema atual (pinho e fundo frio). */
+/** PWA do colaborador: abre direto na escala. Cores da identidade Jornada (Azul Pulso e fundo frio). */
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'JornadaCerta', short_name: 'JornadaCerta', lang: 'pt-BR', dir: 'ltr',
     description: 'Sua escala, seus pedidos e seu banco de horas, no celular.',
     id: '/minha-escala', start_url: '/minha-escala', scope: '/', display: 'standalone', orientation: 'portrait',
-    background_color: '#f6f7fb', theme_color: '#4f46e5', categories: ['business', 'productivity'],
+    background_color: '#f4f6fb', theme_color: '#1f5eff', categories: ['business', 'productivity'],
     icons: [
       { src: '/icons/192', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: '/icons/512', sizes: '512x512', type: 'image/png', purpose: 'any' },

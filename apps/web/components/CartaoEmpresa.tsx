@@ -9,7 +9,7 @@ const acao = { nao_iniciado: 'Começar', em_risco: 'Abrir', adequado: 'Abrir' } 
 
 export function CartaoEmpresa({ empresa: e }: { empresa: Pick<EmpresaRow, 'id' | 'razao_social' | 'cnpj' | 'porte' | 'uf' | 'status_adequacao'> }) {
   return (
-    <Link href={`/empresas/${e.id}`} className="group flex flex-col gap-3 rounded-3xl border border-linha bg-cartao p-4 shadow-[0_2px_8px_rgba(16,32,30,0.05)] transition-colors hover:border-marca">
+    <Link href={`/empresas/${e.id}`} className="group flex flex-col gap-3 rounded-2xl border border-linha bg-cartao p-4 shadow-card transition-colors hover:border-marca">
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-marca-suave text-marca"><IconeEmpresa /></span>
         <div className="min-w-0">

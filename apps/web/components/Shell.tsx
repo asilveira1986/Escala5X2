@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { tomDoIcone, entradaAtual, caminhoParaEmpresa, COOKIE_EMPRESA, COOKIE_MENU, empresaDoCaminho, gravarEstadoMenu, migalhas, montarMenu, posicaoAtual, type EstadoMenu, type GrupoMenu, type ItemMenu, type PosicaoMenu, type SecaoMenu } from '@/lib/menu';
+import { entradaAtual, caminhoParaEmpresa, COOKIE_EMPRESA, COOKIE_MENU, empresaDoCaminho, gravarEstadoMenu, migalhas, montarMenu, posicaoAtual, type EstadoMenu, type GrupoMenu, type ItemMenu, type PosicaoMenu, type SecaoMenu } from '@/lib/menu';
 import { BotaoSair } from './BotaoSair';
 import { CabecalhoPagina } from './ui';
 import { Sino } from './Sino';
@@ -18,9 +18,8 @@ type Props = {
   aviso?: ReactNode; children: ReactNode;
 };
 
-/** Cor do ícone no menu escuro, por área (o item ativo fica branco). */
-const COR_ICONE: Record<string, string> = { marca: 'text-tinta', azul: 'text-azul-fg', violeta: 'text-violeta-fg', verde: 'text-verde-fg', ambar: 'text-ambar-fg', rosa: 'text-rosa-fg', neutro: 'text-suave' };
-const corIcone = (icone: Parameters<typeof tomDoIcone>[0], ativo: boolean) => (ativo ? '' : COR_ICONE[tomDoIcone(icone)]);
+/** Ícones do menu herdam a cor do texto (a cor da identidade é estado, não decoração). */
+const corIcone = (_icone: unknown, _ativo: boolean) => '';
 const classeItem = (ativo: boolean) =>
   `relative flex min-h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors ${ativo ? 'bg-marca-suave font-semibold text-marca' : 'text-tinta hover:bg-fundo'}`;
 
@@ -93,7 +92,7 @@ export function Shell({ cobranca, naoLidas = 0, email, empresas, ehGestor, temMi
           </div>
         ) : null}
 
-        <div className="flex min-w-0 flex-1 flex-col bg-[linear-gradient(180deg,color-mix(in_srgb,var(--c-marca)_9%,transparent),transparent_280px)]">
+        <div className="flex min-w-0 flex-1 flex-col bg-[linear-gradient(180deg,color-mix(in_srgb,var(--c-marca)_5%,transparent),transparent_240px)]">
           <header className="sticky top-0 z-30 flex min-h-12 items-center gap-2 border-b border-linha bg-cartao/90 px-3 backdrop-blur sm:px-5">
             <button type="button" onClick={() => setGaveta(true)} aria-label="Abrir o menu" aria-expanded={gaveta} className="grid size-11 place-items-center rounded-xl text-tinta hover:bg-fundo lg:hidden"><IconeMenu /></button>
             <Link href={soColaborador ? '/minha-escala' : '/empresas'} aria-label="JornadaCerta, início" className="flex items-center gap-2 rounded-lg lg:hidden"><MarcaLogo tamanho={24} /></Link>
@@ -134,8 +133,8 @@ function PainelMenu(p: PainelProps) {
     <div className="flex h-full flex-col">
       <div className={`flex items-center gap-2 px-3 py-3 ${rail ? 'flex-col' : 'justify-between'}`}>
         <Link href="/" aria-label="JornadaCerta, início" className="flex min-w-0 items-center gap-2.5 rounded-lg px-1">
-          <MarcaLogo tamanho={28} />
-          {!rail ? <span className="truncate font-[family-name:var(--font-titulo)] text-base font-bold tracking-tight">JornadaCerta</span> : null}
+          <MarcaLogo tamanho={28} negativo />
+          {!rail ? <span className="truncate font-[family-name:var(--font-titulo)] text-lg font-extrabold tracking-[-0.03em] text-white">JornadaCerta</span> : null}
         </Link>
         {p.naGaveta ? (
           <button type="button" onClick={p.onFechar} aria-label="Fechar o menu" className="grid size-10 place-items-center rounded-xl text-suave hover:bg-fundo"><IconeFechar /></button>
@@ -158,7 +157,7 @@ function PainelMenu(p: PainelProps) {
               <span className="relative mt-1 block">
                 <IconeEmpresa width={18} height={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-marca" />
                 <select value={p.empresaId ?? ''} onChange={(e) => p.onTrocarEmpresa(e.target.value)} aria-label="Trocar de empresa"
-                  className="block min-h-11 w-full appearance-none truncate rounded-xl border border-linha bg-fundo py-2 pl-10 pr-8 text-sm font-semibold normal-case tracking-normal text-tinta">
+                  className="block min-h-11 w-full appearance-none truncate rounded-[10px] border border-linha bg-fundo py-2 pl-10 pr-8 text-sm font-semibold normal-case tracking-normal text-tinta">
                   {!p.empresaId ? <option value="">Escolha uma empresa…</option> : null}
                   {p.empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
                 </select>
@@ -252,7 +251,7 @@ function Dica({ rotulo, children, lista, pos, extra, lado = 'direita' }: { rotul
     <div ref={ref} className="group relative">
       {children}
       <div className={`pointer-events-none absolute z-50 hidden pl-2 group-focus-within:pointer-events-auto group-focus-within:block group-hover:pointer-events-auto group-hover:block ${lado === 'topo' ? 'bottom-0 left-full' : 'left-full top-0'}`}>
-        <div role={lista ? 'group' : 'tooltip'} aria-label={lista ? `Submenu ${rotulo}` : undefined} className="min-w-44 rounded-2xl border border-linha bg-cartao p-1.5 shadow-xl">
+        <div role={lista ? 'group' : 'tooltip'} aria-label={lista ? `Submenu ${rotulo}` : undefined} className="min-w-44 rounded-2xl border border-linha bg-cartao p-1.5 shadow-pop">
           <p className="px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-suave">{rotulo}</p>
           {lista ? <ul>{lista.map((i) => <li key={i.id}>{i.secao ? <p className="px-3 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-wider text-suave">{i.secao}</p> : null}<SubItem i={i} ativo={pos?.itemId === i.id} /></li>)}</ul> : null}
           {extra}
@@ -286,11 +285,11 @@ function BarraInferior({ secoes, pos }: { secoes: SecaoMenu[]; pos: PosicaoMenu 
 /** Tela no lugar do conteúdo quando a conta está bloqueada (teste vencido, assinatura cancelada ou fatura vencida há muito). */
 function BloqueioCobranca({ texto }: { texto: string }) {
   return (
-    <div role="alert" className="mx-auto mt-8 max-w-lg space-y-3 rounded-3xl border border-linha bg-cartao p-6 text-center shadow-sm">
+    <div role="alert" className="mx-auto mt-8 max-w-lg space-y-3 rounded-2xl border border-linha bg-cartao p-6 text-center shadow-card">
       <h1 className="text-xl font-bold">Acesso suspenso</h1>
       <p className="text-sm text-suave">{texto}</p>
       <p className="text-sm text-suave">Seus dados estão guardados e voltam a aparecer assim que a assinatura for regularizada.</p>
-      <Link href="/cobranca" className="inline-flex min-h-11 items-center justify-center rounded-full bg-marca px-5 text-sm font-semibold text-sobre-marca hover:bg-marca-escuro">Ir para Plano e cobrança</Link>
+      <Link href="/cobranca" className="inline-flex min-h-11 items-center justify-center rounded-[10px] bg-marca px-5 text-sm font-semibold text-sobre-marca hover:bg-marca-escuro">Ir para Plano e cobrança</Link>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { ErroTela } from '@/components/ErroTela';
 export default function ErroGlobal(props: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <html lang="pt-BR">
-      <body style={{ fontFamily: 'system-ui, sans-serif', background: '#f6f7fb', padding: '2rem' }}>
+      <body style={{ fontFamily: 'system-ui, sans-serif', background: '#f4f6fb', padding: '2rem' }}>
         <ErroTela {...props} />
       </body>
     </html>

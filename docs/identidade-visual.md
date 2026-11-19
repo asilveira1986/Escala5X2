@@ -1,24 +1,36 @@
 # Identidade visual
 
-Conceito: **tecnologia de gestão de pessoas** — limpa, confiável e leve de usar. Índigo é a família de cor mais associada a software de RH/SaaS; a menta marca os "dias de folga" do logotipo.
+Fonte: design system **Jornada** (artefato "Jornada" no claude.ai). Conceito: **tempo é dado, cor é estado, calma na tela.** O símbolo é um **anel de progresso** (a jornada do dia se completando) com um ponto ciano no centro.
 
-| Papel | Claro | Escuro | Uso |
+| Papel (token do app → token do design system) | Claro | Escuro | Uso |
 |---|---|---|---|
-| Marca (índigo) | `#4F46E5` | `#A5B4FC` | botões, item ativo, links |
-| Marca escura | `#3730A3` | `#C7D2FE` | hover, degradê do login |
-| Marca suave | `#EEF0FF` | `#1C2347` | fundo do item ativo, ícones |
-| Destaque (menta) | `#5EEAD4` | `#5EEAD4` | dias de folga no logo, marcadores |
-| Fundo / cartão | `#F6F7FB` / `#FFFFFF` | `#0B1020` / `#131A2E` | páginas / cartões |
-| Texto / texto suave | `#0F172A` / `#5B6478` | `#E8ECF8` / `#9AA5C0` | |
-| OK / Atenção / Risco | verde `#0B5A3A`, âmbar `#7A4B00`, rosa `#9F1239` sobre tons claros | versões claras sobre tons escuros | status |
+| `marca` → brand-500 (Azul Pulso) | `#1F5EFF` | `#5B8BFF` | botões, item ativo, links, anel do logo |
+| `marca-escuro` → brand-600 | `#1747CC` | `#8FB0FF` | hover |
+| `marca-suave` → brand-soft | `#E8EEFF` | `#16244A` | fundo de selecionado, ícones |
+| `destaque` → accent-400 (Ciano Sinal) | `#22D3EE` | `#22D3EE` | ponto do logo, marcadores; só preenchimento, nunca texto em fundo claro |
+| `noite` → navy-900 (Azul Noite) | `#0B1530` | `#0B1530` | menu lateral, painel do login, ícone do app |
+| `fundo` / `cartao` → surface-50 / surface-0 | `#F4F6FB` / `#FFFFFF` | `#0A1020` / `#111A2E` | páginas / cartões |
+| `tinta` / `suave` → ink / ink-muted | `#0B1530` / `#556079` | `#EEF2FA` / `#9AA6BF` | textos |
+| `linha` → border | `#DBE1EC` | `#26334F` | bordas e divisores |
 
-- Todos os pares de texto passam em contraste AA (mínimo 5,5:1 medido).
-- Tudo é token em `apps/web/app/globals.css`; trocar a marca é editar esse arquivo (mais `lib/pwa/icone.tsx` e `app/manifest.ts` para o ícone do app).
-- Logotipo: cinco barras (dias úteis) + uma menta (folga), em `MarcaLogo` e nos ícones do PWA.
+**Cor é estado** (nunca decoração): `ok` = em jornada/trabalho (verde `#0B7A3B` sobre `#E3F6EA`), `atencao` = intervalo/perto do limite (âmbar `#94520A` sobre `#FDF1DC`), `violeta` = hora extra/banco positivo (`#5A2FD6` sobre `#EFE9FF`), `risco` = atraso/falta/inconsistência (`#B4233A` sobre `#FDE8EB`), `neutro` = folga/férias. Estado nunca depende só da cor: sempre há rótulo ou seta.
+
+- Tudo é token em `apps/web/app/globals.css`; trocar a marca é editar esse arquivo (mais `lib/pwa/icone.tsx` e `app/manifest.ts` para o ícone do app, e `MarcaLogo` em `components/icones.tsx`).
+- **Logotipo:** `MarcaLogo` (anel + ponto ciano, cores fixas do logotipo; `negativo` para fundo Azul Noite). O nome do produto segue **JornadaCerta** (o design system chama a marca de trabalho de "Jornada"; o wordmark é só texto em Plus Jakarta Sans 800, fácil de trocar).
+- **Tema escuro:** `marca` vira `#5B8BFF` com texto escuro (`sobre-marca` `#0A1020`), porque o mesmo token serve de fundo de botão e de cor de texto/link; assim todos os pares passam em contraste AA. Menu e painel do login continuam em Azul Noite nos dois temas.
+- **Foco de teclado:** contorno de 3 px na cor da marca (no menu escuro, o mesmo token fica branco). O ciano do design system não passa 3:1 sobre fundo claro, por isso não é usado como anel de foco no conteúdo.
+
+## Fonte
+
+**Plus Jakarta Sans** (400–800) para interface e títulos e **JetBrains Mono** (400/500/700) para **todo horário, saldo e número de indicador**, com dígitos tabulares (classe `horario` ou `font-mono`; `Metrica` já usa). Vêm do Google Fonts (`app/layout.tsx`) e são definidas pelos tokens `--font-titulo`, `--font-texto` e `--font-horario`. Rótulos de coluna e de indicador usam a classe `rotulo-col` (11 px, negrito, caixa alta, espaçamento 0,08 em).
+
+## Forma
+
+Cartões e painéis: raio 16 px (`rounded-2xl`), borda `linha`, sombra `shadow-card` (token `--sombra-card`). Botões e campos: raio 10 px. Selos e avatares: pílula. Menus flutuantes e popovers: `shadow-pop`.
 
 ## Menu lateral
 
-O menu usa um **índigo profundo** (`#1E1B4B`) nos dois temas para se separar do conteúdo claro. Está na classe `.tema-menu` (`globals.css`), que só redefine os tokens dentro do menu; texto 13:1, texto suave 8:1 e item ativo 9:1 de contraste.
+O menu usa o **Azul Noite** (`#0B1530`) nos dois temas. Item ativo = Azul Pulso com texto branco; hover = branco a 7 %; ícones de traço herdam a cor do texto. Está na classe `.tema-menu` (`globals.css`), que só redefine os tokens dentro do menu.
 
 ## Telas
 
@@ -26,13 +38,9 @@ O menu usa um **índigo profundo** (`#1E1B4B`) nos dois temas para se separar do
 - **Cartões:** `Cartao` aceita `icone` e `acoes` (botões no canto). `Metrica` mostra número + ícone. `IconeCaixa` é o quadradinho colorido do ícone.
 - **Visão geral da empresa:** identificação, quatro números e "Primeiros passos" com barra de progresso. Não repete atalhos para as áreas: a navegação mora só no menu.
 
-## Cores por área
+## Cor nos ícones e indicadores
 
-Cada área do sistema tem uma cor de apoio, aplicada ao ícone (menu, cabeçalhos, cartões, números): **Equipe e Carteira = azul**, **Escalas = violeta**, **Pedidos = âmbar**, **Ponto e folha = verde**, **Diagnóstico = rosa**, empresa/início = índigo da marca. O mapa está em `tomDoIcone` (`lib/menu.ts`); os tons são tokens em `globals.css` (`--c-azul-*`, `--c-violeta-*`, `--c-verde-*`, `--c-ambar-*`, `--c-rosa-*`), com versões para o tema escuro e para o menu lateral. Os números têm uma faixa colorida no topo; a Visão geral tem degradê índigo→violeta; a área de conteúdo tem um leve degradê no topo.
-
-## Fonte
-
-Toda a interface usa **Inter** (400–700), em títulos e texto, com espaçamento levemente fechado nos títulos. A fonte vem do Google Fonts (`app/layout.tsx`) e é definida pelos tokens `--font-titulo` e `--font-texto` em `globals.css`; sem a fonte, cai para Segoe UI/sistema.
+Seguindo "cor é estado", os ícones (menu, cabeçalhos, cartões, números) usam a cor da marca por padrão; só viram verde, âmbar, violeta ou vermelho quando a tela passa um tom de estado (`tom` em `Metrica`/`IconeCaixa`). O mapa antigo por área (`tomDoIcone` em `lib/menu.ts`) continua disponível, mas não é mais aplicado automaticamente. Os números têm uma faixa colorida no topo; a Visão geral é um cartão limpo, sem degradê; a área de conteúdo tem um degradê azul muito leve (5 %) no topo.
 
 ## Layout compacto e menu (regras para não duplicar informação)
 

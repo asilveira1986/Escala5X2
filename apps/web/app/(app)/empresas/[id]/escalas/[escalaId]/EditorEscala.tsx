@@ -168,7 +168,7 @@ export function EditorEscala({ empresaId, entrada, modelos, otimizacao = null }:
       </div>
 
       <Cartao className="!p-0">
-        <div className="max-h-[70vh] overflow-auto rounded-3xl">
+        <div className="max-h-[70vh] overflow-auto rounded-2xl">
           <table className="w-max min-w-full border-separate border-spacing-0 text-xs">
             <thead>
               <tr>

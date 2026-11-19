@@ -82,7 +82,7 @@ export function Sino({ naoLidasInicial = 0 }: { naoLidasInicial?: number }) {
         {naoLidas > 0 ? <span aria-hidden className="absolute right-1 top-1 grid min-w-5 place-items-center rounded-full bg-risco-fg px-1 text-[11px] font-bold leading-5 text-cartao">{naoLidas > 99 ? '99+' : naoLidas}</span> : null}
       </button>
       {aberto ? (
-        <div role="dialog" aria-label="Notificações" className="absolute right-0 z-50 mt-2 w-[min(24rem,calc(100vw-1.5rem))] rounded-3xl border border-linha bg-cartao p-2 shadow-2xl">
+        <div role="dialog" aria-label="Notificações" className="absolute right-0 z-50 mt-2 w-[min(24rem,calc(100vw-1.5rem))] rounded-3xl border border-linha bg-cartao p-2 shadow-pop">
           <div className="flex items-center justify-between px-3 py-2">
             <h2 className="text-sm font-bold">Notificações</h2>
             <button type="button" onClick={marcarTodas} disabled={naoLidas === 0} className="text-xs font-semibold text-marca hover:underline disabled:cursor-not-allowed disabled:text-suave disabled:no-underline">Marcar todas como lidas</button>

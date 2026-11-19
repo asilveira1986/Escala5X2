@@ -13,7 +13,7 @@ export function ComparacaoCenarios({ cenarios }: { cenarios: CenarioListado[] })
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <caption className="sr-only">Comparação de cenários de correção</caption>
-        <thead className="text-xs font-semibold uppercase tracking-wide text-suave">
+        <thead className="rotulo-col">
           <tr><th className="py-2 pr-3">Cenário</th><th className="pr-3">Fase</th><th className="pr-3 text-right">Custo mensal</th><th className="pr-3 text-right">Custo anual</th><th className="pr-3 text-right">Contratações</th><th>Observações</th></tr>
         </thead>
         <tbody>

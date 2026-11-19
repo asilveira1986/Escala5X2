@@ -1,62 +1,69 @@
 @import 'tailwindcss';
 
 /*
- * JornadaCerta — sistema visual.
- * Ideia: tecnologia de RH, limpa e confiável. Índigo como cor de marca (a mesma família dos softwares de gestão de pessoas),
- * menta como destaque ("os dias de folga"), fundo frio quase branco, cartões grandes e arredondados, números em destaque.
- * Cores sempre por token; o tema escuro redefine só os valores.
+ * Jornada — sistema visual (fonte: design system "Jornada").
+ * Ideia: tempo é dado (horários em fonte mono), cor é estado (verde trabalho, âmbar atenção, violeta hora extra, vermelho risco),
+ * calma na tela (fundo claro, cartões brancos, um azul forte por tela). Azul Pulso = marca; Azul Noite = menu e relógio.
+ * Cores sempre por token; o tema escuro redefine só os valores. Nomes dos tokens do app (marca, tinta, suave…) foram mantidos:
+ * marca = brand-500, marca-escuro = brand-600, marca-suave = brand-soft, destaque = accent-400, noite = navy-900.
  */
 :root {
-  --c-fundo: #f6f7fb;
+  --c-fundo: #f4f6fb;
   --c-cartao: #ffffff;
-  --c-tinta: #0f172a;
-  --c-suave: #5b6478;
-  --c-linha: #e3e6ef;
-  --c-marca: #4f46e5;
-  --c-marca-escuro: #3730a3;
-  --c-marca-suave: #eef0ff;
+  --c-tinta: #0b1530;
+  --c-suave: #556079;
+  --c-linha: #dbe1ec;
+  --c-marca: #1f5eff;
+  --c-marca-escuro: #1747cc;
+  --c-marca-suave: #e8eeff;
   --c-sobre-marca: #ffffff;
-  --c-destaque: #5eead4;
-  --c-ok-bg: #d9f7ea;   --c-ok-fg: #0b5a3a;
-  --c-atencao-bg: #fff1cc; --c-atencao-fg: #7a4b00;
-  --c-risco-bg: #ffe1e6;  --c-risco-fg: #9f1239;
-  --c-neutro-bg: #eaecf3; --c-neutro-fg: #3b4458;
-  /* Cores de apoio: cada área do sistema tem a sua (equipe, escalas, pedidos, ponto e folha, análises). */
+  --c-destaque: #22d3ee;   /* Ciano Sinal: só preenchimento, nunca texto sobre fundo claro */
+  --c-noite: #0b1530;      /* Azul Noite: igual nos dois temas */
+  --c-ok-bg: #e3f6ea;   --c-ok-fg: #0b7a3b;
+  --c-atencao-bg: #fdf1dc; --c-atencao-fg: #94520a;
+  --c-risco-bg: #fde8eb;  --c-risco-fg: #b4233a;
+  --c-neutro-bg: #eaeef6; --c-neutro-fg: #556079;
+  /* Cores de apoio (estados e categorias): hora extra/banco = violeta, trabalho = verde, intervalo/atenção = âmbar, atraso/falta = rosa/vermelho. */
   --c-azul-bg: #e0f2fe;    --c-azul-fg: #075985;
-  --c-violeta-bg: #ede9fe; --c-violeta-fg: #5b21b6;
-  --c-verde-bg: #d9f7ea;   --c-verde-fg: #0b5a3a;
-  --c-ambar-bg: #fff1cc;   --c-ambar-fg: #7a4b00;
-  --c-rosa-bg: #ffe4ec;    --c-rosa-fg: #9d174d;
-  --font-titulo: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  --font-texto: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --c-violeta-bg: #efe9ff; --c-violeta-fg: #5a2fd6;
+  --c-verde-bg: #e3f6ea;   --c-verde-fg: #0b7a3b;
+  --c-ambar-bg: #fdf1dc;   --c-ambar-fg: #94520a;
+  --c-rosa-bg: #fde8eb;    --c-rosa-fg: #b4233a;
+  --sombra-card: 0 1px 2px rgba(11, 21, 48, 0.06), 0 4px 16px rgba(11, 21, 48, 0.06);
+  --sombra-pop: 0 12px 32px rgba(11, 21, 48, 0.16);
+  --font-titulo: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-texto: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-horario: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --c-fundo: #0b1020; --c-cartao: #131a2e; --c-tinta: #e8ecf8; --c-suave: #9aa5c0; --c-linha: #252e49;
-    --c-marca: #a5b4fc; --c-marca-escuro: #c7d2fe; --c-marca-suave: #1c2347; --c-sobre-marca: #0b1020;
-    --c-ok-bg: #0f3a2a; --c-ok-fg: #9bf0c8; --c-atencao-bg: #3d3008; --c-atencao-fg: #f6dc8c;
-    --c-risco-bg: #4a1a26; --c-risco-fg: #fdb4c1; --c-neutro-bg: #1d2640; --c-neutro-fg: #b8c2dd;
+    --c-fundo: #0a1020; --c-cartao: #111a2e; --c-tinta: #eef2fa; --c-suave: #9aa6bf; --c-linha: #26334f;
+    --c-marca: #5b8bff; --c-marca-escuro: #8fb0ff; --c-marca-suave: #16244a; --c-sobre-marca: #0a1020;
+    --c-ok-bg: #0f2c1d; --c-ok-fg: #5ee08f; --c-atencao-bg: #33240b; --c-atencao-fg: #ffc56b;
+    --c-risco-bg: #3a1520; --c-risco-fg: #ff8d9c; --c-neutro-bg: #18233b; --c-neutro-fg: #9aa6bf;
     color-scheme: dark;
-    --c-azul-bg: #0c2a40; --c-azul-fg: #7dd3fc; --c-violeta-bg: #2a1f4f; --c-violeta-fg: #c4b5fd; --c-verde-bg: #0f3a2a; --c-verde-fg: #9bf0c8;
-    --c-ambar-bg: #3d3008; --c-ambar-fg: #f6dc8c; --c-rosa-bg: #4a1a2e; --c-rosa-fg: #f9a8d4;
+    --c-azul-bg: #0c2a40; --c-azul-fg: #7dd3fc; --c-violeta-bg: #231a45; --c-violeta-fg: #c2adff; --c-verde-bg: #0f2c1d; --c-verde-fg: #5ee08f;
+    --c-ambar-bg: #33240b; --c-ambar-fg: #ffc56b; --c-rosa-bg: #3a1520; --c-rosa-fg: #ff8d9c;
+    --sombra-card: 0 1px 2px rgba(0, 0, 0, 0.4); --sombra-pop: 0 12px 32px rgba(0, 0, 0, 0.5);
   }
 }
 :root[data-theme='dark'] {
-  --c-fundo: #0b1020; --c-cartao: #131a2e; --c-tinta: #e8ecf8; --c-suave: #9aa5c0; --c-linha: #252e49;
-  --c-marca: #a5b4fc; --c-marca-escuro: #c7d2fe; --c-marca-suave: #1c2347; --c-sobre-marca: #0b1020;
-  --c-ok-bg: #0f3a2a; --c-ok-fg: #9bf0c8; --c-atencao-bg: #3d3008; --c-atencao-fg: #f6dc8c;
-  --c-risco-bg: #4a1a26; --c-risco-fg: #fdb4c1; --c-neutro-bg: #1d2640; --c-neutro-fg: #b8c2dd;
+  --c-fundo: #0a1020; --c-cartao: #111a2e; --c-tinta: #eef2fa; --c-suave: #9aa6bf; --c-linha: #26334f;
+  --c-marca: #5b8bff; --c-marca-escuro: #8fb0ff; --c-marca-suave: #16244a; --c-sobre-marca: #0a1020;
+  --c-ok-bg: #0f2c1d; --c-ok-fg: #5ee08f; --c-atencao-bg: #33240b; --c-atencao-fg: #ffc56b;
+  --c-risco-bg: #3a1520; --c-risco-fg: #ff8d9c; --c-neutro-bg: #18233b; --c-neutro-fg: #9aa6bf;
   color-scheme: dark;
-  --c-azul-bg: #0c2a40; --c-azul-fg: #7dd3fc; --c-violeta-bg: #2a1f4f; --c-violeta-fg: #c4b5fd; --c-verde-bg: #0f3a2a; --c-verde-fg: #9bf0c8;
-  --c-ambar-bg: #3d3008; --c-ambar-fg: #f6dc8c; --c-rosa-bg: #4a1a2e; --c-rosa-fg: #f9a8d4;
+  --c-azul-bg: #0c2a40; --c-azul-fg: #7dd3fc; --c-violeta-bg: #231a45; --c-violeta-fg: #c2adff; --c-verde-bg: #0f2c1d; --c-verde-fg: #5ee08f;
+  --c-ambar-bg: #33240b; --c-ambar-fg: #ffc56b; --c-rosa-bg: #3a1520; --c-rosa-fg: #ff8d9c;
+  --sombra-card: 0 1px 2px rgba(0, 0, 0, 0.4); --sombra-pop: 0 12px 32px rgba(0, 0, 0, 0.5);
 }
 
-/* Menu lateral: índigo profundo nos dois temas, para se destacar do conteúdo. Redefine os mesmos tokens só dentro dele. */
+/* Menu lateral: Azul Noite nos dois temas. Item ativo = Azul Pulso com texto branco; hover = branco a 7%. Redefine os mesmos tokens só dentro dele. */
 .tema-menu {
-  --c-cartao: #1e1b4b; --c-fundo: #2b2778; --c-tinta: #e7eaff; --c-suave: #aeb6ee; --c-linha: #36318a;
-  --c-marca: #ffffff; --c-marca-escuro: #e7eaff; --c-marca-suave: #3b36a8; --c-sobre-marca: #1e1b4b;
-  --c-azul-fg: #7dd3fc; --c-violeta-fg: #c4b5fd; --c-verde-fg: #86efac; --c-ambar-fg: #fcd34d; --c-rosa-fg: #f9a8d4;
+  --c-cartao: #0b1530; --c-fundo: rgb(255 255 255 / 0.07); --c-tinta: #c9d3ea; --c-suave: #9fb0d4; --c-linha: rgb(255 255 255 / 0.1);
+  --c-marca: #ffffff; --c-marca-escuro: #ffffff; --c-marca-suave: #1f5eff; --c-sobre-marca: #0b1530;
+  --sombra-pop: 0 12px 32px rgba(0, 0, 0, 0.5);
   color: var(--c-tinta); color-scheme: dark;
 }
 
@@ -71,6 +78,7 @@
   --color-marca-suave: var(--c-marca-suave);
   --color-sobre-marca: var(--c-sobre-marca);
   --color-destaque: var(--c-destaque);
+  --color-noite: var(--c-noite);
   --color-ok-bg: var(--c-ok-bg);  --color-ok-fg: var(--c-ok-fg);
   --color-atencao-bg: var(--c-atencao-bg); --color-atencao-fg: var(--c-atencao-fg);
   --color-risco-bg: var(--c-risco-bg);  --color-risco-fg: var(--c-risco-fg);
@@ -80,13 +88,21 @@
   --color-verde-bg: var(--c-verde-bg); --color-verde-fg: var(--c-verde-fg);
   --color-ambar-bg: var(--c-ambar-bg); --color-ambar-fg: var(--c-ambar-fg);
   --color-rosa-bg: var(--c-rosa-bg); --color-rosa-fg: var(--c-rosa-fg);
+  --shadow-card: var(--sombra-card);
+  --shadow-pop: var(--sombra-pop);
   --font-titulo: var(--font-titulo);
   --font-texto: var(--font-texto);
+  --font-mono: var(--font-horario);
 }
 
 html { font-size: 15px; }
-body { background: var(--c-fundo); color: var(--c-tinta); font-family: var(--font-texto); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; font-feature-settings: 'cv11', 'ss01'; }
-h1, h2, h3 { font-family: var(--font-titulo); letter-spacing: -0.02em; text-wrap: balance; }
+body { background: var(--c-fundo); color: var(--c-tinta); font-family: var(--font-texto); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: var(--font-titulo); letter-spacing: -0.015em; text-wrap: balance; }
 table { font-variant-numeric: tabular-nums; }
+/* Tempo é dado: horários, saldos e números de indicador em JetBrains Mono, com dígitos alinhados (classe `font-mono` do Tailwind também funciona). */
+.horario { font-family: var(--font-horario); font-variant-numeric: tabular-nums; }
+/* Rótulo de coluna e de indicador: caixa alta, espaçado, 11 px. */
+.rotulo-col { font-size: 11px; line-height: 16px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-suave); }
 :focus-visible { outline: 3px solid var(--c-marca); outline-offset: 2px; border-radius: 6px; }
+.tema-menu :focus-visible { outline-color: var(--c-destaque); }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

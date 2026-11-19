@@ -220,7 +220,7 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
             </p>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[34rem] text-left text-sm" aria-label="Impacto da jornada">
-                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="pb-1.5 pr-3">Jornada</th><th className="pb-1.5 pr-3">Dias</th><th className="pb-1.5 pr-3">Por dia</th><th className="pb-1.5 pr-3 text-right">Pessoas necessárias</th><th className="pb-1.5 pr-3 text-right">Sua equipe</th><th className="pb-1.5 pr-3">Situação</th><th /></tr></thead>
+                <thead className="rotulo-col"><tr><th className="pb-1.5 pr-3">Jornada</th><th className="pb-1.5 pr-3">Dias</th><th className="pb-1.5 pr-3">Por dia</th><th className="pb-1.5 pr-3 text-right">Pessoas necessárias</th><th className="pb-1.5 pr-3 text-right">Sua equipe</th><th className="pb-1.5 pr-3">Situação</th><th /></tr></thead>
                 <tbody>
                   {comparacao.map((l) => {
                     const atual = jornadaNum === l.horas && diasNum === l.dias;
@@ -246,7 +246,7 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
           <Etapa n={3} titulo="Turnos" texto="Mudar um turno cadastrado vale só para esta geração; o cadastro não muda." acoes={turnos.length < 6 ? <Botao variante="secundario" onClick={adicionarTurno}>Adicionar turno</Botao> : null}>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[34rem] text-left text-sm">
-                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="w-10 pb-1.5" /><th className="pb-1.5 pr-2">Turno</th><th className="pb-1.5 pr-2">Entrada</th><th className="pb-1.5 pr-2">Saída</th><th className="pb-1.5 pr-2">Intervalo (min)</th><th className="pb-1.5 pr-2">Líquidas</th>{jornadaNum ? <th className="pb-1.5 pr-2">Segue a jornada</th> : null}<th /></tr></thead>
+                <thead className="rotulo-col"><tr><th className="w-10 pb-1.5" /><th className="pb-1.5 pr-2">Turno</th><th className="pb-1.5 pr-2">Entrada</th><th className="pb-1.5 pr-2">Saída</th><th className="pb-1.5 pr-2">Intervalo (min)</th><th className="pb-1.5 pr-2">Líquidas</th>{jornadaNum ? <th className="pb-1.5 pr-2">Segue a jornada</th> : null}<th /></tr></thead>
                 <tbody>
                   {turnos.map((t, ti) => {
                     const ef = turnosEf[ti]!;
@@ -438,7 +438,7 @@ export function GerarEscala({ empresaId, mesPadrao, modelos, setores, semSetor, 
 /** Bloco numerado de um passo da geração. */
 function Etapa({ n, titulo, texto, acoes, children }: { n: number; titulo: string; texto?: string; acoes?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-linha bg-cartao p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5">
+    <section className="rounded-2xl border border-linha bg-cartao p-4 shadow-card sm:p-5">
       <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-full bg-marca text-sm font-bold text-sobre-marca">{n}</span>
@@ -525,7 +525,7 @@ function ResultadoAdequacao({ r, empresaId }: { r: DadosSetor; empresaId: string
       <Cartao icone="pessoas" titulo="Carga de cada pessoa" subtitulo="Média por semana no mês (turno × dias trabalhados).">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="py-1.5 pr-3">Pessoa</th><th className="pr-3">Turno</th><th className="pr-3 text-right">Dias</th><th className="pr-3 text-right">Horas/semana</th><th className="pr-3 text-right">Domingos</th><th className="text-right">Feriados</th></tr></thead>
+            <thead className="rotulo-col"><tr><th className="py-1.5 pr-3">Pessoa</th><th className="pr-3">Turno</th><th className="pr-3 text-right">Dias</th><th className="pr-3 text-right">Horas/semana</th><th className="pr-3 text-right">Domingos</th><th className="text-right">Feriados</th></tr></thead>
             <tbody className="divide-y divide-linha">
               {r.pessoas.map((p) => (
                 <tr key={p.colaboradorId}>

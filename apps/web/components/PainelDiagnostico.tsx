@@ -7,7 +7,7 @@ import { Cartao } from './ui';
 function Bloco({ Icone, valor, rotulo, dica, tom }: { Icone: typeof IconeCheck; valor: string; rotulo: string; dica?: string; tom: 'ok' | 'atencao' | 'risco' | 'azul' }) {
   const cor = { ok: 'bg-ok-bg text-ok-fg', atencao: 'bg-atencao-bg text-atencao-fg', risco: 'bg-risco-bg text-risco-fg', azul: 'bg-marca-suave text-marca' }[tom];
   return (
-    <div className="rounded-3xl border border-linha bg-cartao p-3.5">
+    <div className="rounded-2xl border border-linha bg-cartao p-3.5">
       <span className={`grid size-8 place-items-center rounded-full ${cor}`}><Icone width={20} height={20} /></span>
       <div className="mt-2 whitespace-nowrap font-[family-name:var(--font-titulo)] text-2xl font-bold leading-none">{valor}</div>
       <div className="mt-1 text-sm font-semibold">{rotulo}</div>
@@ -58,7 +58,7 @@ export function PainelDiagnostico({ diagnostico: d }: { diagnostico: Diagnostico
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <caption className="sr-only">Horas a cobrir e pessoas necessárias por setor e turno</caption>
-            <thead className="text-xs font-semibold uppercase tracking-wide text-suave">
+            <thead className="rotulo-col">
               <tr><th className="py-1.5 pr-3">Setor</th><th className="pr-3">Turno</th><th className="pr-3 text-right">Pessoas</th><th className="pr-3 text-right">Fase 1</th><th className="pr-3 text-right">Fase 2</th><th className="pr-3 text-right">Contratar F1</th><th className="text-right">Contratar F2</th></tr>
             </thead>
             <tbody>

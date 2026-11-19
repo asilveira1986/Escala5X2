@@ -35,6 +35,8 @@ describe('PainelOtimizador', () => {
     expect(aplicarProposta).toHaveBeenCalledWith('o1', 1);
     expect(onAplicada).not.toHaveBeenCalled();
     expect(screen.getAllByRole('button', { name: 'Aplicar na grade' })).toHaveLength(2);
+    // o erro aparece antes de a transição terminar: clicar com o botão ainda desabilitado seria ignorado (corrida vista no CI)
+    await waitFor(() => expect((screen.getAllByRole('button', { name: 'Aplicar na grade' })[0] as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(screen.getAllByRole('button', { name: 'Aplicar na grade' })[0]!);
     await waitFor(() => expect(onAplicada).toHaveBeenCalledTimes(1));
     expect(aplicarProposta).toHaveBeenLastCalledWith('o1', 0);
