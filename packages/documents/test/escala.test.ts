@@ -22,7 +22,7 @@ describe('escala em PDF', () => {
     const grande = await gerarEscalaPdf(dados(70));
     expect(paginas(grande)).toBeGreaterThan(1);
     expect(grande.length).toBeGreaterThan(pequeno.length);
-  });
+  }, 30_000); // gera dois PDFs (5 e 70 pessoas); no runner do CI leva ~11 s, acima dos 5 s padrão
   it('rascunho e escala sem hash também geram, e mês curto (28 dias) funciona', async () => {
     const r = await gerarEscalaPdf(dados(3, { status: 'rascunho', hash: null, dias: dias.slice(0, 28), cobertura: Array(28).fill(2), linhas: [{ nome: 'Ana', celulas: celulas(1).slice(0, 28), diasTrabalhados: 20, horasMin: 9600 }] }));
     expect(Buffer.from(r.slice(0, 5)).toString()).toBe('%PDF-');
