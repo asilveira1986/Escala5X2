@@ -5,12 +5,13 @@ import { diasDaAusencia, ROTULO_SITUACAO, TOM_SITUACAO, type SituacaoAusencia } 
 import type { DataISO } from '@jc/rules-engine';
 import { dataBr } from '@jc/rules-engine';
 import { removerAusencia } from '../actions';
+import { FormEditarAusencia } from './FormEditarAusencia';
 
 const iniciais = (nome: string) => { const p = nome.trim().split(/\s+/); return ((p[0]?.[0] ?? '') + (p.length > 1 ? (p[p.length - 1]?.[0] ?? '') : '')).toUpperCase() || '?'; };
 
 export type AusenciaTela = { id: string; pessoa: string; tipo: 'ferias' | 'afastamento'; inicio: DataISO; fim: DataISO; observacao: string | null; situacao: SituacaoAusencia };
 
-/** Tela de uma ausência: cabeçalho, resumo, observação e remoção. */
+/** Tela de uma ausência: cabeçalho, resumo, edição e remoção. */
 export function TelaAusencia({ empresaId, ausencia: a, podeGerir }: { empresaId: string; ausencia: AusenciaTela; podeGerir: boolean }) {
   const tipo = a.tipo === 'ferias' ? 'Férias' : 'Afastamento';
   const dias = diasDaAusencia(a.inicio, a.fim);
@@ -24,7 +25,7 @@ export function TelaAusencia({ empresaId, ausencia: a, podeGerir }: { empresaId:
         { rotulo: 'Último dia', valor: <span className="horario">{dataBr(a.fim)}</span> },
         { rotulo: 'Duração', valor: <span className="horario">{dias} {dias === 1 ? 'dia' : 'dias'}</span> },
       ]} />
-      {a.observacao ? <Cartao titulo="Observação"><p className="text-sm">{a.observacao}</p></Cartao> : null}
+      {podeGerir ? <Cartao icone="ferias" titulo="Editar lançamento"><FormEditarAusencia empresaId={empresaId} ausencia={a} /></Cartao> : a.observacao ? <Cartao titulo="Observação"><p className="text-sm">{a.observacao}</p></Cartao> : null}
       {podeGerir ? (
         <Cartao titulo="Remover lançamento">
           <RemoverItem acao={removerAusencia.bind(null, empresaId, a.id)} depoisPara={`/empresas/${empresaId}/escalas/ausencias`} rotulo="Remover lançamento"

@@ -3,10 +3,10 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const push = vi.fn();
-const removerDemanda = vi.fn(), removerAusencia = vi.fn();
+const removerDemanda = vi.fn(), removerAusencia = vi.fn(), editarDemanda = vi.fn(), editarAusencia = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
-vi.mock('../app/(app)/empresas/[id]/escalas/cobertura/actions', () => ({ removerDemanda, adicionarDemanda: vi.fn() }));
-vi.mock('../app/(app)/empresas/[id]/escalas/ausencias/actions', () => ({ removerAusencia, adicionarAusencia: vi.fn() }));
+vi.mock('../app/(app)/empresas/[id]/escalas/cobertura/actions', () => ({ removerDemanda, adicionarDemanda: vi.fn(), editarDemanda }));
+vi.mock('../app/(app)/empresas/[id]/escalas/ausencias/actions', () => ({ removerAusencia, adicionarAusencia: vi.fn(), editarAusencia }));
 vi.mock('../app/(app)/empresas/[id]/escalas/actions', () => ({ arquivarModelo: vi.fn(), editarModelo: vi.fn(), criarModelo: vi.fn() }));
 const { TabelaEscalas } = await import('../app/(app)/empresas/[id]/escalas/TabelaEscalas');
 const { TabelaTurnos } = await import('../app/(app)/empresas/[id]/escalas/turnos/TabelaTurnos');
@@ -91,7 +91,7 @@ describe('Férias e afastamentos', () => {
 describe('tela da faixa de cobertura', () => {
   const d = { id: 'd1', setor_id: null, dia_semana: 1, faixa_inicio_min: 480, faixa_fim_min: 720, minimo: 2, ideal: 3 };
   it('cabeçalho e resumo; remover pede confirmação, remove e volta para a lista', async () => {
-    render(<TelaFaixa empresaId="emp" demanda={d} setor={null} podeGerir />);
+    render(<TelaFaixa empresaId="emp" demanda={d} setor={null} setores={[]} podeGerir />);
     expect(screen.getByRole('heading', { name: 'Segunda · 08:00–12:00' })).toBeTruthy();
     const resumo = screen.getByLabelText('Resumo da faixa');
     expect(within(resumo).getByText('Segunda')).toBeTruthy();
@@ -105,14 +105,14 @@ describe('tela da faixa de cobertura', () => {
   });
   it('falha ao remover mostra o erro e não sai da tela; quem não gere não vê a remoção', async () => {
     removerDemanda.mockResolvedValue({ erro: 'Você não tem permissão para remover esta faixa.' });
-    const { unmount } = render(<TelaFaixa empresaId="emp" demanda={d} setor="Loja" podeGerir />);
+    const { unmount } = render(<TelaFaixa empresaId="emp" demanda={d} setor="Loja" setores={[{ id: 's1', nome: 'Loja' }]} podeGerir />);
     expect(screen.getByText('Vale só para escalas do setor Loja')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Remover faixa' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar remoção' }));
     expect(await screen.findByText(/permissão/)).toBeTruthy();
     expect(push).not.toHaveBeenCalled();
     unmount();
-    render(<TelaFaixa empresaId="emp" demanda={d} setor={null} podeGerir={false} />);
+    render(<TelaFaixa empresaId="emp" demanda={d} setor={null} setores={[]} podeGerir={false} />);
     expect(screen.queryByRole('button', { name: 'Remover faixa' })).toBeNull();
   });
 });
@@ -125,11 +125,17 @@ describe('tela da ausência', () => {
     expect(screen.getByText('Férias · 01/12/2026 a 10/12/2026')).toBeTruthy();
     expect(screen.getByText('Agendada')).toBeTruthy();
     expect(within(screen.getByLabelText('Resumo da ausência')).getByText('10 dias')).toBeTruthy();
-    expect(screen.getByText('Férias de fim de ano')).toBeTruthy();
+    expect((screen.getByLabelText('Observação (opcional)') as HTMLInputElement).value).toBe('Férias de fim de ano');   // a gestão edita a observação no formulário
     fireEvent.click(screen.getByRole('button', { name: 'Remover lançamento' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar remoção' }));
     await waitFor(() => expect(removerAusencia).toHaveBeenCalledWith('emp', 'a1'));
     await waitFor(() => expect(push).toHaveBeenCalledWith('/empresas/emp/escalas/ausencias'));
+  });
+  it('quem não gere vê a observação como texto, sem formulário nem remoção', () => {
+    render(<TelaAusencia empresaId="emp" ausencia={a} podeGerir={false} />);
+    expect(screen.getByText('Férias de fim de ano')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Salvar lançamento' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Remover lançamento' })).toBeNull();
   });
   it('um dia só usa o singular; sem observação não mostra o cartão; quem não gere não remove', () => {
     render(<TelaAusencia empresaId="emp" ausencia={{ ...a, fim: '2026-12-01', observacao: null, tipo: 'afastamento', situacao: 'encerrada' }} podeGerir={false} />);
