@@ -174,7 +174,7 @@ describe('desempenho', () => {
     const equipe = Array.from({ length: 200 }, (_, i) => colab({ colaboradorId: `c${i}`, setor: `S${i % 8}`, turno: i % 2 ? 'Manhã' : 'Noite' }));
     const t = performance.now();
     const d = diagnosticar(equipe, HOJE, R);
-    expect(performance.now() - t).toBeLessThan(2000);
+    expect(performance.now() - t).toBeLessThan(10_000);   // ~0,003 s local; limite folgado de propósito: o runner do CI chega a ser 10× mais lento que a máquina local; o teste existe para pegar lentidão de ordem de grandeza
     expect(d.resumo.total).toBe(200);
   });
 });

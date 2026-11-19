@@ -3,6 +3,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['test/**/*.test.ts'],
+    testTimeout: 30_000,   // o runner do CI é bem mais lento que a máquina local
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],

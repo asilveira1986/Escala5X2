@@ -141,7 +141,7 @@ describe('validação linha a linha', () => {
     const t = performance.now();
     const r = validarColaboradores(linhas, m);
     expect(r.validas).toHaveLength(5000);
-    expect(performance.now() - t).toBeLessThan(2000);
+    expect(performance.now() - t).toBeLessThan(10_000);   // ~0,05 s local; limite folgado de propósito: o runner do CI chega a ser 10× mais lento que a máquina local; o teste existe para pegar lentidão de ordem de grandeza
   });
 });
 

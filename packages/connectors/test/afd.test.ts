@@ -122,7 +122,7 @@ describe('fuso de São Paulo e codificação', () => {
     const linhas = Array.from({ length: 100_000 }, (_, i) => m1510(i + 1, '01', '02', '2027', pad(8 + (i % 10), 2), pad(i % 60, 2)));
     const t0 = performance.now();
     const r = lerAfd(arq(cab1510(), ...linhas), { agora: AGORA });
-    expect(performance.now() - t0).toBeLessThan(3000);
+    expect(performance.now() - t0).toBeLessThan(15_000);   // ~0,4 s local; limite folgado de propósito: o runner do CI chega a ser 10× mais lento que a máquina local; o teste existe para pegar lentidão de ordem de grandeza
     expect(r.resumo.marcacoes + r.resumo.duplicadasNoArquivo).toBe(100_000);
   });
 });
