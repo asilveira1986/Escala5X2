@@ -59,3 +59,7 @@ Telas com muito conteúdo foram divididas em **abas por endereço** (`?aba=`, co
 - **Ponto:** Escala × ponto · Importar e arquivos (com a contagem de identificadores sem colaborador).
 - **Folha:** Prévia do mês · Fechamento e versões.
 - **Plano e cobrança:** Assinatura e planos · Faturas (com as pendentes/vencidas).
+
+## Listas com detalhe em painel lateral
+
+Listas de pessoas mostram só o essencial e abrem o resto num **painel lateral** (`Gaveta`) ao clicar na linha: fecha com Esc, com o botão ou clicando fora, e devolve o foco à linha. Em **Colaboradores** a lista traz Nome, Setor e Status (situação do acesso ao app); o painel traz cargo, escala, jornada, turno, matrícula, salário, valor/hora, divisor, alta renda, a gestão do acesso (convidar, reenviar, remover) e o botão "Editar cadastro". A busca continua achando por cargo, escala e matrícula, mesmo ocultos (`colunasOcultas` e `aoClicarLinha` em `TabelaDados`).

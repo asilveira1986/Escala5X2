@@ -5,8 +5,12 @@ import { useState } from 'react';
 import { Botao, classeCampo } from './ui';
 
 /** Tabela com busca, ordenação e paginação (TanStack Table), acessível por teclado. */
-export function TabelaDados<T>({ colunas, dados, rotuloBusca = 'Buscar', tamanhoPagina = 25, vazio = 'Nenhum registro.' }: {
+export function TabelaDados<T>({ colunas, dados, rotuloBusca = 'Buscar', tamanhoPagina = 25, vazio = 'Nenhum registro.', colunasOcultas = [], aoClicarLinha }: {
   colunas: ColumnDef<T, unknown>[]; dados: T[]; rotuloBusca?: string; tamanhoPagina?: number; vazio?: string;
+  /** Ids de colunas que não aparecem, mas continuam valendo na busca (ex.: buscar pelo cargo sem mostrá-lo). */
+  colunasOcultas?: string[];
+  /** Torna a linha clicável (o conteúdo da linha deve ter um botão para quem usa teclado). */
+  aoClicarLinha?: (linha: T) => void;
 }) {
   const [ordem, setOrdem] = useState<SortingState>([]);
   const [filtro, setFiltro] = useState('');
@@ -14,7 +18,7 @@ export function TabelaDados<T>({ colunas, dados, rotuloBusca = 'Buscar', tamanho
     data: dados, columns: colunas, state: { sorting: ordem, globalFilter: filtro },
     onSortingChange: setOrdem, onGlobalFilterChange: setFiltro,
     getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getFilteredRowModel: getFilteredRowModel(), getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: tamanhoPagina } },
+    initialState: { pagination: { pageSize: tamanhoPagina }, columnVisibility: Object.fromEntries(colunasOcultas.map((id) => [id, false])) },
   });
   const total = tabela.getFilteredRowModel().rows.length;
   return (
@@ -43,7 +47,7 @@ export function TabelaDados<T>({ colunas, dados, rotuloBusca = 'Buscar', tamanho
           </thead>
           <tbody>
             {tabela.getRowModel().rows.map((r) => (
-              <tr key={r.id} className="border-b border-linha">
+              <tr key={r.id} className={`border-b border-linha ${aoClicarLinha ? 'cursor-pointer hover:bg-marca-suave' : ''}`} onClick={aoClicarLinha ? () => aoClicarLinha(r.original) : undefined}>
                 {r.getVisibleCells().map((c) => <td key={c.id} className="py-1.5 pr-3 align-top">{flexRender(c.column.columnDef.cell, c.getContext())}</td>)}
               </tr>
             ))}
