@@ -1,14 +1,17 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SolicitacaoLinha } from '@jc/servicos';
 
+const push = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 const criarPedido = vi.fn(); const responderPedido = vi.fn(); const cancelarPedido = vi.fn(); const aprovarPedido = vi.fn(); const recusarPedido = vi.fn();
 vi.mock('../app/(app)/minha-escala/pedidos/actions', () => ({ criarPedido, responderPedido, cancelarPedido }));
 vi.mock('../app/(app)/empresas/[id]/solicitacoes/actions', () => ({ aprovarPedido, recusarPedido }));
 const { FormPedido } = await import('../app/(app)/minha-escala/pedidos/FormPedido');
 const { ListaPedidos } = await import('../app/(app)/minha-escala/pedidos/ListaPedidos');
-const { CartaoDecisao } = await import('../app/(app)/empresas/[id]/solicitacoes/CartaoDecisao');
+const { TelaPedido } = await import('../app/(app)/empresas/[id]/solicitacoes/TelaPedido');
+const { TabelaPedidos } = await import('../app/(app)/empresas/[id]/solicitacoes/TabelaPedidos');
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 const sol = (extra: Partial<SolicitacaoLinha> = {}): SolicitacaoLinha => ({
@@ -90,11 +93,19 @@ describe('ListaPedidos', () => {
   });
 });
 
-describe('CartaoDecisao (RH)', () => {
+describe('tela do pedido (RH)', () => {
   const prev = (extra = {}) => ({ resumo: 'x', bloqueios: 0, alertas: 0, problemas: [], conflitos: [], ...extra });
+  it('cabeçalho e resumo mostram quem pediu, o tipo, a data e o colega', () => {
+    render(<TelaPedido s={sol()} empresaId="emp" previsao={prev()} />);
+    expect(screen.getByRole('heading', { name: 'Ana' })).toBeTruthy();
+    expect(screen.getByText('Troca de turno com colega · pedido em 20/01/2027')).toBeTruthy();
+    expect(screen.getByText('Aguardando o RH')).toBeTruthy();
+    const resumo = screen.getByLabelText('Resumo do pedido');
+    expect(resumo.textContent).toContain('Bia');
+  });
   it('mostra a conferência das regras e aprova', async () => {
     aprovarPedido.mockResolvedValue({ ok: true, mensagem: 'Ana e Bia trocam de turno em 01/02/2027.' });
-    render(<ul><CartaoDecisao s={sol()} empresaId="emp" previsao={prev()} /></ul>);
+    render(<TelaPedido s={sol()} empresaId="emp" previsao={prev()} />);
     expect(screen.getByText('A mudança respeita as regras da escala.')).toBeTruthy();
     expect(screen.getByText('Motivo do colaborador: Consulta')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /^Aprovar:/ }));
@@ -103,7 +114,7 @@ describe('CartaoDecisao (RH)', () => {
   });
   it('violação da lei bloqueia a aprovação e mostra a mensagem; recusar continua possível', async () => {
     recusarPedido.mockResolvedValue({ ok: true, mensagem: 'Pedido recusado.' });
-    render(<ul><CartaoDecisao s={sol()} empresaId="emp" previsao={prev({ bloqueios: 1, problemas: [{ severidade: 'bloqueio', mensagem: 'Ana: só 9h entre os turnos.' }] })} /></ul>);
+    render(<TelaPedido s={sol()} empresaId="emp" previsao={prev({ bloqueios: 1, problemas: [{ severidade: 'bloqueio', mensagem: 'Ana: só 9h entre os turnos.' }] })} />);
     expect(screen.getByText(/Violaria a lei: Ana: só 9h entre os turnos\./)).toBeTruthy();
     expect((screen.getByRole('button', { name: /^Aprovar:/ }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: /^Recusar:/ }));
@@ -114,12 +125,39 @@ describe('CartaoDecisao (RH)', () => {
     await waitFor(() => expect(recusarPedido).toHaveBeenCalledWith('emp', 's1', 'Intervalo entre jornadas'));
     expect(await screen.findByText('Pedido recusado.')).toBeTruthy();
   });
-  it('férias com turnos em conflito avisa; pedido encerrado não tem botões', () => {
-    render(<ul><CartaoDecisao s={sol({ tipo: 'ferias', payload: { inicio: '2027-02-01', fim: '2027-02-05' }, destinatario_id: null })} empresaId="emp" previsao={prev({ conflitos: ['2027-02-01', '2027-02-02'] })} /></ul>);
+  it('férias mostram o período e avisam dos turnos em conflito; pedido encerrado não tem botões', () => {
+    render(<TelaPedido s={sol({ tipo: 'ferias', payload: { inicio: '2027-02-01', fim: '2027-02-05' }, destinatario_id: null, destinatario_nome: null })} empresaId="emp" previsao={prev({ conflitos: ['2027-02-01', '2027-02-02'] })} />);
+    expect(within(screen.getByLabelText('Resumo do pedido')).getByText('01/02/2027 a 05/02/2027')).toBeTruthy();
     expect(screen.getByText(/2 turno\(s\) já escalado\(s\)/)).toBeTruthy();
     cleanup();
-    render(<ul><CartaoDecisao s={sol({ status: 'aprovada', decisao_motivo: null })} empresaId="emp" previsao={null} /></ul>);
+    render(<TelaPedido s={sol({ status: 'aprovada', decisao_motivo: 'Combinado' })} empresaId="emp" previsao={null} />);
     expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.getByText('Resposta: Combinado')).toBeTruthy();
     expect(screen.getByText(/nova versão publicada/)).toBeTruthy();
+  });
+});
+
+describe('lista de pedidos (RH)', () => {
+  const dados = [
+    { id: 's1', pessoa: 'Ana', pedido: 'Troca de turno com colega', data: '20/01/2027', status: 'pendente' as const, descricao: 'Ana e Bia trocam de turno em 01/02/2027' },
+    { id: 's2', pessoa: 'Caio', pedido: 'Férias', data: '10/01/2027', status: 'aprovada' as const, descricao: 'Caio: férias de 01/03/2027 a 10/03/2027' },
+  ];
+  it('mostra pessoa, pedido, data e situação; a linha leva à tela do pedido', () => {
+    render(<TabelaPedidos dados={dados} empresaId="emp" vazio="Nada." />);
+    expect(screen.getAllByRole('columnheader').map((h) => h.textContent).filter(Boolean)).toEqual(['Pessoa', 'Pedido', 'Pedido em', 'Situação']);
+    expect(screen.getByText('Aguardando o RH')).toBeTruthy();
+    expect(screen.getByText('Aprovada')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Ana' }).getAttribute('href')).toBe('/empresas/emp/solicitacoes/s1');
+    fireEvent.click(screen.getByText('Férias'));
+    expect(push).toHaveBeenCalledWith('/empresas/emp/solicitacoes/s2');
+  });
+  it('a busca acha pela descrição (datas e colega), mesmo oculta; vazio mostra a orientação da aba', () => {
+    render(<TabelaPedidos dados={dados} empresaId="emp" vazio="Nenhum pedido encerrado ainda." />);
+    fireEvent.change(screen.getByLabelText('Buscar pedido'), { target: { value: '01/03/2027' } });
+    expect(screen.queryByText('Ana')).toBeNull();
+    expect(screen.getByText('Caio')).toBeTruthy();
+    cleanup();
+    render(<TabelaPedidos dados={[]} empresaId="emp" vazio="Nenhum pedido encerrado ainda." />);
+    expect(screen.getByText('Nenhum pedido encerrado ainda.')).toBeTruthy();
   });
 });

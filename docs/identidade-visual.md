@@ -72,7 +72,7 @@ A busca da lista continua achando por cargo, escala e matrícula, mesmo ocultos 
 
 ## Padrão: lista enxuta, tela do item
 
-Além de Colaboradores, o mesmo formato vale para **Escalas do mês, Turnos, Cobertura mínima e Férias e afastamentos**:
+Além de Colaboradores, o mesmo formato vale para **Escalas do mês, Turnos, Cobertura mínima, Férias e afastamentos e Pedidos**:
 
 - **Lista:** um cartão com a contagem no título, o botão de criar no canto ("Nova escala", "Novo turno", "Nova faixa", "Lançar ausência") e uma tabela só com o essencial (`TabelaLista`: a linha toda é clicável e o primeiro campo é um link de verdade). A busca fica no topo.
 - **Criar:** o botão abre uma tela própria (`/nova`, `/novo`), com o formulário num cartão. Ao salvar, volta para a lista.
@@ -80,3 +80,4 @@ Além de Colaboradores, o mesmo formato vale para **Escalas do mês, Turnos, Cob
 - Quem não gere a empresa vê as listas sem links, sem botão de criar e sem remoção.
 - Férias e afastamentos ganharam a coluna **Situação** (Agendada, Em andamento, Encerrada), calculada pelas datas (`lib/ausencias.ts`).
 - O editor de uma escala (`/escalas/[escalaId]`) continua sendo a tela do item de Escalas do mês.
+- **Pedidos:** as abas (Para decidir, Aguardando o colega, Encerradas) ficam no topo e a lista mostra Pessoa, Pedido, Pedido em e Situação, sem calcular nada pesado. A **conferência das regras da escala** só roda ao abrir o pedido, na tela dele: cabeçalho, resumo, "O pedido" (descrição, motivo e resposta) e "Decisão" (aprovar, ou recusar com motivo). A busca acha pelas datas e pelo colega, mesmo ocultos.
