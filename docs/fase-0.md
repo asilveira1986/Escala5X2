@@ -19,6 +19,6 @@
 1. Criar três projetos Supabase (dev, homolog, prod) em `sa-east-1`; habilitar MFA TOTP, provedor Google e link mágico; configurar URLs de redirect.
 2. Secrets no GitHub: `HOMOLOG_DATABASE_URL`, `PROD_DATABASE_URL`; criar environments `homologacao` e `producao` (revisores obrigatórios).
 3. Variáveis `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_APP_URL` no Railway (ver `docs/hospedagem-railway.md`).
-4. O CI usa `supabase db push`, que espera o layout `supabase/migrations` com nomes timestampados; hoje as migrations estão em `packages/db/migrations`. Ajustar no passo de deploy (ou adotar a CLI como runner) antes do primeiro merge.
+4. O CI usa `supabase db push`, que espera o layout `supabase/migrations` com nomes timestampados; hoje as migrations estão em `packages/db/migrations`. Ajustar no passo de deploy (ou adotar a CLI como runner) antes do primeiro merge. **Enquanto isso não for feito, os jobs de migrations do CI ficam desligados:** só rodam com a variável do repositório `MIGRACOES_AUTOMATICAS=true` (e com os secrets do item 2); sem ela são pulados e o `main` não fica vermelho. O banco é atualizado à mão, ver `docs/instalacao-do-zero.md`.
 5. Não testado: fluxo real de login/MFA contra o Supabase (só o build, tipos e a lógica de redirecionamento).
 6. `middleware.ts` consulta `membro` a cada requisição; avaliar cache/claim no JWT se pesar.

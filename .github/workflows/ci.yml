@@ -28,9 +28,12 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test   # inclui a suíte de RLS (@jc/db) contra o Postgres do serviço
 
+  # As migrations só rodam automaticamente com a variável do repositório MIGRACOES_AUTOMATICAS=true
+  # (Settings → Secrets and variables → Actions → Variables) e depois de existirem os secrets
+  # HOMOLOG_DATABASE_URL / PROD_DATABASE_URL. Hoje o banco é atualizado à mão (docs/instalacao-do-zero.md).
   migrations-homologacao:
     needs: verificar
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: vars.MIGRACOES_AUTOMATICAS == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: homologacao
     steps:
@@ -41,6 +44,7 @@ jobs:
 
   migrations-producao:
     needs: migrations-homologacao
+    if: vars.MIGRACOES_AUTOMATICAS == 'true'
     runs-on: ubuntu-latest
     environment: producao   # configure "required reviewers" para aprovação manual
     steps:
