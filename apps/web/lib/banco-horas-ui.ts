@@ -43,3 +43,18 @@ export function descreverLancamento(l: Lancamento): string {
   const base = `${ROTULO_ORIGEM[l.origem]} de ${horasTexto(Math.abs(l.minutos))}`;
   return l.vence_em && l.minutos > 0 ? `${base} (vence em ${dataBr(l.vence_em as DataISO)})` : base;
 }
+
+export type SituacaoBanco = 'vencido' | 'negativo' | 'a_vencer' | 'em_dia' | 'sem_lancamento';
+export const ROTULO_SITUACAO_BANCO: Record<SituacaoBanco, string> = {
+  vencido: 'Vencido a pagar', negativo: 'Saldo negativo', a_vencer: 'Vence em breve', em_dia: 'Em dia', sem_lancamento: 'Sem lançamentos',
+};
+export const TOM_SITUACAO_BANCO: Record<SituacaoBanco, 'vermelho' | 'amarelo' | 'verde' | 'cinza'> = {
+  vencido: 'vermelho', negativo: 'vermelho', a_vencer: 'amarelo', em_dia: 'verde', sem_lancamento: 'cinza',
+};
+/** Situação do banco de uma pessoa, do mais urgente para o menos: vencido a pagar, saldo negativo, vence em breve, em dia. `null` = nunca teve lançamento. */
+export function situacaoBanco(s: { saldoMin: number; aVencerMin: number; vencidoMin: number } | null): SituacaoBanco {
+  if (!s) return 'sem_lancamento';
+  if (s.vencidoMin > 0) return 'vencido';
+  if (s.saldoMin < 0) return 'negativo';
+  return s.aVencerMin > 0 ? 'a_vencer' : 'em_dia';
+}

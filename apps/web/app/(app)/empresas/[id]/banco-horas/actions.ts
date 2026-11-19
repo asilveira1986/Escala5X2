@@ -25,7 +25,7 @@ export async function lancar(entrada: NovoLancamento): Promise<Resultado> {
   const { supabase } = await exigirUsuario();
   const { error } = await supabase.rpc('lancar_banco_horas', { p_colaborador: d.colaboradorId, p_data: d.data, p_minutos: d.sinal * min, p_origem: d.tipo, p_descricao: d.descricao || null });
   if (error) return { ok: false, erro: traduzir(error.message) };
-  revalidatePath(`/empresas/${d.empresaId}/banco-horas`);
+  revalidatePath(`/empresas/${d.empresaId}/banco-horas`, 'layout');   // lista e telas das pessoas
   return { ok: true, mensagem: 'Lançamento registrado.' };
 }
 
@@ -37,6 +37,6 @@ export async function estornar(empresaId: string, id: number, motivo: string): P
   const { supabase } = await exigirUsuario();
   const { error } = await supabase.rpc('estornar_banco_horas', { p_id: id, p_motivo: m.data });
   if (error) return { ok: false, erro: traduzir(error.message) };
-  revalidatePath(`/empresas/${e.data}/banco-horas`);
+  revalidatePath(`/empresas/${e.data}/banco-horas`, 'layout');
   return { ok: true, mensagem: 'Lançamento estornado.' };
 }

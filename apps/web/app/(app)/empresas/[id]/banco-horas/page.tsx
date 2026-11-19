@@ -1,11 +1,10 @@
-import Link from 'next/link';
-import { EstadoVazio } from '@/components/EstadoVazio';
-import { Cartao } from '@/components/ui';
-import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
+import { Aviso, Cartao } from '@/components/ui';
+import { exigirUsuario, idOu404 } from '@/lib/contexto';
 import { todasAsLinhas } from '@/lib/paginar';
-import { horasTexto, saldoTexto } from '@/lib/banco-horas-ui';
+import { horasTexto, situacaoBanco } from '@/lib/banco-horas-ui';
 import { calcularSaldo, lerEntradaDiagnostico, valorEstimadoVencido, type Lancamento } from '@jc/servicos';
 import { dataDeInstante, divisorEfetivo, resolverRegras, valorHoraCentavos } from '@jc/rules-engine';
+import { TabelaBancoHoras, type LinhaBanco } from './TabelaBancoHoras';
 
 const moeda = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -34,47 +33,27 @@ export default async function BancoHoras({ params }: { params: Promise<{ id: str
     }
   } catch { /* sem contratos: sem estimativa */ }
 
-  const linhasTabela = colaboradores.filter((c) => porPessoa.has(c.id)).map((c) => {
-    const s = calcularSaldo(porPessoa.get(c.id)!, hoje);
-    const vh = valorHora.get(c.id);
-    return { c, s, valor: vh && s.vencidoMin > 0 ? valorEstimadoVencido(s.vencidoMin, vh.hora, vh.adicional) : 0 };
-  }).sort((a, b) => b.s.vencidoMin - a.s.vencidoMin || b.s.aVencerMin - a.s.aVencerMin || a.c.nome.localeCompare(b.c.nome, 'pt-BR'));
-  const semLancamento = colaboradores.filter((c) => !porPessoa.has(c.id) && !c.desligamento);
-  const totalVencido = linhasTabela.reduce((s, x) => s + x.s.vencidoMin, 0);
-  const totalValor = linhasTabela.reduce((s, x) => s + x.valor, 0);
   const podeGerir = ger === true;
+  // quem já tem lançamentos aparece sempre; quem ainda não tem só para a gestão (para poder lançar a primeira hora)
+  const linhasTabela: Array<LinhaBanco & { vencidoMin: number; aVencerMin: number }> = colaboradores
+    .filter((c) => porPessoa.has(c.id) || (podeGerir && !c.desligamento))
+    .map((c) => {
+      const lanc = porPessoa.get(c.id);
+      if (!lanc) return { id: c.id, nome: c.nome, saldoMin: null, situacao: situacaoBanco(null), valorCentavos: 0, vencidoMin: 0, aVencerMin: 0 };
+      const s = calcularSaldo(lanc, hoje);
+      const vh = valorHora.get(c.id);
+      return { id: c.id, nome: c.nome, saldoMin: s.saldoMin, situacao: situacaoBanco(s), valorCentavos: vh && s.vencidoMin > 0 ? valorEstimadoVencido(s.vencidoMin, vh.hora, vh.adicional) : 0, vencidoMin: s.vencidoMin, aVencerMin: s.aVencerMin };
+    })
+    .sort((a, b) => b.vencidoMin - a.vencidoMin || b.aVencerMin - a.aVencerMin || a.nome.localeCompare(b.nome, 'pt-BR'));
+  const totalVencido = linhasTabela.reduce((s, x) => s + x.vencidoMin, 0);
+  const totalValor = linhasTabela.reduce((s, x) => s + x.valorCentavos, 0);
+  const dados: LinhaBanco[] = linhasTabela.map(({ vencidoMin: _v, aVencerMin: _a, ...l }) => l);
 
   return (
-    <>
-      <Cartao icone="banco" subtitulo="Saldo de cada colaborador, créditos que estão perto de vencer e horas vencidas a pagar como hora extra. Crédito só existe para quem tem acordo com banco de horas vigente.">
-        {totalVencido > 0 ? <p className="mb-3 rounded-2xl bg-risco-bg px-3.5 py-2 text-sm font-semibold text-risco-fg">{horasTexto(totalVencido)} vencidas a pagar na empresa{totalValor > 0 ? ` (≈ ${moeda(totalValor)} com adicional)` : ''}.</p> : null}
-        {linhasTabela.length === 0 ? <EstadoVazio titulo="Nenhum lançamento ainda">Abra um colaborador abaixo para lançar a primeira hora no banco.</EstadoVazio> : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="rotulo-col"><tr><th className="py-1.5 pr-3">Colaborador</th><th className="pr-3 text-right">Saldo</th><th className="pr-3 text-right">Vence em 30 dias</th><th className="pr-3 text-right">Vencido</th><th className="pr-3 text-right">A pagar (≈)</th><th /></tr></thead>
-              <tbody className="divide-y divide-linha">
-                {linhasTabela.map(({ c, s, valor }) => (
-                  <tr key={c.id}>
-                    <td className="py-1.5 pr-3 font-semibold">{c.nome}</td>
-                    <td className={`pr-3 text-right font-semibold ${s.saldoMin < 0 ? 'text-risco-fg' : ''}`}>{saldoTexto(s.saldoMin)}</td>
-                    <td className={`pr-3 text-right ${s.aVencerMin > 0 ? 'font-semibold text-atencao-fg' : ''}`}>{horasTexto(s.aVencerMin)}</td>
-                    <td className={`pr-3 text-right ${s.vencidoMin > 0 ? 'font-semibold text-risco-fg' : ''}`}>{horasTexto(s.vencidoMin)}</td>
-                    <td className="pr-3 text-right">{valor > 0 ? moeda(valor) : '—'}</td>
-                    <td className="text-right"><Link href={`/empresas/${empresaId}/banco-horas/${c.id}`} aria-label={`Abrir banco de horas de ${c.nome}`} className="font-semibold text-marca hover:underline">Abrir</Link></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Cartao>
-      {podeGerir && semLancamento.length > 0 ? (
-        <Cartao icone="pessoas" titulo="Outros colaboradores" subtitulo="Ainda sem lançamentos no banco de horas.">
-          <ul className="flex flex-wrap gap-2">
-            {semLancamento.map((c) => <li key={c.id}><Link href={`/empresas/${empresaId}/banco-horas/${c.id}`} className="inline-flex min-h-9 items-center rounded-full border border-linha bg-cartao px-3 text-sm font-semibold hover:bg-marca-suave">{c.nome}</Link></li>)}
-          </ul>
-        </Cartao>
-      ) : null}
-    </>
+    <Cartao icone="banco" titulo={`${dados.length} ${dados.length === 1 ? 'pessoa' : 'pessoas'}`}
+      subtitulo="Saldo de cada colaborador, créditos perto de vencer e horas vencidas a pagar como hora extra. Crédito só existe para quem tem acordo com banco de horas vigente.">
+      {totalVencido > 0 ? <div className="mb-3"><Aviso tipo="erro">{horasTexto(totalVencido)} vencidas a pagar na empresa{totalValor > 0 ? ` (≈ ${moeda(totalValor)} com adicional)` : ''}.</Aviso></div> : null}
+      <TabelaBancoHoras dados={dados} empresaId={empresaId} />
+    </Cartao>
   );
 }

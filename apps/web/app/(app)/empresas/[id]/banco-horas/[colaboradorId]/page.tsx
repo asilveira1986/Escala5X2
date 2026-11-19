@@ -1,14 +1,11 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Cartao } from '@/components/ui';
+import { lerAba } from '@/lib/abas';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
 import { calcularSaldo, type Lancamento } from '@jc/servicos';
 import { dataDeInstante } from '@jc/rules-engine';
-import { Extrato } from '../Extrato';
-import { FormLancamento } from '../FormLancamento';
-import { ResumoSaldo } from '../Resumo';
+import { abasBanco, TelaBancoHoras } from './TelaBancoHoras';
 
-export default async function BancoHorasColaborador({ params }: { params: Promise<{ id: string; colaboradorId: string }> }) {
+export default async function BancoHorasColaborador({ params, searchParams }: { params: Promise<{ id: string; colaboradorId: string }>; searchParams: Promise<{ aba?: string }> }) {
   const p = await params;
   const empresaId = idOu404(p.id), colabId = idOu404(p.colaboradorId);
   const { supabase } = await exigirUsuario();
@@ -21,15 +18,7 @@ export default async function BancoHorasColaborador({ params }: { params: Promis
   const colab = c as { id: string; nome: string; empresa_id: string } | null;
   if (!colab || colab.empresa_id !== empresaId) notFound();
   const lancamentos = linhas<Lancamento>(lan);
-  const saldo = calcularSaldo(lancamentos, hoje);
   const podeGerir = ger === true;
-  return (
-    <>
-      <Link href={`/empresas/${empresaId}/banco-horas`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Banco de horas</Link>
-      <h2 className="text-xl font-bold">{colab.nome}</h2>
-      <Cartao icone="banco" titulo="Situação"><ResumoSaldo saldo={saldo} /></Cartao>
-      {podeGerir ? <Cartao icone="mais" titulo="Novo lançamento" subtitulo="O livro é imutável: se errar, estorne o lançamento (fica registrado quem, quando e por quê)."><FormLancamento empresaId={empresaId} colaboradorId={colabId} hoje={hoje} vencidoMin={saldo.vencidoMin} /></Cartao> : null}
-      <Cartao icone="folha" titulo="Extrato">{lancamentos.length === 0 ? <p className="text-sm text-suave">Nenhum lançamento.</p> : <Extrato lancamentos={lancamentos} empresaId={podeGerir ? empresaId : undefined} />}</Cartao>
-    </>
-  );
+  const aba = lerAba((await searchParams).aba, abasBanco(podeGerir, 0));
+  return <TelaBancoHoras empresaId={empresaId} colaborador={{ id: colab.id, nome: colab.nome }} saldo={calcularSaldo(lancamentos, hoje)} lancamentos={lancamentos} aba={aba} podeGerir={podeGerir} hoje={hoje} />;
 }
