@@ -1,13 +1,12 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { IconeBaixar } from '@/components/icones';
-import { Cartao, classeBotaoLink } from '@/components/ui';
+import { Cartao } from '@/components/ui';
 import { ComparacaoCenarios } from '@/components/ComparacaoCenarios';
 import { GraficoDeficit } from '@/components/GraficoDeficit';
 import { PainelDiagnostico } from '@/components/PainelDiagnostico';
 import { TabelaItens } from '@/components/TabelaItens';
 import { exigirUsuario, idOu404 } from '@/lib/contexto';
 import { carregarDiagnostico, ErroServico } from '@jc/servicos';
+import { CabecalhoDiagnostico } from './CabecalhoDiagnostico';
 import { Simulador } from './Simulador';
 import { Abas } from '@/components/Abas';
 import { lerAba } from '@/lib/abas';
@@ -31,13 +30,7 @@ export default async function DetalheDiagnostico({ params, searchParams }: { par
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href={`/empresas/${empresaId}/diagnostico`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Diagnósticos</Link>
-        <div className="flex flex-wrap gap-2">
-          <a className={classeBotaoLink} href={`${base}?formato=pdf`}><IconeBaixar width={18} height={18} />Baixar PDF</a>
-          <a className={classeBotaoLink} href={`${base}?formato=xlsx`}><IconeBaixar width={18} height={18} />Baixar planilha</a>
-        </div>
-      </div>
+      <CabecalhoDiagnostico diagnostico={d} criadoEm={salvo.criadoEm} baixarEm={base} />
       <Abas abas={ABAS.map((x) => (x.id === 'cenarios' ? { ...x, contagem: cenarios.length } : x))} atual={aba} base={`/empresas/${empresaId}/diagnostico/${diagId}`} />
       {aba === 'resumo' ? (
         <>

@@ -8,7 +8,7 @@ export default async function PaginaVisaoGeral({ params }: { params: Promise<{ i
   const { supabase } = await exigirUsuario();
   const cont = (q: PromiseLike<{ count: number | null }>) => q.then((r) => r.count ?? 0);
   const [{ data }, colab, turnos, publicadas, rascunhos, pendentes] = await Promise.all([
-    supabase.from('empresa').select('id, razao_social, cnpj, status_adequacao').eq('id', empresaId).maybeSingle(),
+    supabase.from('empresa').select('id, razao_social, cnpj, porte, uf, status_adequacao').eq('id', empresaId).maybeSingle(),
     cont(supabase.from('colaborador').select('id', { count: 'exact', head: true }).eq('empresa_id', empresaId).is('desligamento', null)),
     cont(supabase.from('turno_modelo').select('id', { count: 'exact', head: true }).eq('empresa_id', empresaId).eq('ativo', true)),
     cont(supabase.from('escala').select('id', { count: 'exact', head: true }).eq('empresa_id', empresaId).eq('status', 'publicada')),

@@ -72,7 +72,7 @@ A busca da lista continua achando por cargo, escala e matrícula, mesmo ocultos 
 
 ## Padrão: lista enxuta, tela do item
 
-Além de Colaboradores, o mesmo formato vale para **Escalas do mês, Turnos, Cobertura mínima, Férias e afastamentos, Pedidos e Banco de horas**:
+Além de Colaboradores, o mesmo formato vale para **Escalas do mês, Turnos, Cobertura mínima, Férias e afastamentos, Pedidos, Banco de horas, Empresas e Diagnósticos**:
 
 - **Lista:** um cartão com a contagem no título, o botão de criar no canto ("Nova escala", "Novo turno", "Nova faixa", "Lançar ausência") e uma tabela só com o essencial (`TabelaLista`: a linha toda é clicável e o primeiro campo é um link de verdade). A busca fica no topo.
 - **Criar:** o botão abre uma tela própria (`/nova`, `/novo`), com o formulário num cartão. Ao salvar, volta para a lista.
@@ -82,3 +82,6 @@ Além de Colaboradores, o mesmo formato vale para **Escalas do mês, Turnos, Cob
 - O editor de uma escala (`/escalas/[escalaId]`) continua sendo a tela do item de Escalas do mês.
 - **Pedidos:** as abas (Para decidir, Aguardando o colega, Encerradas) ficam no topo e a lista mostra Pessoa, Pedido, Pedido em e Situação, sem calcular nada pesado. A **conferência das regras da escala** só roda ao abrir o pedido, na tela dele: cabeçalho, resumo, "O pedido" (descrição, motivo e resposta) e "Decisão" (aprovar, ou recusar com motivo). A busca acha pelas datas e pelo colega, mesmo ocultos.
 - **Banco de horas:** a lista mostra Pessoa, Saldo e Situação (Vencido a pagar, Saldo negativo, Vence em breve, Em dia, Sem lançamentos; `situacaoBanco` em `lib/banco-horas-ui.ts`), com a estimativa a pagar ao lado quando há horas vencidas e o total da empresa no aviso do topo. A gestão vê também quem ainda não tem lançamentos (some o cartão "Outros colaboradores"). A tela da pessoa tem o saldo no resumo e abas: *Extrato* (com estorno), *Vencimentos* (lotes por data, com a contagem) e *Novo lançamento* (só gestão). A tela do colaborador no app (`/minha-escala/banco-horas`) não mudou.
+- **Empresas:** a lista mostra Empresa, CNPJ e Situação da adequação (porte e UF ficam só na busca); clicar abre a **Visão geral** da empresa, cujo cabeçalho agora segue o formato dos itens (nome, CNPJ · porte · UF e a situação), com as quatro métricas e os "Primeiros passos" abaixo. O cartão em grade (`CartaoEmpresa`) saiu.
+- **Diagnósticos:** a lista mostra Referência, Pessoas e Situação (`situacaoDiagnostico`: "N a adequar", "Tudo adequado" ou "Sem resumo"; a data de geração fica na busca). "Novo diagnóstico" abre tela própria (`/diagnostico/novo`) e, ao rodar, vai direto para o resultado. O passo a passo no topo só aparece enquanto a jornada não está completa. No diagnóstico, o cabeçalho traz a referência, a geração, a situação e os downloads (PDF e planilha), e o resumo mostra Pessoas, A adequar, Horas a cobrir (fase 2) e Folha mensal; as abas Resumo, Cenários e Pessoas continuam.
+- Regra de código: funções usadas por componentes de servidor e de cliente (como as situações) ficam em `lib/`, nunca dentro de arquivos `'use client'`.

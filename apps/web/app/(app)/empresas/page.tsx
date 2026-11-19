@@ -1,10 +1,9 @@
-import { CartaoEmpresa } from '@/components/CartaoEmpresa';
-import { EstadoVazio } from '@/components/EstadoVazio';
 import Link from 'next/link';
 import { Cartao, classeBotaoLinkPrimario, Titulo } from '@/components/ui';
 import { exigirUsuario, linhas } from '@/lib/contexto';
 import type { EmpresaRow, OrganizacaoRow } from '@/lib/tipos-db';
 import { FormNovaOrganizacao } from './FormNovaOrganizacao';
+import { TabelaEmpresas } from './TabelaEmpresas';
 
 export default async function Empresas() {
   const { supabase, user } = await exigirUsuario();
@@ -30,13 +29,9 @@ export default async function Empresas() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <Titulo icone="empresas" descricao="Escolha uma empresa para abrir o sistema dela." acoes={organizacoes.length > 0 ? <Link href="/empresas/nova" className={classeBotaoLinkPrimario}>Nova empresa</Link> : null}>Suas empresas</Titulo>
       </div>
-      {empresas.length > 0 ? (
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {empresas.map((e) => <li key={e.id} className="contents"><CartaoEmpresa empresa={e} /></li>)}
-        </ul>
-      ) : (
-        <Cartao><EstadoVazio titulo="Vamos começar?">Use o botão Nova empresa. Em seguida você importa a planilha de colaboradores e recebe o diagnóstico em poucos minutos.</EstadoVazio></Cartao>
-      )}
+      <Cartao icone="empresas" titulo={`${empresas.length} ${empresas.length === 1 ? 'empresa' : 'empresas'}`}>
+        <TabelaEmpresas dados={empresas} />
+      </Cartao>
     </>
   );
 }
