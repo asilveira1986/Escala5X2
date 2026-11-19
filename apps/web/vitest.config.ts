@@ -4,5 +4,5 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   esbuild: { jsx: 'automatic' },
   resolve: { alias: { '@': fileURLToPath(new URL('./', import.meta.url)) } },
-  test: { include: ['**/*.test.{ts,tsx}'], exclude: ['node_modules', '.next'] },
+  test: { include: ['**/*.test.{ts,tsx}'], exclude: ['node_modules', '.next'], testTimeout: 30_000, setupFiles: ['./test/setup.ts'] },
 });

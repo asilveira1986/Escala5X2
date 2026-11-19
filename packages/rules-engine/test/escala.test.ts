@@ -249,7 +249,7 @@ describe('ordenação e desempenho', () => {
     expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
     expect(ranks[0]).toBe(0);
   });
-  it('um mês de 30 pessoas, com folgas alternadas, é válido e roda em menos de 500 ms', () => {
+  it('um mês de 30 pessoas, com folgas alternadas, é válido e roda rápido (limite de 5 s)', () => {
     const ctxs = Array.from({ length: 30 }, (_, i) => c5x2(`p${i}`));
     const alocacoes = ctxs.flatMap((c, i) => {
       const deslocamento = i % 3; // 0: seg–sex; 1: ter–sáb; 2: qua–dom
@@ -257,7 +257,7 @@ describe('ordenação e desempenho', () => {
     });
     const t = performance.now();
     const v = validarEscala({ periodo: { inicio: '2027-02-01', fim: '2027-02-28' }, alocacoes: alocacoes.filter((a) => a.data <= '2027-02-28') }, ctxs, R);
-    expect(performance.now() - t).toBeLessThan(500);
+    expect(performance.now() - t).toBeLessThan(5_000);   // ~0,01 s local; limite folgado de propósito: o runner do CI chega a ser 10× mais lento que a máquina local; o teste existe para pegar lentidão de ordem de grandeza
     expect(bloqueios(v)).toEqual([]);
   });
   it('mutação: acrescentar um dia de trabalho a qualquer pessoa de uma escala válida gera bloqueio de folgas', () => {
