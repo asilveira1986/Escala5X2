@@ -1,13 +1,10 @@
 import Link from 'next/link';
-import { EstadoVazio } from '@/components/EstadoVazio';
-import { Cartao, Selo } from '@/components/ui';
+import { Cartao, classeBotaoLinkPrimario } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
-import { dataBr, dataDeInstante } from '@jc/rules-engine';
-import { FormNovaEscala } from './FormNovaEscala';
+import { dataBr } from '@jc/rules-engine';
+import { TabelaEscalas, type LinhaEscala } from './TabelaEscalas';
 
-type EscalaLinha = { id: string; nome: string; periodo: string; status: 'rascunho' | 'publicada' | 'substituida'; versao: number; publicada_em: string | null };
-const tom = { rascunho: 'amarelo', publicada: 'verde', substituida: 'cinza' } as const;
-const rotulo = { rascunho: 'Rascunho', publicada: 'Publicada', substituida: 'Substituída' } as const;
+type EscalaBanco = { id: string; nome: string; periodo: string; status: LinhaEscala['status']; versao: number };
 
 /** "[2027-02-01,2027-03-01)" → "01/02/2027 a 28/02/2027" */
 function periodoLegivel(p: string): string {
@@ -20,34 +17,12 @@ function periodoLegivel(p: string): string {
 export default async function Escalas({ params }: { params: Promise<{ id: string }> }) {
   const empresaId = idOu404((await params).id);
   const { supabase } = await exigirUsuario();
-  const [esc, mod, set] = await Promise.all([
-    supabase.from('escala').select('id, nome, periodo, status, versao, publicada_em').eq('empresa_id', empresaId).order('periodo', { ascending: false }).order('versao', { ascending: false }).limit(50),
-    supabase.from('turno_modelo').select('id').eq('empresa_id', empresaId).eq('ativo', true).order('inicio_min'),
-    supabase.from('setor').select('id, nome, unidade!inner(empresa_id)').eq('unidade.empresa_id', empresaId).order('nome'),
-  ]);
-  const escalas = linhas<EscalaLinha>(esc.data), modelos = linhas<{ id: string }>(mod.data);
-  const setores = linhas<{ id: string; nome: string }>(set.data).map((s) => ({ id: s.id, nome: s.nome }));
-  const hoje = dataDeInstante(new Date());
+  const { data } = await supabase.from('escala').select('id, nome, periodo, status, versao').eq('empresa_id', empresaId).order('periodo', { ascending: false }).order('versao', { ascending: false }).limit(50);
+  const escalas: LinhaEscala[] = linhas<EscalaBanco>(data).map((e) => ({ ...e, periodo: periodoLegivel(e.periodo) }));
   return (
-    <>
-      <Cartao icone="mais" titulo="Nova escala" subtitulo="Monte o mês à mão: veja os avisos da lei na hora e publique quando estiver tudo certo.">
-        {modelos.length === 0 ? <p className="mb-3 rounded-2xl bg-atencao-bg px-3.5 py-2 text-sm font-medium text-atencao-fg">Cadastre pelo menos um turno para poder montar a escala. <Link href={`/empresas/${empresaId}/escalas/turnos`} className="underline">Ir para Turnos</Link></p> : null}
-        <FormNovaEscala empresaId={empresaId} mesPadrao={hoje.slice(0, 7)} setores={setores} />
-      </Cartao>
-      <Cartao icone="calendario">
-        {escalas.length === 0 ? <EstadoVazio titulo="Nenhuma escala ainda">Crie a primeira acima. Os turnos que você cadastrar ficam disponíveis para pintar na grade.</EstadoVazio> : (
-          <ul className="divide-y divide-linha">
-            {escalas.map((e) => (
-              <li key={e.id}>
-                <Link href={`/empresas/${empresaId}/escalas/${e.id}`} className="flex min-h-12 flex-wrap items-center justify-between gap-2 py-1.5 hover:text-marca">
-                  <span className="font-semibold">{e.nome} <span className="font-normal text-suave">· versão {e.versao}</span></span>
-                  <span className="flex items-center gap-3 text-sm text-suave">{periodoLegivel(e.periodo)}<Selo tom={tom[e.status]}>{rotulo[e.status]}</Selo></span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Cartao>
-    </>
+    <Cartao icone="calendario" titulo={`${escalas.length} ${escalas.length === 1 ? 'escala' : 'escalas'}`}
+      acoes={<Link href={`/empresas/${empresaId}/escalas/nova`} className={classeBotaoLinkPrimario}>Nova escala</Link>}>
+      <TabelaEscalas dados={escalas} empresaId={empresaId} />
+    </Cartao>
   );
 }

@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
 import { Abas } from '@/components/Abas';
+import { CabecalhoItem, ResumoItem } from '@/components/ItemTela';
 import { Aviso, Cartao, Selo } from '@/components/ui';
 import { minutosParaHoras, reaisParaTexto } from '@/lib/colaborador-form';
 import { horasMin, moeda, moedaHora } from '@jc/documents/formatar';
@@ -40,21 +40,15 @@ export function TelaColaborador({ empresaId, colaboradorId, colab, contratos, ab
   return (
     <>
       <Link href={`/empresas/${empresaId}/colaboradores`} className="text-sm font-semibold text-marca hover:underline">← Colaboradores</Link>
-      <header className="flex flex-wrap items-center gap-3">
-        <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-2xl bg-marca-suave text-lg font-bold text-marca">{iniciais(colab.nome)}</span>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-bold leading-tight tracking-tight">{colab.nome}</h1>
-          <p className="text-[13px] text-suave">{subtitulo ? `${subtitulo} · ` : ''}Admitido em {dataBr(colab.admissao)}</p>
-        </div>
-        {desligado ? <Selo tom="vermelho">Desligado</Selo> : <Selo tom="verde">Ativo</Selo>}
-      </header>
+      <CabecalhoItem iniciais={iniciais(colab.nome)} titulo={colab.nome} subtitulo={`${subtitulo ? `${subtitulo} · ` : ''}Admitido em ${dataBr(colab.admissao)}`}
+        selo={desligado ? <Selo tom="vermelho">Desligado</Selo> : <Selo tom="verde">Ativo</Selo>} />
       {atual ? (
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl border border-linha bg-cartao p-3.5 shadow-card sm:grid-cols-4 sm:p-4" aria-label="Resumo do contrato atual">
-          <Resumo rotulo="Escala">{atual.tipo_escala}{atual.turno ? ` · ${atual.turno}` : ''}</Resumo>
-          <Resumo rotulo="Jornada semanal"><span className="horario">{horasMin(atual.jornada_semanal_min)}</span></Resumo>
-          <Resumo rotulo="Salário"><span className="horario">{moeda(Math.round(Number(atual.salario_base) * 100))}</span></Resumo>
-          <Resumo rotulo="Valor/hora"><span className="horario">{moedaHora(Math.round((Number(atual.salario_base) / atual.divisor) * 100))}</span></Resumo>
-        </dl>
+        <ResumoItem rotulo="Resumo do contrato atual" itens={[
+          { rotulo: 'Escala', valor: `${atual.tipo_escala}${atual.turno ? ` · ${atual.turno}` : ''}` },
+          { rotulo: 'Jornada semanal', valor: <span className="horario">{horasMin(atual.jornada_semanal_min)}</span> },
+          { rotulo: 'Salário', valor: <span className="horario">{moeda(Math.round(Number(atual.salario_base) * 100))}</span> },
+          { rotulo: 'Valor/hora', valor: <span className="horario">{moedaHora(Math.round((Number(atual.salario_base) / atual.divisor) * 100))}</span> },
+        ]} />
       ) : null}
       <Abas abas={[...ABAS]} atual={aba} base={base} rotulo="Seções do colaborador" />
 
@@ -99,8 +93,4 @@ export function TelaColaborador({ empresaId, colaboradorId, colab, contratos, ab
       ) : null}
     </>
   );
-}
-
-function Resumo({ rotulo, children }: { rotulo: string; children: ReactNode }) {
-  return <div className="min-w-0"><dt className="rotulo-col">{rotulo}</dt><dd className="mt-0.5 truncate text-sm font-semibold">{children}</dd></div>;
 }

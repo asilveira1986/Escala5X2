@@ -69,3 +69,14 @@ A lista mostra só **Nome, Setor e Status** (situação do acesso ao app). Clica
 - **Abas por endereço** (`?aba=`, como nas outras telas): *Dados pessoais* (Identificação e Trabalho), *Contrato e escala* (mudança de contrato e histórico), *Acesso ao app* (convidar, reenviar, remover) e *Desligamento*. Cada aba mostra só o seu assunto.
 
 A busca da lista continua achando por cargo, escala e matrícula, mesmo ocultos (`colunasOcultas` e `aoClicarLinha` em `TabelaDados`). Quem não gere a empresa vê a lista sem links.
+
+## Padrão: lista enxuta, tela do item
+
+Além de Colaboradores, o mesmo formato vale para **Escalas do mês, Turnos, Cobertura mínima e Férias e afastamentos**:
+
+- **Lista:** um cartão com a contagem no título, o botão de criar no canto ("Nova escala", "Novo turno", "Nova faixa", "Lançar ausência") e uma tabela só com o essencial (`TabelaLista`: a linha toda é clicável e o primeiro campo é um link de verdade). A busca fica no topo.
+- **Criar:** o botão abre uma tela própria (`/nova`, `/novo`), com o formulário num cartão. Ao salvar, volta para a lista.
+- **Tela do item** (`CabecalhoItem` + `ResumoItem`): cabeçalho com ícone ou iniciais, título, uma linha de apoio e a situação; faixa de resumo com os números principais em fonte mono; depois os cartões do assunto (editar, observação) e, no fim, **Remover** em dois passos (`RemoverItem`), que volta para a lista.
+- Quem não gere a empresa vê as listas sem links, sem botão de criar e sem remoção.
+- Férias e afastamentos ganharam a coluna **Situação** (Agendada, Em andamento, Encerrada), calculada pelas datas (`lib/ausencias.ts`).
+- O editor de uma escala (`/escalas/[escalaId]`) continua sendo a tela do item de Escalas do mês.

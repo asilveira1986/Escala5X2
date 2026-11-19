@@ -1,10 +1,8 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
 import { IconeChevron } from '@/components/icones';
-import { TabelaDados } from '@/components/TabelaDados';
+import { CelulaLink, TabelaLista } from '@/components/TabelaLista';
 import { Selo } from '@/components/ui';
 import type { LinhaEquipe } from '@/lib/tipos-db';
 
@@ -18,13 +16,12 @@ const OCULTAS = ['cargo', 'tipo_escala', 'matricula'];
 
 /** Na lista só o essencial (nome, setor e status). Clicar na linha abre a tela do colaborador, com todos os dados e a edição. */
 export function TabelaColaboradores({ dados, empresaId, podeGerir }: { dados: LinhaEquipe[]; empresaId: string; podeGerir: boolean }) {
-  const router = useRouter();
   const href = (l: LinhaEquipe) => `/empresas/${empresaId}/colaboradores/${l.colaborador_id}`;
   const colunas: ColumnDef<LinhaEquipe, unknown>[] = [
     {
       accessorKey: 'nome', header: 'Nome',
       // o nome é um link de verdade (teclado, abrir em nova aba); o clique no resto da linha também leva à tela
-      cell: (c) => podeGerir ? <Link href={href(c.row.original)} className="font-semibold hover:text-marca hover:underline">{c.getValue() as string}</Link> : <span className="font-semibold">{c.getValue() as string}</span>,
+      cell: (c) => <CelulaLink href={podeGerir ? href(c.row.original) : undefined}>{c.getValue() as string}</CelulaLink>,
     },
     { accessorKey: 'setor_nome', header: 'Setor', cell: (c) => (c.getValue() as string | null) ?? '—' },
     { id: 'status', accessorFn: (r) => STATUS[r.acesso.estado].rotulo, header: 'Status', enableSorting: false, cell: (c) => <Selo tom={STATUS[c.row.original.acesso.estado].tom}>{c.getValue() as string}</Selo> },
@@ -35,7 +32,7 @@ export function TabelaColaboradores({ dados, empresaId, podeGerir }: { dados: Li
     { accessorKey: 'matricula', header: 'Matrícula' },
   ];
   return (
-    <TabelaDados colunas={colunas} dados={dados} colunasOcultas={OCULTAS} aoClicarLinha={podeGerir ? (l) => router.push(href(l)) : undefined}
+    <TabelaLista colunas={colunas} dados={dados} colunasOcultas={OCULTAS} href={podeGerir ? href : undefined}
       rotuloBusca="Buscar colaborador" vazio="Nenhum colaborador com contrato vigente. Importe uma planilha." />
   );
 }

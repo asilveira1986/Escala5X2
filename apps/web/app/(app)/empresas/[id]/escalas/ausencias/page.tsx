@@ -1,51 +1,36 @@
 import Link from 'next/link';
-import { EstadoVazio } from '@/components/EstadoVazio';
-import { Cartao, Selo } from '@/components/ui';
+import { Aviso, Cartao, classeBotaoLinkPrimario } from '@/components/ui';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
 import { todasAsLinhas } from '@/lib/paginar';
 import { lerDaterange } from '@/lib/cobertura';
-import { dataBr } from '@jc/rules-engine';
-import { BotaoRemover } from '../cobertura/BotaoRemover';
-import { removerAusencia } from './actions';
-import { FormAusencia } from './FormAusencia';
+import { situacaoAusencia } from '@/lib/ausencias';
+import { dataBr, dataDeInstante } from '@jc/rules-engine';
+import { TabelaAusencias, type LinhaAusencia } from './TabelaAusencias';
 
-type Linha = { id: string; colaborador_id: string; periodo: string; tipo: 'ferias' | 'afastamento'; observacao: string | null };
+type Banco = { id: string; colaborador_id: string; periodo: string; tipo: 'ferias' | 'afastamento' };
 
-export default async function Ausencias({ params }: { params: Promise<{ id: string }> }) {
+export default async function Ausencias({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ lancada?: string }> }) {
   const empresaId = idOu404((await params).id);
+  const lancada = (await searchParams).lancada === '1';
   const { supabase } = await exigirUsuario();
   const [aus, col, ger] = await Promise.all([
-    supabase.from('ausencia').select('id, colaborador_id, periodo, tipo, observacao').eq('empresa_id', empresaId).order('periodo', { ascending: false }).limit(300),
-    todasAsLinhas<{ id: string; nome: string; desligamento: string | null }>((a, b) => supabase.from('colaborador').select('id, nome, desligamento').eq('empresa_id', empresaId).order('nome').range(a, b)).then((r) => ({ data: r.linhas })),
+    supabase.from('ausencia').select('id, colaborador_id, periodo, tipo').eq('empresa_id', empresaId).order('periodo', { ascending: false }).limit(300),
+    todasAsLinhas<{ id: string; nome: string }>((a, b) => supabase.from('colaborador').select('id, nome').eq('empresa_id', empresaId).order('nome').range(a, b)).then((r) => r.linhas),
     supabase.rpc('pode_gerir_empresa', { p_empresa: empresaId }),
   ]);
-  const colaboradores = linhas<{ id: string; nome: string; desligamento: string | null }>(col.data);
-  const nome = new Map(colaboradores.map((c) => [c.id, c.nome]));
-  const lista = linhas<Linha>(aus.data).flatMap((a) => { const p = lerDaterange(a.periodo); return p ? [{ ...a, ...p }] : []; })
-    .sort((a, b) => b.inicio.localeCompare(a.inicio));
+  const nome = new Map(col.map((c) => [c.id, c.nome]));
+  const hoje = dataDeInstante(new Date());
+  const dados: LinhaAusencia[] = linhas<Banco>(aus.data).flatMap((a) => {
+    const p = lerDaterange(a.periodo);
+    return p ? [{ id: a.id, pessoa: nome.get(a.colaborador_id) ?? 'Colaborador', tipo: a.tipo, periodo: `${dataBr(p.inicio)} a ${dataBr(p.fim)}`, situacao: situacaoAusencia(p.inicio, p.fim, hoje), inicio: p.inicio }] : [];
+  }).sort((a, b) => b.inicio.localeCompare(a.inicio)).map(({ inicio: _, ...l }) => l);
   const podeGerir = ger.data === true;
   return (
-    <>
-      <Cartao icone="ferias" subtitulo="Quem está ausente não pode ser escalado: o editor bloqueia a publicação se houver trabalho nesses dias.">
-        {podeGerir ? <FormAusencia empresaId={empresaId} colaboradores={colaboradores.filter((c) => !c.desligamento).map((c) => ({ id: c.id, nome: c.nome }))} /> : <p className="text-sm text-suave">Só quem gere a empresa pode lançar ausências.</p>}
-      </Cartao>
-      <Cartao icone="ferias" titulo="Lançamentos">
-        {lista.length === 0 ? <EstadoVazio titulo="Nenhuma ausência lançada">Lance as férias programadas para o editor evitar escalar quem está fora.</EstadoVazio> : (
-          <ul className="divide-y divide-linha">
-            {lista.map((a) => (
-              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
-                <span className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="font-semibold">{nome.get(a.colaborador_id) ?? 'Colaborador'}</span>
-                  <Selo tom={a.tipo === 'ferias' ? 'azul' : 'amarelo'}>{a.tipo === 'ferias' ? 'Férias' : 'Afastamento'}</Selo>
-                  <span>{dataBr(a.inicio)} a {dataBr(a.fim)}</span>
-                  {a.observacao ? <span className="text-suave">· {a.observacao}</span> : null}
-                </span>
-                {podeGerir ? <BotaoRemover rotulo={`Remover ausência de ${nome.get(a.colaborador_id) ?? 'colaborador'}`} confirmacao="Remover este lançamento?" acao={removerAusencia.bind(null, empresaId, a.id)} /> : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Cartao>
-    </>
+    <Cartao icone="ferias" titulo={`${dados.length} ${dados.length === 1 ? 'lançamento' : 'lançamentos'}`}
+      subtitulo="Quem está ausente não pode ser escalado: o editor bloqueia a publicação se houver trabalho nesses dias."
+      acoes={podeGerir ? <Link href={`/empresas/${empresaId}/escalas/ausencias/nova`} className={classeBotaoLinkPrimario}>Lançar ausência</Link> : undefined}>
+      {lancada ? <div className="mb-3"><Aviso tipo="ok">Ausência lançada. As escalas em rascunho passam a bloquear trabalho nesse período.</Aviso></div> : null}
+      <TabelaAusencias dados={dados} empresaId={empresaId} podeGerir={podeGerir} />
+    </Cartao>
   );
 }

@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { exigirUsuario } from '@/lib/contexto';
 import { lerQuantidades, montarFaixa } from '@/lib/cobertura';
@@ -26,7 +27,7 @@ export async function adicionarDemanda(_: EstadoForm, form: FormData): Promise<E
   })));
   if (error) return { erro: traduzir(error.message) };
   revalidatePath(`/empresas/${empresaId.data}/escalas/cobertura`);
-  return { ok: `${dias.length === 1 ? 'Faixa adicionada' : `${dias.length} faixas adicionadas`}.` };
+  redirect(`/empresas/${empresaId.data}/escalas/cobertura`);
 }
 
 export async function removerDemanda(empresaId: string, demandaId: string): Promise<EstadoForm> {
@@ -36,5 +37,6 @@ export async function removerDemanda(empresaId: string, demandaId: string): Prom
   const { error, count } = await supabase.from('demanda_cobertura').delete({ count: 'exact' }).eq('id', d.data).eq('empresa_id', e.data);
   if (error || !count) return { erro: error ? traduzir(error.message) : 'Você não tem permissão para remover esta faixa.' };
   revalidatePath(`/empresas/${e.data}/escalas/cobertura`);
+  revalidatePath(`/empresas/${e.data}/escalas/cobertura/${d.data}`);
   return { ok: 'Faixa removida.' };
 }

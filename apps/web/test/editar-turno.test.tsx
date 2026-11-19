@@ -3,9 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const E = '11111111-1111-4111-8111-111111111111', T = '22222222-2222-4222-8222-222222222222';
-const atualizar = vi.fn(), resultado = vi.fn();
+const atualizar = vi.fn(), resultado = vi.fn(), push = vi.fn();
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
-vi.mock('next/navigation', () => ({ redirect: vi.fn() }));
 vi.mock('@jc/jobs', () => ({ enfileirarOtimizacaoAvulsa: vi.fn() }));
 vi.mock('@/lib/supabase/servidor-restrito', () => ({ supabaseServidorRestrito: () => null }));
 vi.mock('@/lib/contexto', () => ({
@@ -14,7 +13,7 @@ vi.mock('@/lib/contexto', () => ({
 
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const dados = { empresaId: E, modeloId: T, nome: ' Manhã ', inicio: '07:00', fim: '16:00', intervalo: '60' };
-beforeEach(() => { atualizar.mockReset(); resultado.mockReset().mockReturnValue({ data: [{ id: T }], error: null }); });
+beforeEach(() => { push.mockReset(); atualizar.mockReset(); resultado.mockReset().mockReturnValue({ data: [{ id: T }], error: null }); });
 afterEach(cleanup);
 
 describe('editarModelo / arquivarModelo (ações)', () => {
@@ -49,45 +48,57 @@ describe('editarModelo / arquivarModelo (ações)', () => {
   });
 });
 
-describe('ListaTurnos', () => {
-  const montar = async () => {
-    const { ListaTurnos } = await import('@/app/(app)/empresas/[id]/escalas/turnos/ListaTurnos');
-    return render(<ListaTurnos empresaId={E} turnos={[{ id: T, nome: 'Manhã', inicio_min: 480, fim_min: 1020, intervalo_min: 60 }, { id: '33333333-3333-4333-8333-333333333333', nome: 'Noite', inicio_min: 1320, fim_min: 1800, intervalo_min: 60 }]} />);
+const turno = { id: T, nome: 'Manhã', inicio_min: 480, fim_min: 1020, intervalo_min: 60 };
+vi.mock('next/navigation', () => ({ redirect: vi.fn(), useRouter: () => ({ push }) }));
+
+describe('tela do turno', () => {
+  const montar = async (t = turno) => {
+    const { TelaTurno } = await import('@/app/(app)/empresas/[id]/escalas/turnos/[turnoId]/TelaTurno');
+    return render(<TelaTurno empresaId={E} turno={t} />);
   };
-  it('mostra os horários, abre o formulário com os valores atuais e salva', async () => {
+  it('cabeçalho e resumo mostram horário, intervalo e jornada líquida', async () => {
     await montar();
-    expect(screen.getByText('08:00–17:00')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Editar o turno Manhã' }));
+    expect(screen.getByRole('heading', { name: 'Manhã' })).toBeTruthy();
+    expect(screen.getByText('Turno de 08:00–17:00')).toBeTruthy();
+    const resumo = screen.getByLabelText('Resumo do turno');
+    expect(resumo.textContent).toContain('08:00');
+    expect(resumo.textContent).toContain('17:00');
+    expect(resumo.textContent).toContain('60 min');
+    expect(resumo.textContent).toContain('8h');
+  });
+  it('o formulário abre com os valores atuais e salva', async () => {
+    await montar();
     expect((screen.getByLabelText('Entrada') as HTMLInputElement).value).toBe('08:00');
     expect((screen.getByLabelText(/^Saída/) as HTMLInputElement).value).toBe('17:00');
     expect((screen.getByLabelText('Intervalo (min)') as HTMLInputElement).value).toBe('60');
-    expect(screen.getByText(/não muda/)).toBeTruthy();
+    expect(screen.getByText(/A mudança vale para as próximas/)).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Entrada'), { target: { value: '07:30' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar turno' }));
     await waitFor(() => expect(atualizar).toHaveBeenCalledWith(expect.objectContaining({ inicio_min: 450 })));
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull());      // fecha ao salvar
+    expect(await screen.findByText('Turno salvo.')).toBeTruthy();
   });
-  it('cancelar fecha sem salvar; o turno noturno mostra a saída do dia seguinte', async () => {
-    await montar();
-    expect(screen.getByText('22:00–06:00')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Editar o turno Noite' }));
+  it('turno noturno: saída do dia seguinte aparece como está', async () => {
+    await montar({ id: T, nome: 'Noite', inicio_min: 1320, fim_min: 1800, intervalo_min: 60 });
+    expect(screen.getByText('Turno de 22:00–06:00')).toBeTruthy();
     expect((screen.getByLabelText(/^Saída/) as HTMLInputElement).value).toBe('06:00');
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
-    expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull();
-    expect(atualizar).not.toHaveBeenCalled();
   });
-  it('remover pede confirmação antes de arquivar', async () => {
+  it('remover pede confirmação, arquiva e volta para a lista', async () => {
     await montar();
-    fireEvent.click(screen.getByRole('button', { name: 'Remover o turno Manhã' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remover turno' }));
     expect(atualizar).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar remoção' }));
     await waitFor(() => expect(atualizar).toHaveBeenCalledWith({ ativo: false }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith(`/empresas/${E}/escalas/turnos`));
   });
-  it('erro ao remover aparece na linha', async () => {
-    resultado.mockReturnValue({ data: null, error: { message: 'permission denied' } });
+  it('cancelar a remoção não arquiva; erro ao remover aparece na tela', async () => {
     await montar();
-    fireEvent.click(screen.getByRole('button', { name: 'Remover o turno Manhã' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remover turno' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(atualizar).not.toHaveBeenCalled();
+    resultado.mockReturnValue({ data: null, error: { message: 'permission denied' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Remover turno' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar remoção' }));
     expect(await screen.findByText(/permissão/)).toBeTruthy();
+    expect(push).not.toHaveBeenCalled();
   });
 });
