@@ -73,7 +73,7 @@ export default async function Carteira({ searchParams }: { searchParams: Promise
             const pend = pendencias(l);
             return (
               <li key={l.empresa_id}>
-                <section className="flex h-full flex-col gap-3 rounded-3xl border border-linha bg-cartao p-4 shadow-[0_2px_8px_rgba(16,32,30,0.05)]">
+                <section className="flex h-full flex-col gap-3 rounded-2xl border border-linha bg-cartao p-4 shadow-card">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h2 className="truncate text-base font-bold" title={l.razao_social}>{l.razao_social}</h2>

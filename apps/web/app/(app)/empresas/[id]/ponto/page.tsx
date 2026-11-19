@@ -93,7 +93,7 @@ export default async function Ponto({ params, searchParams }: { params: Promise<
           <Cartao icone="pessoas" titulo={`Resumo por colaborador · ${rotuloMes(mes)}`}>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="py-1.5 pr-3">Colaborador</th><th className="pr-3 text-right">Previsto</th><th className="pr-3 text-right">Apurado</th><th className="pr-3 text-right">Sem marcação</th><th className="pr-3 text-right">Atrasos</th><th className="pr-3 text-right">Além do turno</th><th className="pr-3 text-right">Dias a conferir</th></tr></thead>
+                <thead className="rotulo-col"><tr><th className="py-1.5 pr-3">Colaborador</th><th className="pr-3 text-right">Previsto</th><th className="pr-3 text-right">Apurado</th><th className="pr-3 text-right">Sem marcação</th><th className="pr-3 text-right">Atrasos</th><th className="pr-3 text-right">Além do turno</th><th className="pr-3 text-right">Dias a conferir</th></tr></thead>
                 <tbody className="divide-y divide-linha">
                   {resumo.map((r) => (
                     <tr key={r.colaboradorId}>

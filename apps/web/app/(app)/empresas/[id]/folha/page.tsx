@@ -103,7 +103,7 @@ export default async function Folha({ params, searchParams }: { params: Promise<
           <Cartao icone="folha" titulo={`Prévia: ${rotuloMes(mes)}`} subtitulo={`Calculada ${origem === 'ponto' ? 'pelo ponto apurado' : 'pela escala publicada'} e pelo banco de horas; é o que o fechamento guardaria agora.`}>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="py-1.5 pr-3">Colaborador</th><th className="pr-3">Matrícula</th><th className="pr-3 text-right">Trabalhadas</th><th className="pr-3 text-right">Extras</th><th className="pr-3 text-right">Noturno</th><th className="pr-3 text-right">Faltas</th>{origem === 'ponto' ? <th className="pr-3 text-right">Sem marcação</th> : null}<th className="pr-3 text-right">Férias/afast.</th><th className="pr-3 text-right">Banco</th></tr></thead>
+                <thead className="rotulo-col"><tr><th className="py-1.5 pr-3">Colaborador</th><th className="pr-3">Matrícula</th><th className="pr-3 text-right">Trabalhadas</th><th className="pr-3 text-right">Extras</th><th className="pr-3 text-right">Noturno</th><th className="pr-3 text-right">Faltas</th>{origem === 'ponto' ? <th className="pr-3 text-right">Sem marcação</th> : null}<th className="pr-3 text-right">Férias/afast.</th><th className="pr-3 text-right">Banco</th></tr></thead>
                 <tbody className="divide-y divide-linha">
                   {f.linhas.map((l) => (
                     <tr key={l.colaboradorId}>

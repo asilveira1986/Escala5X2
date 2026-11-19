@@ -73,7 +73,7 @@ export default async function HistoricoEscala({ params, searchParams }: { params
             </div>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[32rem] text-left text-sm" aria-label="Diferenças entre as versões">
-                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="pb-1.5 pr-3">Dia</th><th className="pb-1.5 pr-3">Colaborador</th><th className="pb-1.5 pr-3">Antes</th><th className="pb-1.5">Depois</th></tr></thead>
+                <thead className="rotulo-col"><tr><th className="pb-1.5 pr-3">Dia</th><th className="pb-1.5 pr-3">Colaborador</th><th className="pb-1.5 pr-3">Antes</th><th className="pb-1.5">Depois</th></tr></thead>
                 <tbody className="divide-y divide-linha">
                   {diff.mudancas.slice(0, MAX_LISTA).map((m) => (
                     <tr key={`${m.colaboradorId}${m.data}`}>

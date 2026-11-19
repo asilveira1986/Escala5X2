@@ -26,7 +26,7 @@ export function Extrato({ lancamentos, empresaId }: { lancamentos: Lancamento[];
       {msg ? <Aviso tipo={msg.tipo}>{msg.texto}</Aviso> : null}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="py-1.5 pr-3">Data</th><th className="pr-3">Tipo</th><th className="pr-3 text-right">Horas</th><th className="pr-3">Vence em</th><th className="pr-3">Descrição</th>{empresaId ? <th /> : null}</tr></thead>
+          <thead className="rotulo-col"><tr><th className="py-1.5 pr-3">Data</th><th className="pr-3">Tipo</th><th className="pr-3 text-right">Horas</th><th className="pr-3">Vence em</th><th className="pr-3">Descrição</th>{empresaId ? <th /> : null}</tr></thead>
           <tbody className="divide-y divide-linha">
             {ordenados.map((l) => (
               <tr key={l.id} className={ja.has(l.id) ? 'text-suave line-through decoration-suave/50' : ''}>

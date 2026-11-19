@@ -77,7 +77,7 @@ export default async function PaginaCobranca({ searchParams }: { searchParams: P
         {faturas.length === 0 ? <p className="text-sm text-suave">Nenhuma fatura ainda. Depois de assinar, a primeira aparece aqui.</p> : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="py-1.5 pr-3">Vencimento</th><th className="pr-3 text-right">Valor</th><th className="pr-3">Forma</th><th className="pr-3">Situação</th><th /></tr></thead>
+              <thead className="rotulo-col"><tr><th className="py-1.5 pr-3">Vencimento</th><th className="pr-3 text-right">Valor</th><th className="pr-3">Forma</th><th className="pr-3">Situação</th><th /></tr></thead>
               <tbody className="divide-y divide-linha">
                 {faturas.map((f) => (
                   <tr key={f.id}>

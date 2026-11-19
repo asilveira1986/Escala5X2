@@ -25,7 +25,7 @@ export function TabelaDados<T>({ colunas, dados, rotuloBusca = 'Buscar', tamanho
       </label>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="text-xs font-semibold uppercase tracking-wide text-suave">
+          <thead className="rotulo-col">
             {tabela.getHeaderGroups().map((g) => (
               <tr key={g.id}>
                 {g.headers.map((h) => {
@@ -33,7 +33,7 @@ export function TabelaDados<T>({ colunas, dados, rotuloBusca = 'Buscar', tamanho
                   return (
                     <th key={h.id} className="py-1.5 pr-3" aria-sort={s === 'asc' ? 'ascending' : s === 'desc' ? 'descending' : 'none'}>
                       {h.column.getCanSort()
-                        ? <button type="button" onClick={h.column.getToggleSortingHandler()} className="font-semibold uppercase hover:underline">{flexRender(h.column.columnDef.header, h.getContext())}{s === 'asc' ? ' ▲' : s === 'desc' ? ' ▼' : ''}</button>
+                        ? <button type="button" onClick={h.column.getToggleSortingHandler()} className="font-bold uppercase hover:underline">{flexRender(h.column.columnDef.header, h.getContext())}{s === 'asc' ? ' ▲' : s === 'desc' ? ' ▼' : ''}</button>
                         : flexRender(h.column.columnDef.header, h.getContext())}
                     </th>
                   );

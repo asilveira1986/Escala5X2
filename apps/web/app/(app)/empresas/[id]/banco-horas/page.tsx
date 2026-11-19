@@ -51,7 +51,7 @@ export default async function BancoHoras({ params }: { params: Promise<{ id: str
         {linhasTabela.length === 0 ? <EstadoVazio titulo="Nenhum lançamento ainda">Abra um colaborador abaixo para lançar a primeira hora no banco.</EstadoVazio> : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="py-1.5 pr-3">Colaborador</th><th className="pr-3 text-right">Saldo</th><th className="pr-3 text-right">Vence em 30 dias</th><th className="pr-3 text-right">Vencido</th><th className="pr-3 text-right">A pagar (≈)</th><th /></tr></thead>
+              <thead className="rotulo-col"><tr><th className="py-1.5 pr-3">Colaborador</th><th className="pr-3 text-right">Saldo</th><th className="pr-3 text-right">Vence em 30 dias</th><th className="pr-3 text-right">Vencido</th><th className="pr-3 text-right">A pagar (≈)</th><th /></tr></thead>
               <tbody className="divide-y divide-linha">
                 {linhasTabela.map(({ c, s, valor }) => (
                   <tr key={c.id}>

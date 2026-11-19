@@ -1,8 +1,8 @@
-import { tomDoIcone, type IconeId, type TomCor } from '@/lib/menu';
+import type { IconeId, TomCor } from '@/lib/menu';
 import { ICONES_MENU } from './menu-icones';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-const base = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3.5 py-1 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-8';
+const base = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-[10px] px-3.5 py-1 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-8';
 
 export function Botao({ variante = 'primario', className = '', ...p }: ButtonHTMLAttributes<HTMLButtonElement> & { variante?: 'primario' | 'secundario' | 'perigo' }) {
   const cores = {
@@ -17,7 +17,7 @@ export function Botao({ variante = 'primario', className = '', ...p }: ButtonHTM
 export const classeBotaoLink = `${base} border border-linha bg-cartao text-tinta hover:bg-marca-suave`;
 export const classeBotaoLinkPrimario = `${base} bg-marca text-sobre-marca hover:bg-marca-escuro`;
 
-export const classeCampo = 'mt-1 block min-h-11 w-full rounded-lg border border-linha bg-cartao px-2.5 py-1 text-[13px] sm:min-h-8 text-tinta placeholder:text-suave';
+export const classeCampo = 'mt-1 block min-h-11 w-full rounded-[10px] border border-linha bg-cartao px-2.5 py-1 text-[13px] sm:min-h-8 text-tinta placeholder:text-suave';
 
 export function Campo({ rotulo, children, dica }: { rotulo: string; children: ReactNode; dica?: string }) {
   return (
@@ -41,12 +41,12 @@ const COR_BARRA: Record<TomIcone, string> = { marca: 'bg-marca', azul: 'bg-azul-
 export function IconeCaixa({ icone, tom, tamanho = 'md' }: { icone: IconeId; tom?: TomIcone; tamanho?: 'sm' | 'md' | 'lg' }) {
   const I = ICONES_MENU[icone];
   const dim = { sm: 'size-7 rounded-lg', md: 'size-8 rounded-xl', lg: 'size-9 rounded-xl' }[tamanho];
-  return <span aria-hidden className={`grid shrink-0 place-items-center ${dim} ${COR_TOM[tom ?? tomDoIcone(icone)]}`}><I width={tamanho === 'sm' ? 16 : 18} height={tamanho === 'sm' ? 16 : 18} /></span>;
+  return <span aria-hidden className={`grid shrink-0 place-items-center ${dim} ${COR_TOM[tom ?? 'marca']}`}><I width={tamanho === 'sm' ? 16 : 18} height={tamanho === 'sm' ? 16 : 18} /></span>;
 }
 
 export function Cartao({ titulo, subtitulo, icone, acoes, children, className = '' }: { titulo?: string; subtitulo?: string; icone?: IconeId; acoes?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-2xl border border-linha bg-cartao p-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-4 ${className}`}>
+    <section className={`rounded-2xl border border-linha bg-cartao p-3.5 shadow-card sm:p-4 ${className}`}>
       {titulo || subtitulo || acoes ? (
         <header className="mb-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-1.5">
           <div className="flex min-w-0 items-start gap-2.5">
@@ -83,20 +83,20 @@ export function CabecalhoPagina({ titulo, descricao, icone, acoes, children }: {
 
 /** Número em destaque com ícone, para resumos. Vira link quando recebe `href`. */
 export function Metrica({ icone, rotulo, valor, texto, tom, href }: { icone: IconeId; rotulo: string; valor: number | string; texto?: string; tom?: TomIcone; href?: string }) {
-  const barra = COR_BARRA[tom ?? tomDoIcone(icone)];
+  const barra = COR_BARRA[tom ?? 'marca'];
   const corpo = (
     <>
       <span aria-hidden className={`absolute inset-x-5 top-0 h-1 rounded-b-full opacity-70 ${barra}`} />
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[13px] font-semibold text-suave">{rotulo}</span>
+        <span className="rotulo-col truncate !tracking-[0.05em]" title={rotulo}>{rotulo}</span>
         <IconeCaixa icone={icone} tom={tom} tamanho="sm" />
       </div>
-      <span className="mt-1.5 block text-xl font-bold leading-none tracking-tight">{valor}</span>
+      <span className="horario mt-1.5 block text-xl font-bold leading-none tracking-tight">{valor}</span>
       {texto ? <span className="mt-1 block text-xs text-suave">{texto}</span> : null}
     </>
   );
-  const cls = 'relative block overflow-hidden rounded-2xl border border-linha bg-cartao p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-3.5';
-  return href ? <a href={href} className={`${cls} transition hover:-translate-y-0.5 hover:border-marca hover:shadow-md`}>{corpo}</a> : <div className={cls}>{corpo}</div>;
+  const cls = 'relative block overflow-hidden rounded-2xl border border-linha bg-cartao p-3 shadow-card sm:p-3.5';
+  return href ? <a href={href} className={`${cls} transition hover:-translate-y-0.5 hover:border-marca hover:shadow-pop`}>{corpo}</a> : <div className={cls}>{corpo}</div>;
 }
 
 const tons = {

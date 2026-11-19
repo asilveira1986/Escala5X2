@@ -14,13 +14,15 @@ export const IconeSeta = (p: P) => <svg {...base} {...p}><path d="M5 12h14M13 6l
 export const IconeBaixar = (p: P) => <svg {...base} {...p}><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5" /><path d="M5 19.5h14" /></svg>;
 export const IconeEscudo = (p: P) => <svg {...base} {...p}><path d="M12 3.5l7 2.6v5.4c0 4.2-2.9 7.6-7 9-4.1-1.4-7-4.8-7-9V6.1l7-2.6z" /><path d="M9 12l2.2 2.2L15.5 10" /></svg>;
 
-/** Marca: um calendário de semana com dois dias de folga destacados (o "2" do 5x2). */
-export function MarcaLogo({ tamanho = 28 }: { tamanho?: number }) {
+/** Marca Jornada: anel de progresso (a jornada do dia se completando) com o ponto ciano no centro. Cores fixas do logotipo; `negativo` é a versão para fundo Azul Noite. */
+export function MarcaLogo({ tamanho = 28, negativo = false }: { tamanho?: number; negativo?: boolean }) {
   return (
-    <svg width={tamanho} height={tamanho} viewBox="0 0 32 32" aria-hidden>
-      <rect width="32" height="32" rx="9" fill="var(--c-marca)" />
-      {[0, 1, 2, 3, 4].map((i) => <rect key={i} x={5 + i * 4.8} y="9" width="3.6" height="14" rx="1.8" fill="var(--c-sobre-marca)" opacity="0.92" />)}
-      <rect x="25" y="9" width="3.6" height="14" rx="1.8" fill="var(--c-destaque)" />
+    <svg width={tamanho} height={tamanho} viewBox="0 0 64 64" aria-hidden>
+      <rect width="64" height="64" rx="16" fill={negativo ? '#3d73ff' : '#1f5eff'} />
+      <circle cx="32" cy="32" r="17" fill="none" stroke="#ffffff" strokeOpacity="0.3" strokeWidth="6" />
+      <path d="M32 15 A17 17 0 1 1 15 32" fill="none" stroke="#ffffff" strokeWidth="6" strokeLinecap="round" />
+      <path d="M32 32 L32 23" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="32" cy="32" r="4.5" fill="#22d3ee" />
     </svg>
   );
 }

@@ -32,7 +32,7 @@ export function ListaApuracao({ empresaId, mes, linhas, podeGerir }: { empresaId
     <div className="space-y-3">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="text-xs font-semibold uppercase tracking-wide text-suave">
+          <thead className="rotulo-col">
             <tr>
               <th className="w-8 py-1.5 pr-2">{podeGerir && disponiveis.length > 0 ? <input type="checkbox" aria-label="Marcar todos" className="size-4" checked={todos} onChange={() => setMarcados(todos ? new Set() : new Set(disponiveis.map(chave)))} /> : null}</th>
               <th className="pr-3">Colaborador</th><th className="pr-3">Dia</th><th className="pr-3 text-right">Previsto</th><th className="pr-3 text-right">Trabalhado</th><th className="pr-3 text-right">Saldo do dia</th><th>O que aconteceu</th>

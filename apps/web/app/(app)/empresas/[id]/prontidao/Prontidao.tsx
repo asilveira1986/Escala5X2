@@ -54,7 +54,7 @@ export function Prontidao({ empresaId, d, p, comunicados, emissao, aba }: { aba:
         {p.setores.length === 0 ? <p className="text-sm text-suave">Cadastre colaboradores com contrato para ver a prontidão.</p> : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[40rem] text-left text-sm" aria-label="Prontidão por setor">
-              <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="pb-1.5 pr-3">Setor</th><th className="pb-1.5 pr-3 text-right">Pessoas</th><th className="pb-1.5 pr-3 text-right">A adequar F1 · F2</th><th className="pb-1.5 pr-3 text-right">Horas a cobrir (F2)</th><th className="pb-1.5 pr-3 text-right">Pessoas a mais F1 · F2</th><th className="pb-1.5 pr-3">Situação</th><th className="pb-1.5">Comunicados</th></tr></thead>
+              <thead className="rotulo-col"><tr><th className="pb-1.5 pr-3">Setor</th><th className="pb-1.5 pr-3 text-right">Pessoas</th><th className="pb-1.5 pr-3 text-right">A adequar F1 · F2</th><th className="pb-1.5 pr-3 text-right">Horas a cobrir (F2)</th><th className="pb-1.5 pr-3 text-right">Pessoas a mais F1 · F2</th><th className="pb-1.5 pr-3">Situação</th><th className="pb-1.5">Comunicados</th></tr></thead>
               <tbody className="divide-y divide-linha">
                 {p.setores.map((s) => (
                   <tr key={s.setor}>
@@ -89,7 +89,7 @@ export function Prontidao({ empresaId, d, p, comunicados, emissao, aba }: { aba:
             </div>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[32rem] text-left text-sm" aria-label="Custo por estratégia">
-                <thead className="text-xs font-semibold uppercase tracking-wide text-suave"><tr><th className="pb-1.5 pr-3">Fase</th><th className="pb-1.5 pr-3">Como cobrir</th><th className="pb-1.5 pr-3 text-right">Contratações</th><th className="pb-1.5 pr-3 text-right">Custo por mês</th><th className="pb-1.5 pr-3 text-right">Custo no ano</th><th className="pb-1.5" /></tr></thead>
+                <thead className="rotulo-col"><tr><th className="pb-1.5 pr-3">Fase</th><th className="pb-1.5 pr-3">Como cobrir</th><th className="pb-1.5 pr-3 text-right">Contratações</th><th className="pb-1.5 pr-3 text-right">Custo por mês</th><th className="pb-1.5 pr-3 text-right">Custo no ano</th><th className="pb-1.5" /></tr></thead>
                 <tbody className="divide-y divide-linha">
                   {custos.map((c) => (
                     <tr key={`${c.fase}${c.tipo}`} className={c.maisBarato ? 'bg-ok-bg/40' : ''}>

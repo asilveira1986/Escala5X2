@@ -19,7 +19,7 @@ export function VisaoGeral({ empresaId, empresa, resumo }: { empresaId: string; 
   const feitos = passos.filter((p) => p.ok).length;
   return (
     <>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-marca/15 bg-[linear-gradient(120deg,var(--c-marca-suave),var(--c-cartao)_55%,var(--c-violeta-bg))] p-4 shadow-[0_8px_24px_-12px_rgba(79,70,229,0.25)] sm:p-6">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-linha bg-cartao p-4 shadow-card sm:p-5">
         <IconeCaixa icone="empresas" tamanho="lg" />
         <div className="min-w-0 flex-1 basis-40">
           <h1 className="text-lg font-bold leading-tight tracking-tight" title={empresa.razao_social}>{empresa.razao_social}</h1>

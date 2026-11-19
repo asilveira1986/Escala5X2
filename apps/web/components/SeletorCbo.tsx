@@ -54,7 +54,7 @@ export function SeletorCbo({ name = 'cbo', valorInicial = '', aoEscolher }: { na
       />
       {codigo ? <button type="button" onClick={limpar} aria-label="Limpar a ocupação" className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-suave hover:bg-fundo">×</button> : null}
       {aberto && texto.trim() ? (
-        <ul id={`${id}-lista`} role="listbox" aria-label="Ocupações encontradas" className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-2xl border border-linha bg-cartao p-1 shadow-xl">
+        <ul id={`${id}-lista`} role="listbox" aria-label="Ocupações encontradas" className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-2xl border border-linha bg-cartao p-1 shadow-pop">
           {opcoes.length === 0 ? <li role="presentation" className="px-3 py-2 text-sm text-suave">{lista.length === 0 ? 'Carregando…' : 'Nenhuma ocupação encontrada.'}</li> : opcoes.map((o, i) => (
             <li key={o[0]} id={`${id}-${i}`} role="option" aria-selected={i === ativo} onMouseDown={(e) => { e.preventDefault(); escolher(o); }} onMouseEnter={() => setAtivo(i)}
               className={`cursor-pointer rounded-xl px-3 py-2 text-sm ${i === ativo ? 'bg-marca-suave text-marca' : ''}`}>

@@ -17,7 +17,7 @@ export function ErroTela({ error, reset }: { error: Error & { digest?: string };
     } catch { /* sem sessionStorage: mostra a tela normal */ }
   }, [error]);
   return (
-    <div role="alert" className="mx-auto max-w-lg space-y-3 rounded-3xl border border-linha bg-cartao p-6 text-center shadow-sm">
+    <div role="alert" className="mx-auto max-w-lg space-y-3 rounded-2xl border border-linha bg-cartao p-6 text-center shadow-card">
       <h1 className="text-xl font-bold">Algo deu errado ao abrir esta tela</h1>
       <p className="text-sm text-suave">Isso costuma passar ao recarregar a página (principalmente logo depois de o sistema ser atualizado). Se continuar, envie a mensagem abaixo ao suporte.</p>
       <div className="flex justify-center gap-2">
