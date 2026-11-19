@@ -43,7 +43,8 @@ describe('BotaoFechar', () => {
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar fechamento' }));
     expect(await screen.findByText('Só dá para fechar um mês já encerrado.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Confirmar fechamento' })).toBeTruthy();
+    // o erro aparece antes de a transição terminar (o botão ainda diz "Fechando…"): espera o rótulo voltar
+    expect(await screen.findByRole('button', { name: 'Confirmar fechamento' })).toBeTruthy();
   });
   it('com bloqueio, o botão fica desligado e explica o motivo', () => {
     render(<BotaoFechar empresaId="e" mes="2027-02" reabrir={false} podeFechar={false} motivoBloqueio="Nenhuma escala publicada cobre este mês." />);
