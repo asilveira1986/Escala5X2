@@ -26,6 +26,7 @@ export async function aprovarPedido(empresaId: string, id: string): Promise<Resu
     : await aprovarTroca(supabase, supabaseServidorRestrito(), s, user.id);
   revalidatePath(`/empresas/${p.data.empresaId}/solicitacoes`);
   revalidatePath(`/empresas/${p.data.empresaId}/escalas`);
+  revalidatePath(`/empresas/${p.data.empresaId}/solicitacoes/${p.data.id}`);
   if (!r.ok) return { ok: false, erro: r.erro };
   return { ok: true, mensagem: r.relatorio.resumo };
 }
@@ -38,5 +39,6 @@ export async function recusarPedido(empresaId: string, id: string, motivo: strin
   const { supabase } = await exigirUsuario();
   const r = await recusarSolicitacao(supabase, p.data.id, m.data);
   revalidatePath(`/empresas/${p.data.empresaId}/solicitacoes`);
+  revalidatePath(`/empresas/${p.data.empresaId}/solicitacoes/${p.data.id}`);
   return r.ok ? { ok: true, mensagem: 'Pedido recusado.' } : { ok: false, erro: r.erro };
 }
