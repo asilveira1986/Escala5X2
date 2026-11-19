@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { exigirUsuario } from '@/lib/contexto';
 import { periodoAusencia } from '@/lib/cobertura';
@@ -28,7 +29,7 @@ export async function adicionarAusencia(_: EstadoForm, form: FormData): Promise<
     return { erro: 'Não foi possível salvar a ausência.' };
   }
   revalidatePath(`/empresas/${empresaId.data}/escalas/ausencias`);
-  return { ok: 'Ausência lançada. As escalas em rascunho passam a bloquear trabalho nesse período.' };
+  redirect(`/empresas/${empresaId.data}/escalas/ausencias?lancada=1`);
 }
 
 export async function removerAusencia(empresaId: string, ausenciaId: string): Promise<{ erro?: string }> {
@@ -38,5 +39,6 @@ export async function removerAusencia(empresaId: string, ausenciaId: string): Pr
   const { error, count } = await supabase.from('ausencia').delete({ count: 'exact' }).eq('id', a.data).eq('empresa_id', e.data);
   if (error || !count) return { erro: 'Você não tem permissão para remover esta ausência.' };
   revalidatePath(`/empresas/${e.data}/escalas/ausencias`);
+  revalidatePath(`/empresas/${e.data}/escalas/ausencias/${a.data}`);
   return {};
 }

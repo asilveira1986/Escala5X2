@@ -63,7 +63,7 @@ export async function criarModelo(_: EstadoForm, form: FormData): Promise<Estado
   if (error) return { erro: erroTurno(error.message) };
   revalidatePath(`/empresas/${empresaId.data}/escalas`);
   revalidatePath(`/empresas/${empresaId.data}/escalas/turnos`);
-  return {};
+  redirect(`/empresas/${empresaId.data}/escalas/turnos`);
 }
 
 /**
@@ -82,6 +82,7 @@ export async function editarModelo(_: EstadoForm & { ok?: boolean }, form: FormD
   if (!Array.isArray(data) || data.length === 0) return { erro: 'Turno não encontrado ou sem permissão para alterá-lo.' };
   revalidatePath(`/empresas/${empresaId.data}/escalas`);
   revalidatePath(`/empresas/${empresaId.data}/escalas/turnos`);
+  revalidatePath(`/empresas/${empresaId.data}/escalas/turnos/${modeloId.data}`);
   return { ok: true };
 }
 
