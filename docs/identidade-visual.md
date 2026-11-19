@@ -60,6 +60,12 @@ Telas com muito conteúdo foram divididas em **abas por endereço** (`?aba=`, co
 - **Folha:** Prévia do mês · Fechamento e versões.
 - **Plano e cobrança:** Assinatura e planos · Faturas (com as pendentes/vencidas).
 
-## Listas com detalhe em painel lateral
+## Colaboradores: lista enxuta e tela própria
 
-Listas de pessoas mostram só o essencial e abrem o resto num **painel lateral** (`Gaveta`) ao clicar na linha: fecha com Esc, com o botão ou clicando fora, e devolve o foco à linha. Em **Colaboradores** a lista traz Nome, Setor e Status (situação do acesso ao app); o painel traz cargo, escala, jornada, turno, matrícula, salário, valor/hora, divisor, alta renda, a gestão do acesso (convidar, reenviar, remover) e o botão "Editar cadastro". A busca continua achando por cargo, escala e matrícula, mesmo ocultos (`colunasOcultas` e `aoClicarLinha` em `TabelaDados`).
+A lista mostra só **Nome, Setor e Status** (situação do acesso ao app). Clicar na linha (ou no nome, que é um link) abre a **tela do colaborador**, a mesma de edição, organizada assim:
+
+- **Cabeçalho:** iniciais, nome, cargo · setor · data de admissão e a situação (Ativo/Desligado).
+- **Resumo do contrato atual**, sempre à vista: escala, jornada, salário e valor/hora (em fonte mono).
+- **Abas por endereço** (`?aba=`, como nas outras telas): *Dados pessoais* (Identificação e Trabalho), *Contrato e escala* (mudança de contrato e histórico), *Acesso ao app* (convidar, reenviar, remover) e *Desligamento*. Cada aba mostra só o seu assunto.
+
+A busca da lista continua achando por cargo, escala e matrícula, mesmo ocultos (`colunasOcultas` e `aoClicarLinha` em `TabelaDados`). Quem não gere a empresa vê a lista sem links.

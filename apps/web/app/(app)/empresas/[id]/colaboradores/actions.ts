@@ -22,6 +22,7 @@ export async function convidar(empresaId: string, colaboradorId: string, email: 
   const { data, error } = await supabase.rpc('convidar_colaborador', { p_colaborador: p.data.colaboradorId, p_email: e.data });
   if (error) return { ok: false, erro: traduzir(error.message) };
   revalidatePath(`/empresas/${p.data.empresaId}/colaboradores`);
+  revalidatePath(`/empresas/${p.data.empresaId}/colaboradores/${p.data.colaboradorId}`);
   const estado = (data as { estado?: string } | null)?.estado;
   if (estado === 'vinculado') return { ok: true, mensagem: 'Esse e-mail já tinha conta. O acesso foi liberado: basta a pessoa entrar para ver a escala.' };
   const envio = await enviarLinkDeAcesso(e.data.toLowerCase());
@@ -37,6 +38,7 @@ export async function revogarAcesso(empresaId: string, colaboradorId: string): P
   const { error } = await supabase.rpc('revogar_acesso_colaborador', { p_colaborador: p.data.colaboradorId });
   if (error) return { ok: false, erro: traduzir(error.message) };
   revalidatePath(`/empresas/${p.data.empresaId}/colaboradores`);
+  revalidatePath(`/empresas/${p.data.empresaId}/colaboradores/${p.data.colaboradorId}`);
   return { ok: true, mensagem: 'Acesso removido.' };
 }
 
@@ -105,6 +107,7 @@ export async function atualizarDadosColaborador(empresaId: string, colaboradorId
   });
   if (error) return { valores: v, erroGeral: traduzir(error.message).slice(0, 200) };
   revalidatePath(`/empresas/${p.data.empresaId}/colaboradores`);
+  revalidatePath(`/empresas/${p.data.empresaId}/colaboradores/${p.data.colaboradorId}`);
   return { ok: 'Dados salvos.', valores: v };
 }
 
