@@ -1,14 +1,15 @@
 import Link from 'next/link';
 import { IconeCheck } from '@/components/icones';
-import { Cartao, IconeCaixa, Metrica, Selo } from '@/components/ui';
-import { ROTULO_STATUS, type EmpresaRow } from '@/lib/tipos-db';
+import { CabecalhoItem } from '@/components/ItemTela';
+import { Cartao, Metrica, Selo } from '@/components/ui';
+import { ROTULO_PORTE, ROTULO_STATUS, type EmpresaRow } from '@/lib/tipos-db';
 import { formatarCnpj } from '@jc/connectors/parsers';
 
 const tom = { nao_iniciado: 'cinza', em_risco: 'amarelo', adequado: 'verde' } as const;
 export type ResumoEmpresa = { colab: number; turnos: number; publicadas: number; rascunhos: number; pendentes: number };
 
 /** Visão geral da empresa: identificação, números e primeiros passos. A navegação fica só no menu (nada de atalhos repetidos aqui). */
-export function VisaoGeral({ empresaId, empresa, resumo }: { empresaId: string; empresa: Pick<EmpresaRow, 'razao_social' | 'cnpj' | 'status_adequacao'>; resumo: ResumoEmpresa }) {
+export function VisaoGeral({ empresaId, empresa, resumo }: { empresaId: string; empresa: Pick<EmpresaRow, 'razao_social' | 'cnpj' | 'porte' | 'uf' | 'status_adequacao'>; resumo: ResumoEmpresa }) {
   const { colab, turnos, publicadas, rascunhos, pendentes } = resumo;
   const base = `/empresas/${empresaId}`;
   const passos = [
@@ -19,14 +20,8 @@ export function VisaoGeral({ empresaId, empresa, resumo }: { empresaId: string; 
   const feitos = passos.filter((p) => p.ok).length;
   return (
     <>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-linha bg-cartao p-4 shadow-card sm:p-5">
-        <IconeCaixa icone="empresas" tamanho="lg" />
-        <div className="min-w-0 flex-1 basis-40">
-          <h1 className="text-lg font-bold leading-tight tracking-tight" title={empresa.razao_social}>{empresa.razao_social}</h1>
-          <p className="text-sm text-suave">CNPJ {formatarCnpj(empresa.cnpj)}</p>
-        </div>
-        <Selo tom={tom[empresa.status_adequacao]}>{ROTULO_STATUS[empresa.status_adequacao]}</Selo>
-      </div>
+      <CabecalhoItem icone="empresas" titulo={empresa.razao_social} subtitulo={`CNPJ ${formatarCnpj(empresa.cnpj)} · ${ROTULO_PORTE[empresa.porte]} · ${empresa.uf}`}
+        selo={<Selo tom={tom[empresa.status_adequacao]}>{ROTULO_STATUS[empresa.status_adequacao]}</Selo>} />
 
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <Metrica href={`${base}/colaboradores`} icone="pessoas" rotulo="Colaboradores ativos" valor={colab} texto="Ver e cadastrar equipe" />
