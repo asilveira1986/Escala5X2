@@ -1,23 +1,22 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { EstadoVazio } from '@/components/EstadoVazio';
-import { Cartao, Metrica, Selo } from '@/components/ui';
+import { lerAba } from '@/lib/abas';
 import { exigirUsuario, idOu404, linhas } from '@/lib/contexto';
 import { diffEscalas } from '@/lib/escala-diff';
 import { carregarEntradaEscala } from '@jc/servicos';
 import { dataBr } from '@jc/rules-engine';
+import { ABAS_HISTORICO, TelaHistorico } from './TelaHistorico';
+import type { LinhaVersao } from './TabelaVersoes';
 
 type Versao = { id: string; nome: string; status: 'rascunho' | 'publicada' | 'substituida'; versao: number; revisao: number; criado_em: string; publicada_em: string | null; publicada_por: string | null; hash_publicado: string | null };
-const ROTULO = { rascunho: 'Rascunho', publicada: 'Publicada', substituida: 'Substituída' } as const;
-const TOM = { rascunho: 'amarelo', publicada: 'verde', substituida: 'cinza' } as const;
 const MAX_LISTA = 150;
 const quando = (iso: string | null) => (iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) : '—');
 
 /** Versões da mesma escala (mesma empresa, setor e período) e o que mudou de uma para outra. */
-export default async function HistoricoEscala({ params, searchParams }: { params: Promise<{ id: string; escalaId: string }>; searchParams: Promise<{ de?: string }> }) {
+export default async function HistoricoEscala({ params, searchParams }: { params: Promise<{ id: string; escalaId: string }>; searchParams: Promise<{ de?: string; aba?: string }> }) {
   const p = await params;
   const empresaId = idOu404(p.id), escalaId = idOu404(p.escalaId);
   const sp = await searchParams;
+  const aba = lerAba(sp.aba, ABAS_HISTORICO);
   const { supabase } = await exigirUsuario();
   let atual;
   try { atual = await carregarEntradaEscala(supabase, escalaId); } catch { notFound(); }
@@ -39,55 +38,17 @@ export default async function HistoricoEscala({ params, searchParams }: { params
   const diff = base ? diffEscalas(base.alocacoes, atual.alocacoes) : null;
   const baseVersao = versoes.find((v) => v.id === baseId);
   const href = `/empresas/${empresaId}/escalas`;
+  const rotuloVersao = (v: { status: string; versao: number }) => (v.status === 'rascunho' ? 'Rascunho' : `Versão ${v.versao}`);
+  const linhasVersao: LinhaVersao[] = versoes.map((v) => ({
+    id: v.id, rotulo: rotuloVersao(v), status: v.status, atual: v.id === escalaId, hash: v.hash_publicado ? v.hash_publicado.slice(0, 12) : null,
+    publicacao: v.publicada_em ? `publicada em ${quando(v.publicada_em)}${v.publicada_por && nomeDe.get(v.publicada_por) ? ` por ${nomeDe.get(v.publicada_por)}` : ''}` : `criada em ${quando(v.criado_em)}`,
+    hrefAbrir: `${href}/${v.id}`, hrefComparar: v.id !== escalaId ? `${href}/${escalaId}/historico?aba=mudancas&de=${v.id}` : null,
+  }));
+  const mudancas = (diff?.mudancas ?? []).slice(0, MAX_LISTA).map((m) => ({ chave: `${m.colaboradorId}${m.data}`, data: dataBr(m.data), pessoa: nomes.get(m.colaboradorId) ?? 'Colaborador', antes: m.antes ?? '—', depois: m.depois ?? '—' }));
 
   return (
-    <>
-      <Link href={`${href}/${escalaId}`} className="inline-flex min-h-9 items-center text-sm font-semibold text-marca hover:underline">← Voltar à escala</Link>
-      <Cartao icone="calendario" titulo={`Histórico de ${atual.escala.nome}`} subtitulo={`${dataBr(atual.escala.inicio)} a ${dataBr(atual.escala.fim)} · uma publicação nova nunca apaga a anterior: ela fica guardada como substituída.`}>
-        {versoes.length === 0 ? <EstadoVazio titulo="Sem versões">Nada para mostrar.</EstadoVazio> : (
-          <ul className="divide-y divide-linha" aria-label="Versões">
-            {versoes.map((v) => (
-              <li key={v.id} className={`flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5 ${v.id === escalaId ? 'font-semibold' : ''}`}>
-                <span className="min-w-[8rem]">{v.status === 'rascunho' ? 'Rascunho' : `Versão ${v.versao}`}{v.id === escalaId ? <span className="ml-2 rounded-full bg-marca-suave px-2 py-0.5 text-[10px] font-bold uppercase text-marca">esta</span> : null}</span>
-                <Selo tom={TOM[v.status]}>{ROTULO[v.status]}</Selo>
-                <span className="text-sm font-normal text-suave">{v.publicada_em ? `publicada em ${quando(v.publicada_em)}${v.publicada_por && nomeDe.get(v.publicada_por) ? ` por ${nomeDe.get(v.publicada_por)}` : ''}` : `criada em ${quando(v.criado_em)}`}</span>
-                {v.hash_publicado ? <span className="font-mono text-xs font-normal text-suave" title="Código de integridade da publicação">{v.hash_publicado.slice(0, 12)}…</span> : null}
-                <span className="ml-auto flex gap-3 text-sm font-semibold">
-                  {v.id !== escalaId ? <Link className="text-marca hover:underline" href={`${href}/${escalaId}/historico?de=${v.id}`}>Comparar com esta</Link> : null}
-                  <Link className="text-marca hover:underline" href={`${href}/${v.id}`}>Abrir</Link>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Cartao>
-
-      <Cartao icone="diagnostico" titulo="O que mudou" subtitulo={baseVersao ? `${baseVersao.status === 'rascunho' ? 'Rascunho' : `Versão ${baseVersao.versao}`} → ${atual.escala.status === 'rascunho' ? 'Rascunho' : `Versão ${atual.escala.versao}`} (esta)` : undefined}>
-        {!diff ? <EstadoVazio titulo="Nada para comparar">Esta é a primeira versão. Quando houver outra, as diferenças aparecem aqui.</EstadoVazio> : diff.mudancas.length === 0 ? <p className="text-sm text-ok-fg">As duas versões são idênticas.</p> : (
-          <>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <Metrica icone="pessoas" rotulo="Pessoas afetadas" valor={diff.pessoas} />
-              <Metrica icone="calendario" rotulo="Dias alterados" valor={diff.dias} />
-              <Metrica icone="escalas" tom="verde" rotulo="Passaram a trabalhar" valor={diff.entraramEmTrabalho} />
-              <Metrica icone="ferias" tom="ambar" rotulo="Passaram a folgar" valor={diff.sairamDeTrabalho} texto={diff.horarioMudou > 0 ? `${diff.horarioMudou} com horário diferente` : undefined} />
-            </div>
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[32rem] text-left text-sm" aria-label="Diferenças entre as versões">
-                <thead className="rotulo-col"><tr><th className="pb-1.5 pr-3">Dia</th><th className="pb-1.5 pr-3">Colaborador</th><th className="pb-1.5 pr-3">Antes</th><th className="pb-1.5">Depois</th></tr></thead>
-                <tbody className="divide-y divide-linha">
-                  {diff.mudancas.slice(0, MAX_LISTA).map((m) => (
-                    <tr key={`${m.colaboradorId}${m.data}`}>
-                      <td className="whitespace-nowrap py-1.5 pr-3">{dataBr(m.data)}</td><td className="py-1.5 pr-3 font-semibold">{nomes.get(m.colaboradorId) ?? 'Colaborador'}</td>
-                      <td className="py-1.5 pr-3 text-suave">{m.antes ?? '—'}</td><td className="py-1.5">{m.depois ?? '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {diff.mudancas.length > MAX_LISTA ? <p className="mt-2 text-xs text-suave">Mostrando as primeiras {MAX_LISTA} de {diff.mudancas.length} mudanças.</p> : null}
-          </>
-        )}
-      </Cartao>
-    </>
+    <TelaHistorico empresaId={empresaId} escalaId={escalaId} nome={atual.escala.nome} periodo={`${dataBr(atual.escala.inicio)} a ${dataBr(atual.escala.fim)}`} aba={aba} versoes={linhasVersao}
+      deRotulo={baseVersao ? rotuloVersao(baseVersao) : null} paraRotulo={rotuloVersao({ status: atual.escala.status, versao: atual.escala.versao })} mudancas={mudancas} base={baseVersao?.id}
+      diff={diff ? { pessoas: diff.pessoas, dias: diff.dias, entraramEmTrabalho: diff.entraramEmTrabalho, sairamDeTrabalho: diff.sairamDeTrabalho, horarioMudou: diff.horarioMudou, total: diff.mudancas.length } : null} />
   );
 }

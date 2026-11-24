@@ -91,3 +91,11 @@ Além de Colaboradores, o mesmo formato vale para **Escalas do mês, Turnos, Cob
 
 - **Importar planilha:** duas abas por endereço, *Nova importação* (o assistente em etapas, como antes) e *Importações* (com a contagem), que usa a lista no formato padrão: Enviada em, Resultado ("12 criados · 3 atualizados · 2 com erro") e Situação. Clicar abre a **tela da importação**: cabeçalho com a data e a situação, resumo (Criados, Atualizados, Sem alteração, Com erro), cartão com os erros por linha e o download em CSV, e os atalhos "Ver colaboradores" e "Rodar diagnóstico". Enquanto processa, a tela se atualiza sozinha. Os textos e tons da situação ficam em `lib/importacao-ui.ts`.
 - **Plano e cobrança:** o cabeçalho traz a situação da assinatura (Ativa, Em teste, Fatura vencida…) e o resumo fica sempre à vista (Plano, Próximo vencimento ou Teste até, Forma de pagamento, Colaboradores ativos, que ganha destaque ao passar do limite do plano). Abas *Planos* (cartões dos planos com os preços em fonte mono e, para quem tem assinatura em andamento, o cartão "Encerrar a assinatura") e *Faturas* (com a contagem das abertas; tabela com busca, "Pagar" nas abertas e "Ver" nas pagas). Quem não é administrador continua vendo só o aviso de acesso.
+
+## Listas da gestão (Banco pelo ponto, Histórico, Carteira)
+
+Mesmo padrão das demais telas:
+
+- **Banco pelo ponto**: resumo da apuração em `ResumoItem` (dias com diferença, horas a mais/a menos, saldo proposto); as regras ficam num `<details>` "Como a apuração funciona"; a lista mostra *Previsto → trabalhado* em mono (`1h30`).
+- **Histórico de versões**: `TelaHistorico` com `CabecalhoItem`, `ResumoItem` e duas abas (`?aba=versoes|mudancas`). Versões em `TabelaVersoes` (linha abre a versão; "Comparar" leva à aba "O que mudou" com `de=<versão>`); mudanças em `TabelaMudancas`.
+- **Carteira**: `ResumoItem` no topo, filtros e mês mantidos, empresas em `TabelaCarteira` (linha abre a empresa; cada pendência é link para a área certa, com `stopPropagation`; até 2 pendências visíveis e "+N"). A busca acha por CNPJ sem pontuação e UF.

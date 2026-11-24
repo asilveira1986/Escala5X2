@@ -9,6 +9,7 @@ import { lancarApuracao, type ResultadoApuracao } from './actions';
 
 export type LinhaApuracao = { colaboradorId: string; nome: string; data: string; minutos: number; previstoMin: number; efetivoMin: number; motivo: string; jaLancado: boolean };
 const chave = (l: Pick<LinhaApuracao, 'colaboradorId' | 'data'>) => `${l.colaboradorId}|${l.data}`;
+const hm = (min: number) => `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}`;
 
 export function ListaApuracao({ empresaId, mes, linhas, podeGerir }: { empresaId: string; mes: string; linhas: LinhaApuracao[]; podeGerir: boolean }) {
   const router = useRouter();
@@ -35,7 +36,7 @@ export function ListaApuracao({ empresaId, mes, linhas, podeGerir }: { empresaId
           <thead className="rotulo-col">
             <tr>
               <th className="w-8 py-1.5 pr-2">{podeGerir && disponiveis.length > 0 ? <input type="checkbox" aria-label="Marcar todos" className="size-4" checked={todos} onChange={() => setMarcados(todos ? new Set() : new Set(disponiveis.map(chave)))} /> : null}</th>
-              <th className="pr-3">Colaborador</th><th className="pr-3">Dia</th><th className="pr-3 text-right">Previsto</th><th className="pr-3 text-right">Trabalhado</th><th className="pr-3 text-right">Saldo do dia</th><th>O que aconteceu</th>
+              <th className="pr-3">Colaborador</th><th className="pr-3">Dia</th><th className="pr-3">Previsto → trabalhado</th><th className="pr-3 text-right">Saldo do dia</th><th>O que aconteceu</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-linha">
@@ -43,10 +44,9 @@ export function ListaApuracao({ empresaId, mes, linhas, podeGerir }: { empresaId
               <tr key={chave(l)} className={l.jaLancado ? 'text-suave' : ''}>
                 <td className="py-1.5 pr-2">{podeGerir && !l.jaLancado ? <input type="checkbox" className="size-4" aria-label={`Lançar ${l.nome} em ${dataBr(l.data)}`} checked={marcados.has(chave(l))} onChange={() => alternar(chave(l))} /> : null}</td>
                 <td className="pr-3 font-semibold">{l.nome}</td>
-                <td className="pr-3">{dataBr(l.data)}</td>
-                <td className="pr-3 text-right">{Math.floor(l.previstoMin / 60)}h{String(l.previstoMin % 60).padStart(2, '0')}</td>
-                <td className="pr-3 text-right">{Math.floor(l.efetivoMin / 60)}h{String(l.efetivoMin % 60).padStart(2, '0')}</td>
-                <td className={`pr-3 text-right font-semibold ${l.minutos < 0 ? 'text-risco-fg' : 'text-ok-fg'}`}>{saldoTexto(l.minutos)}</td>
+                <td className="horario whitespace-nowrap pr-3">{dataBr(l.data)}</td>
+                <td className="horario whitespace-nowrap pr-3">{hm(l.previstoMin)} → {hm(l.efetivoMin)}</td>
+                <td className={`horario pr-3 text-right font-semibold ${l.minutos < 0 ? 'text-risco-fg' : 'text-ok-fg'}`}>{saldoTexto(l.minutos)}</td>
                 <td>{l.jaLancado ? <span className="rounded-full bg-neutro-bg px-2 py-0.5 text-xs font-semibold text-neutro-fg">já lançado</span> : l.motivo.replace(/ \([+−]\d+h\d+\)$/, '')}</td>
               </tr>
             ))}
