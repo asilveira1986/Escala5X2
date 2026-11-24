@@ -1,15 +1,15 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { EstadoVazio } from '@/components/EstadoVazio';
-import { Aviso, CabecalhoPagina, Cartao, classeBotaoLink, Selo } from '@/components/ui';
+import { ResumoItem } from '@/components/ItemTela';
+import { Aviso, CabecalhoPagina, Cartao, classeBotaoLink } from '@/components/ui';
 import { exigirUsuario, linhas } from '@/lib/contexto';
 import { diasAte, FILTROS, filtrar, lerFiltro, lerMes, mesVizinho, ordenarPorAtencao, pendencias, resumir, type LinhaCarteira } from '@/lib/carteira';
 import { lerDaterange } from '@/lib/cobertura';
-import { ROTULO_STATUS } from '@/lib/tipos-db';
 import { dataBr, dataDeInstante } from '@jc/rules-engine';
 import { formatarCnpj } from '@jc/connectors/parsers';
+import { TabelaCarteira, type LinhaEmpresaCarteira } from './TabelaCarteira';
 
-const tomStatus = { nao_iniciado: 'cinza', em_risco: 'amarelo', adequado: 'verde' } as const;
 const NOMES_MES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const rotuloMes = (m: string) => `${NOMES_MES[Number(m.slice(5)) - 1]} de ${m.slice(0, 4)}`;
 
@@ -30,6 +30,10 @@ export default async function Carteira({ searchParams }: { searchParams: Promise
   const lista = ordenarPorAtencao(filtrar(todas, filtro));
   const prazo = lerDaterange(linhas<{ vigencia: string }>(regra)[0]?.vigencia ?? '')?.inicio;
   const faltam = prazo ? diasAte(prazo, hoje) : null;
+  const dados: LinhaEmpresaCarteira[] = lista.map((l) => ({
+    id: l.empresa_id, razao: l.razao_social, cnpj: formatarCnpj(l.cnpj), uf: l.uf, pessoas: l.colaboradores, status: l.status_adequacao,
+    pendencias: pendencias(l).map((p) => ({ codigo: p.codigo, texto: p.texto, href: `/empresas/${l.empresa_id}/${p.aba}` })),
+  }));
   const href = (f: string, m = mes) => `/carteira?filtro=${f}&mes=${m}`;
 
   return (
@@ -44,12 +48,12 @@ export default async function Carteira({ searchParams }: { searchParams: Promise
       ) : null}
       {error ? <Aviso tipo="erro">Não foi possível carregar a carteira agora. Tente novamente.</Aviso> : null}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Numero rotulo="Empresas" valor={resumo.empresas} sub={`${resumo.pessoas} pessoas`} />
-        <Numero rotulo="Pedem atenção" valor={resumo.atencao} tom={resumo.atencao > 0 ? 'amarelo' : 'verde'} />
-        <Numero rotulo="Em risco" valor={resumo.emRisco} tom={resumo.emRisco > 0 ? 'vermelho' : 'verde'} />
-        <Numero rotulo="Ciências pendentes" valor={resumo.cienciasPendentes} tom={resumo.cienciasPendentes > 0 ? 'amarelo' : 'verde'} sub={`escala de ${rotuloMes(mes)}`} />
-      </div>
+      <ResumoItem rotulo="Resumo da carteira" itens={[
+        { rotulo: 'Empresas', valor: <span className="horario">{resumo.empresas}<span className="font-[family-name:var(--font-texto)] text-xs font-medium text-suave"> · {resumo.pessoas} pessoas</span></span> },
+        { rotulo: 'Pedem atenção', valor: <span className={`horario ${resumo.atencao > 0 ? 'text-atencao-fg' : 'text-ok-fg'}`}>{resumo.atencao}</span> },
+        { rotulo: 'Em risco', valor: <span className={`horario ${resumo.emRisco > 0 ? 'text-risco-fg' : 'text-ok-fg'}`}>{resumo.emRisco}</span> },
+        { rotulo: 'Ciências pendentes', valor: <span className={`horario ${resumo.cienciasPendentes > 0 ? 'text-atencao-fg' : 'text-ok-fg'}`}>{resumo.cienciasPendentes}<span className="font-[family-name:var(--font-texto)] text-xs font-medium text-suave"> · escala de {rotuloMes(mes)}</span></span> },
+      ]} />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <nav aria-label="Filtrar empresas" className="flex flex-wrap gap-1.5">
@@ -65,52 +69,9 @@ export default async function Carteira({ searchParams }: { searchParams: Promise
         </div>
       </div>
 
-      {lista.length === 0 ? (
-        <Cartao><EstadoVazio titulo={todas.length === 0 ? 'Nenhuma empresa na carteira' : 'Nenhuma empresa neste filtro'}>{todas.length === 0 ? 'Cadastre empresas ou peça o vínculo do escritório às empresas clientes.' : 'Tente outro filtro acima.'}</EstadoVazio></Cartao>
-      ) : (
-        <ul className="grid gap-3 lg:grid-cols-2">
-          {lista.map((l) => {
-            const pend = pendencias(l);
-            return (
-              <li key={l.empresa_id}>
-                <section className="flex h-full flex-col gap-3 rounded-2xl border border-linha bg-cartao p-4 shadow-card">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h2 className="truncate text-base font-bold" title={l.razao_social}>{l.razao_social}</h2>
-                      <p className="text-sm text-suave">{formatarCnpj(l.cnpj)} · {l.uf} · {l.colaboradores} {l.colaboradores === 1 ? 'pessoa' : 'pessoas'}</p>
-                    </div>
-                    <Selo tom={tomStatus[l.status_adequacao]}>{ROTULO_STATUS[l.status_adequacao]}</Selo>
-                  </div>
-                  {pend.length === 0 ? <p className="text-sm font-semibold text-ok-fg">Tudo em dia neste mês.</p> : (
-                    <ul className="space-y-1">
-                      {pend.map((p) => (
-                        <li key={p.codigo}>
-                          <Link href={`/empresas/${l.empresa_id}/${p.aba}`} className="flex min-h-9 items-center justify-between gap-2 rounded-xl px-2 text-sm hover:bg-marca-suave">
-                            <span>{p.texto}</span><span aria-hidden className="text-marca">›</span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <p className="mt-auto text-xs text-suave">
-                    {l.diagnostico_em ? `Último diagnóstico em ${dataBr(l.diagnostico_em.slice(0, 10))}` : 'Sem diagnóstico'} · {l.escalas_publicadas} publicada(s) e {l.escalas_rascunho} em rascunho em {rotuloMes(mes)}
-                  </p>
-                </section>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <Cartao icone="carteira" titulo={`${lista.length} ${lista.length === 1 ? 'empresa' : 'empresas'}`} subtitulo={todas.length === 0 ? 'Cadastre empresas ou peça o vínculo do escritório às empresas clientes.' : `Das que mais precisam de atenção para as em dia. Pendências e escalas de ${rotuloMes(mes)}.`}>
+        <TabelaCarteira dados={dados} />
+      </Cartao>
     </>
-  );
-}
-
-function Numero({ rotulo, valor, tom, sub }: { rotulo: string; valor: number; tom?: 'verde' | 'amarelo' | 'vermelho'; sub?: string }) {
-  return (
-    <div className="rounded-2xl border border-linha bg-cartao px-4 py-2.5">
-      <p className="text-xs font-semibold text-suave">{rotulo}</p>
-      <p className="flex items-center gap-2 text-2xl font-bold">{valor}{tom ? <Selo tom={tom}>{tom === 'verde' ? 'em dia' : tom === 'amarelo' ? 'atenção' : 'risco'}</Selo> : null}</p>
-      {sub ? <p className="text-xs text-suave">{sub}</p> : null}
-    </div>
   );
 }
