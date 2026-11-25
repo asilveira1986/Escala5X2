@@ -99,3 +99,11 @@ Mesmo padrão das demais telas:
 - **Banco pelo ponto**: resumo da apuração em `ResumoItem` (dias com diferença, horas a mais/a menos, saldo proposto); as regras ficam num `<details>` "Como a apuração funciona"; a lista mostra *Previsto → trabalhado* em mono (`1h30`).
 - **Histórico de versões**: `TelaHistorico` com `CabecalhoItem`, `ResumoItem` e duas abas (`?aba=versoes|mudancas`). Versões em `TabelaVersoes` (linha abre a versão; "Comparar" leva à aba "O que mudou" com `de=<versão>`); mudanças em `TabelaMudancas`.
 - **Carteira**: `ResumoItem` no topo, filtros e mês mantidos, empresas em `TabelaCarteira` (linha abre a empresa; cada pendência é link para a área certa, com `stopPropagation`; até 2 pendências visíveis e "+N"). A busca acha por CNPJ sem pontuação e UF.
+
+## App do colaborador
+
+Telas pensadas para o celular, no mesmo padrão:
+
+- **Minha escala:** cabeçalho, o **próximo turno** em destaque (Azul Noite, horário em mono na cor de destaque), resumo (escalas publicadas, dias de trabalho e horas previstas daqui para frente, itens aguardando ciência) e três atalhos (Pedidos, Banco de horas, Comunicados — este avisa quando há novos). No calendário do mês os horários ficam em mono e há uma legenda curta.
+- **Meus pedidos:** resumo (esperando você, em andamento, aprovados, recusados), pedidos de colegas para você no topo e abas *Em andamento* / *Encerrados*. "Novo pedido" tem tela própria (`/minha-escala/pedidos/novo`) e, ao enviar, volta à lista com um aviso (`?enviado=1`). O carregamento das escalas para o formulário fica em `pedidos/dados.ts`.
+- **Banco de horas, Comunicados e Notificações:** cabeçalho no formato dos itens, com "Minha escala" para voltar; comunicados que aguardam ciência vêm primeiro e têm resumo; notificações mostram quantas não foram lidas.

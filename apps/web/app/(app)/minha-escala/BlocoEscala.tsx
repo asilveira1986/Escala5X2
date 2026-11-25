@@ -13,7 +13,7 @@ export function BlocoEscala({ e, hoje }: { e: EscalaPublicada; hoje: string }) {
     <Cartao>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h2 className="text-base font-bold">{e.nome} <span className="font-normal text-suave">· versão {e.versao}</span></h2>
+          <h2 className="text-base font-bold">{e.nome} <span className="horario text-sm font-normal text-suave">· versão {e.versao}</span></h2>
           <p className="text-sm text-suave">{dataBr(e.inicio)} a {dataBr(e.fim)}{e.publicadaEm ? ` · publicada em ${dataBr(e.publicadaEm.slice(0, 10))}` : ''}</p>
         </div>
         {e.cienteEm ? <Selo tom="verde">Ciente em {dataBr(e.cienteEm.slice(0, 10))}</Selo> : <Selo tom="amarelo">Aguardando sua ciência</Selo>}
@@ -33,8 +33,8 @@ export function BlocoEscala({ e, hoje }: { e: EscalaPublicada; hoje: string }) {
                   return (
                     <td key={d} aria-label={`${dataBr(d)}: ${a ? textoTurno(a) : 'sem lançamento'}`}
                       className={`h-14 rounded-xl px-0.5 align-top ${trab ? 'bg-marca-suave text-marca' : a ? 'bg-neutro-bg text-neutro-fg' : 'border border-dashed border-linha text-suave'} ${d === hoje ? 'outline outline-2 outline-marca' : ''}`}>
-                      <span className="block pt-0.5 text-[11px] font-semibold">{d.slice(8)}</span>
-                      <span className="block text-[11px] font-semibold leading-tight">{trab ? `${String(Math.floor((a!.inicioMin ?? 0) / 60)).padStart(2, '0')}:${String((a!.inicioMin ?? 0) % 60).padStart(2, '0')}` : a ? (a.tipo === 'folga' ? 'Folga' : a.tipo === 'ferias' ? 'Férias' : a.tipo === 'dsr' ? 'DSR' : a.tipo === 'feriado' ? 'Feriado' : 'Afast.') : ''}</span>
+                      <span className="horario block pt-0.5 text-[11px] font-semibold">{d.slice(8)}</span>
+                      <span className="horario block text-[11px] font-semibold leading-tight">{trab ? `${String(Math.floor((a!.inicioMin ?? 0) / 60)).padStart(2, '0')}:${String((a!.inicioMin ?? 0) % 60).padStart(2, '0')}` : a ? (a.tipo === 'folga' ? 'Folga' : a.tipo === 'ferias' ? 'Férias' : a.tipo === 'dsr' ? 'DSR' : a.tipo === 'feriado' ? 'Feriado' : 'Afast.') : ''}</span>
                     </td>
                   );
                 })}
@@ -44,12 +44,14 @@ export function BlocoEscala({ e, hoje }: { e: EscalaPublicada; hoje: string }) {
         </table>
       </div>
 
+      <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-suave" aria-hidden><span><span className="mr-1 inline-block size-2.5 rounded bg-marca-suave align-middle" />trabalho (início)</span><span><span className="mr-1 inline-block size-2.5 rounded bg-neutro-bg align-middle" />folga e ausências</span><span><span className="mr-1 inline-block size-2.5 rounded outline outline-2 outline-marca align-middle" />hoje</span></p>
+
       <details className="mt-3">
         <summary className="min-h-9 cursor-pointer text-sm font-semibold text-marca">Ver dia a dia</summary>
         <ul className="mt-2 divide-y divide-linha">
           {e.dias.map((d, i) => (
             <li key={`${d.data}-${i}`} className="flex flex-wrap justify-between gap-x-3 py-1.5 text-sm">
-              <span className="font-semibold">{DIAS[diaDaSemana(d.data)]}, {dataBr(d.data)}</span><span className="text-suave">{textoTurno(d)}</span>
+              <span className="font-semibold">{DIAS[diaDaSemana(d.data)]}, {dataBr(d.data)}</span><span className="horario text-suave">{textoTurno(d)}</span>
             </li>
           ))}
         </ul>

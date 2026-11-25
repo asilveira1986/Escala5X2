@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import { Aviso, Botao, Campo, classeCampo } from '@/components/ui';
 import { opcoesColega, ROTULO_TIPO, type TurnoColega } from '@/lib/solicitacoes-ui';
@@ -21,6 +22,7 @@ export function FormPedido({ colaboradorId, escalas, hoje }: { colaboradorId: st
   const [motivo, setMotivo] = useState('');
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
   const [pendente, iniciar] = useTransition();
+  const roteador = useRouter();
   const escala = escalas.find((e) => e.id === escalaId);
   const opcoes = useMemo(() => opcoesColega(escala?.colegas ?? []), [escala]);
   const precisaEscala = tipo === 'troca_turno' || tipo === 'troca_folga';
@@ -43,6 +45,7 @@ export function FormPedido({ colaboradorId, escalas, hoje }: { colaboradorId: st
     if (!r.ok) { setMsg({ tipo: 'erro', texto: r.erro }); return; }
     setMsg({ tipo: 'ok', texto: tipo === 'troca_turno' ? 'Pedido enviado ao colega. Depois que ele aceitar, o RH decide.' : 'Pedido enviado ao RH.' });
     setMeuDia(''); setColega(''); setTrabalharEm(''); setInicio(''); setFim(''); setMotivo('');
+    roteador.push('/minha-escala/pedidos?enviado=1');   // volta para a lista, onde o andamento aparece
   });
 
   return (
