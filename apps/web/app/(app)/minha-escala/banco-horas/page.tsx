@@ -1,5 +1,7 @@
 import { EstadoVazio } from '@/components/EstadoVazio';
-import { CabecalhoPagina, Cartao } from '@/components/ui';
+import Link from 'next/link';
+import { CabecalhoItem } from '@/components/ItemTela';
+import { Cartao, classeBotaoLink } from '@/components/ui';
 import { exigirUsuario, linhas } from '@/lib/contexto';
 import { calcularSaldo, type Lancamento } from '@jc/servicos';
 import { dataDeInstante } from '@jc/rules-engine';
@@ -17,7 +19,7 @@ export default async function MeuBancoDeHoras() {
   const saldo = calcularSaldo(lancamentos, dataDeInstante(new Date()));
   return (
     <>
-      <CabecalhoPagina icone="banco" titulo="Meu banco de horas" descricao="Horas a seu favor e quando elas vencem. Crédito vencido e não compensado é pago como hora extra." />
+      <CabecalhoItem icone="banco" titulo="Meu banco de horas" subtitulo="Horas a seu favor e quando elas vencem. Crédito vencido e não compensado é pago como hora extra." selo={<Link href="/minha-escala" className={classeBotaoLink}>Minha escala</Link>} />
       <Cartao icone="banco" titulo="Situação"><ResumoSaldo saldo={saldo} /></Cartao>
       <Cartao icone="folha" titulo="Extrato">{lancamentos.length === 0 ? <EstadoVazio titulo="Nada lançado ainda">Quando houver horas no seu banco, elas aparecem aqui.</EstadoVazio> : <Extrato lancamentos={lancamentos} />}</Cartao>
     </>
