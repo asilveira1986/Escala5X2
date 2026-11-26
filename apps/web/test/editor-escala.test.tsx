@@ -132,4 +132,13 @@ describe('EditorEscala', () => {
     expect(cel('06').getAttribute('aria-label')).toContain('Impede a publicação');
     expect(screen.getAllByText(/férias/i).length).toBeGreaterThan(0);
   });
+  it('cabeçalho no formato dos itens: título, período e versão, situação e resumo com as pessoas', () => {
+    render(<EditorEscala empresaId="emp" entrada={entrada()} modelos={[manha]} />);
+    expect(screen.getByRole('heading', { name: 'Semana teste' })).toBeTruthy();
+    expect(screen.getByText('04/01/2027 a 10/01/2027 · versão 1')).toBeTruthy();
+    expect(screen.getByText('Rascunho')).toBeTruthy();
+    const r = within(screen.getByLabelText('Resumo da escala'));
+    expect(r.getByText('Pessoas na grade').nextElementSibling!.textContent).toBe('1');
+    expect(r.getByText('Alertas').nextElementSibling!.textContent).toBe('0');
+  });
 });

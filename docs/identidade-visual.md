@@ -107,3 +107,8 @@ Telas pensadas para o celular, no mesmo padrão:
 - **Minha escala:** cabeçalho, o **próximo turno** em destaque (Azul Noite, horário em mono na cor de destaque), resumo (escalas publicadas, dias de trabalho e horas previstas daqui para frente, itens aguardando ciência) e três atalhos (Pedidos, Banco de horas, Comunicados — este avisa quando há novos). No calendário do mês os horários ficam em mono e há uma legenda curta.
 - **Meus pedidos:** resumo (esperando você, em andamento, aprovados, recusados), pedidos de colegas para você no topo e abas *Em andamento* / *Encerrados*. "Novo pedido" tem tela própria (`/minha-escala/pedidos/novo`) e, ao enviar, volta à lista com um aviso (`?enviado=1`). O carregamento das escalas para o formulário fica em `pedidos/dados.ts`.
 - **Banco de horas, Comunicados e Notificações:** cabeçalho no formato dos itens, com "Minha escala" para voltar; comunicados que aguardam ciência vêm primeiro e têm resumo; notificações mostram quantas não foram lidas.
+
+## Gerar escala e editor da escala
+
+- **Nova escala:** cabeçalho com "Voltar às escalas", o formulário numa linha (nome, mês, setor, criar) e o cartão "Como funciona" com os três passos (criar, montar a grade à mão ou com propostas automáticas, publicar). Sem turno cadastrado, o aviso leva ao cadastro.
+- **Editor:** cabeçalho no formato dos itens (nome, período e versão, situação), resumo (impedem a publicação, alertas, informações, pessoas na grade), barra de ações (PDF, Excel, Histórico à esquerda; Repetir 1ª semana, Salvar e Publicar à direita). Dias e células da grade em mono, com legenda dos contornos (impede, alerta, informação, folga). As propostas automáticas ganham número em cada cartão. As regras de validação e de publicação não mudaram.

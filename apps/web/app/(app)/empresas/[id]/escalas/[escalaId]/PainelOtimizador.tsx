@@ -68,7 +68,7 @@ export function PainelOtimizador({ escalaId, inicial, bloqueado, onAplicada, int
         <ul className="mt-4 grid gap-3 lg:grid-cols-3">
           {resumo.propostas.map((p) => (
             <li key={p.indice} className="flex flex-col gap-2 rounded-2xl border border-linha bg-fundo p-3">
-              <h3 className="text-sm font-bold">{rotuloProposta(p.indice, p.status)}</h3>
+              <h3 className="flex items-center gap-2 text-sm font-bold"><span aria-hidden className="horario grid size-6 place-items-center rounded-full bg-marca-suave text-xs text-marca">{p.indice + 1}</span>{rotuloProposta(p.indice, p.status)}</h3>
               <ul className="space-y-1 text-sm">
                 {descreverMetricas(p.metricas, p.alertas).map((l) => (
                   <li key={l.texto} className="flex items-start gap-2"><Selo tom={l.tom === 'ok' ? 'verde' : 'amarelo'}>{l.tom === 'ok' ? 'ok' : 'atenção'}</Selo><span>{l.texto}</span></li>
