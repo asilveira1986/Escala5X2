@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { resumirHoras, validarEntrada, type EntradaEscala } from '@jc/servicos';
 import { dataBr, diaDaSemana, duracao, type Violacao } from '@jc/rules-engine';
+import { CabecalhoItem, ResumoItem } from '@/components/ItemTela';
 import { Aviso, Botao, Cartao, classeBotaoLink, Selo } from '@/components/ui';
 import {
   aplicarPincel, ausenciasPorCelula, chave, contarTrabalhando, diasComCoberturaBaixa, diasDoPeriodo, faixaHoras, indexar, NOMES_DIA, repetirPrimeiraSemana, rotuloCelula,
@@ -88,18 +89,23 @@ export function EditorEscala({ empresaId, entrada, modelos, otimizacao = null }:
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold">{entrada.escala.nome} <span className="text-base font-normal text-suave">· versão {entrada.escala.versao}</span></h2>
-          <p className="text-sm text-suave">{dataBr(entrada.escala.inicio)} a {dataBr(entrada.escala.fim)}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Selo tom={status === 'rascunho' ? 'amarelo' : status === 'publicada' ? 'verde' : 'cinza'}>{status === 'rascunho' ? 'Rascunho' : status === 'publicada' ? 'Publicada' : 'Substituída'}</Selo>
-          <span className="flex gap-1" role="group" aria-label="Baixar a escala" title={sujo ? 'Baixa a última versão salva (há alterações não salvas)' : 'Baixa a escala para afixar ou abrir no Excel'}>
-            <a href={`/api/v1/escalas/${entrada.escala.id}?formato=pdf`} className={classeBotaoLink}>PDF</a>
-            <a href={`/api/v1/escalas/${entrada.escala.id}?formato=xlsx`} className={classeBotaoLink}>Excel</a>
-          </span>
-          <Link href={`/empresas/${empresaId}/escalas/${entrada.escala.id}/historico`} className={classeBotaoLink}>Histórico</Link>
+      <CabecalhoItem icone="calendario" titulo={entrada.escala.nome} subtitulo={`${dataBr(entrada.escala.inicio)} a ${dataBr(entrada.escala.fim)} · versão ${entrada.escala.versao}`}
+        selo={<Selo tom={status === 'rascunho' ? 'amarelo' : status === 'publicada' ? 'verde' : 'cinza'}>{status === 'rascunho' ? 'Rascunho' : status === 'publicada' ? 'Publicada' : 'Substituída'}</Selo>} />
+
+      <ResumoItem rotulo="Resumo da escala" itens={[
+        { rotulo: 'Impedem a publicação', valor: <span className={`horario ${resultado.bloqueios > 0 ? 'text-risco-fg' : 'text-ok-fg'}`}>{resultado.bloqueios}</span> },
+        { rotulo: 'Alertas', valor: <span className={`horario ${resultado.alertas > 0 ? 'text-atencao-fg' : 'text-ok-fg'}`}>{resultado.alertas}</span> },
+        { rotulo: 'Informações', valor: <span className="horario">{resultado.infos}</span> },
+        { rotulo: 'Pessoas na grade', valor: <span className="horario">{entrada.colaboradores.length}</span> },
+      ]} />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="flex gap-1" role="group" aria-label="Baixar a escala" title={sujo ? 'Baixa a última versão salva (há alterações não salvas)' : 'Baixa a escala para afixar ou abrir no Excel'}>
+          <a href={`/api/v1/escalas/${entrada.escala.id}?formato=pdf`} className={classeBotaoLink}>PDF</a>
+          <a href={`/api/v1/escalas/${entrada.escala.id}?formato=xlsx`} className={classeBotaoLink}>Excel</a>
+        </span>
+        <Link href={`/empresas/${empresaId}/escalas/${entrada.escala.id}/historico`} className={classeBotaoLink}>Histórico</Link>
+        <span className="ml-auto flex flex-wrap items-center gap-2">
           {somenteLeitura ? (status === 'publicada' ? <Botao variante="secundario" onClick={criarNovaVersao} disabled={pendente}>Criar nova versão</Botao> : <Botao variante="secundario" onClick={criarNovaVersao} disabled={pendente}>Restaurar esta versão</Botao>) : (
             <>
               <Botao variante="secundario" onClick={() => { setAlocs((a) => repetirPrimeiraSemana(a, entrada.escala.inicio, entrada.escala.fim)); setConfirmando(false); }} disabled={pendente}>Repetir 1ª semana</Botao>
@@ -107,7 +113,7 @@ export function EditorEscala({ empresaId, entrada, modelos, otimizacao = null }:
               <Botao onClick={() => { setConfirmando(true); setLi(false); }} disabled={pendente || sujo || !resultado.podePublicar}>Publicar</Botao>
             </>
           )}
-        </div>
+        </span>
       </div>
 
       {aviso ? <Aviso tipo={aviso.tipo}>{aviso.texto}</Aviso> : null}
@@ -161,12 +167,6 @@ export function EditorEscala({ empresaId, entrada, modelos, otimizacao = null }:
         </Cartao>
       ) : null}
 
-      <div className="grid gap-2 sm:grid-cols-3">
-        <Resumo rotulo="Impedem a publicação" valor={resultado.bloqueios} tom={resultado.bloqueios > 0 ? 'vermelho' : 'verde'} />
-        <Resumo rotulo="Alertas" valor={resultado.alertas} tom={resultado.alertas > 0 ? 'amarelo' : 'verde'} />
-        <Resumo rotulo="Informações" valor={resultado.infos} tom="azul" />
-      </div>
-
       <Cartao className="!p-0">
         <div className="max-h-[70vh] overflow-auto rounded-2xl">
           <table className="w-max min-w-full border-separate border-spacing-0 text-xs">
@@ -179,7 +179,7 @@ export function EditorEscala({ empresaId, entrada, modelos, otimizacao = null }:
                   return (
                     <th key={d} scope="col" title={fer ? `${dataBr(d)} · ${fer}` : dataBr(d)}
                       className={`sticky top-0 z-20 min-w-11 border-b border-linha px-0.5 py-1 text-center font-semibold ${fer ? 'bg-atencao-bg text-atencao-fg' : dow === 0 || dow === 6 ? 'bg-neutro-bg' : 'bg-cartao'}`}>
-                      <span className="block text-[10px] font-normal uppercase text-suave">{NOMES_DIA[dow]}</span>{d.slice(8)}
+                      <span className="block text-[10px] font-normal uppercase text-suave">{NOMES_DIA[dow]}</span><span className="horario">{d.slice(8)}</span>
                     </th>
                   );
                 })}
@@ -210,7 +210,7 @@ export function EditorEscala({ empresaId, entrada, modelos, otimizacao = null }:
                             aria-label={`${c.nome}, ${dataBr(d)}: ${r.longo}${sev ? `. ${rotuloSeveridade[sev]}` : ''}`}
                             title={r.longo}
                             style={trabalho ? { background: modelo?.cor ?? '#475569', color: '#fff' } : undefined}
-                            className={`flex h-10 w-full min-w-10 items-center justify-center rounded-lg text-[11px] font-semibold disabled:cursor-default sm:h-8 ${fundo} ${sev ? classeSeveridade[sev] : ''} ${foco === k ? 'outline outline-4 outline-offset-1 outline-marca' : ''}`}>
+                            className={`horario flex h-10 w-full min-w-10 items-center justify-center rounded-lg text-[11px] font-semibold disabled:cursor-default sm:h-8 ${fundo} ${sev ? classeSeveridade[sev] : ''} ${foco === k ? 'outline outline-4 outline-offset-1 outline-marca' : ''}`}>
                             {r.curto}
                           </button>
                         </td>
@@ -237,6 +237,8 @@ export function EditorEscala({ empresaId, entrada, modelos, otimizacao = null }:
         </div>
       </Cartao>
 
+      <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-suave" aria-hidden><span><span className="mr-1 inline-block size-2.5 rounded-full ring-2 ring-risco-fg align-middle" />impede a publicação</span><span><span className="mr-1 inline-block size-2.5 rounded-full ring-2 ring-atencao-fg align-middle" />alerta</span><span><span className="mr-1 inline-block size-2.5 rounded-full ring-1 ring-marca align-middle" />informação</span><span><span className="mr-1 inline-block size-2.5 rounded bg-neutro-bg align-middle" />folga ou ausência</span></p>
+
       <Cartao titulo="Avisos da escala" subtitulo="Toque num aviso para ir até a célula.">
         {resultado.violacoes.length === 0 ? <Aviso tipo="ok">Nenhum aviso. {alocs.length === 0 ? 'Comece pintando a grade.' : 'A escala está em conformidade com as regras vigentes.'}</Aviso> : (
           <>
@@ -261,14 +263,6 @@ export function EditorEscala({ empresaId, entrada, modelos, otimizacao = null }:
           </>
         )}
       </Cartao>
-    </div>
-  );
-}
-
-function Resumo({ rotulo, valor, tom }: { rotulo: string; valor: number; tom: 'verde' | 'amarelo' | 'vermelho' | 'azul' }) {
-  return (
-    <div className="flex items-center justify-between rounded-2xl border border-linha bg-cartao px-4 py-2">
-      <span className="text-sm font-semibold">{rotulo}</span><Selo tom={tom}>{valor}</Selo>
     </div>
   );
 }

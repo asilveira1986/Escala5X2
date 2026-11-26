@@ -7,7 +7,7 @@ import { criarEscala, type EstadoForm } from './actions';
 export function FormNovaEscala({ empresaId, mesPadrao, setores }: { empresaId: string; mesPadrao: string; setores: Array<{ id: string; nome: string }> }) {
   const [estado, acao, pendente] = useActionState<EstadoForm, FormData>(criarEscala, {});
   return (
-    <form action={acao} className="flex flex-wrap items-end gap-3">
+    <form action={acao} className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_auto]">
       <input type="hidden" name="empresaId" value={empresaId} />
       <Campo rotulo="Nome"><input name="nome" required maxLength={80} placeholder="Ex.: Escala de março" className={classeCampo} /></Campo>
       <Campo rotulo="Mês"><input type="month" name="mes" defaultValue={mesPadrao} required className={classeCampo} /></Campo>
@@ -20,7 +20,7 @@ export function FormNovaEscala({ empresaId, mesPadrao, setores }: { empresaId: s
         </Campo>
       ) : null}
       <Botao disabled={pendente}>{pendente ? 'Criando…' : 'Criar escala'}</Botao>
-      {estado.erro ? <div className="basis-full"><Aviso tipo="erro">{estado.erro}</Aviso></div> : null}
+      {estado.erro ? <div className="sm:col-span-2 lg:col-span-4"><Aviso tipo="erro">{estado.erro}</Aviso></div> : null}
     </form>
   );
 }
