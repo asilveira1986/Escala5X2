@@ -1,9 +1,9 @@
--- JornadaCerta: APAGA os dados fictícios criados por dados_de_teste.sql (organização "Demo JornadaCerta"). Só mexe nessa organização.
+-- JornadaCerta: APAGA os dados fictícios criados por dados_de_teste.sql (organizações "Demo JornadaCerta" e "Demo Supermercado"). Só mexe nessas organizações.
 begin;
 do $rm$
 declare v_org uuid;
 begin
-  for v_org in select id from organizacao where nome = 'Demo JornadaCerta' loop
+  for v_org in select id from organizacao where nome in ('Demo JornadaCerta', 'Demo Supermercado') loop
     delete from alocacao where organizacao_id = v_org;
     delete from escala where organizacao_id = v_org;
     delete from ausencia where organizacao_id = v_org;
