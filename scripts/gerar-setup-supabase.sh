@@ -237,4 +237,8 @@ INC25=$DB/setup/supabase_atualizar_sem_mfa.sql
   echo "commit;"
 } > "$INC25"
 echo "gerado: $INC25"
+# Dados fictícios para teste (e a remoção deles): cópias dos seeds, prontas para colar no SQL Editor.
+cp "$DB/seeds/dados_de_teste.sql" "$DB/setup/supabase_dados_de_teste.sql"
+cp "$DB/seeds/remover_dados_de_teste.sql" "$DB/setup/supabase_remover_dados_de_teste.sql"
+echo "gerado: $DB/setup/supabase_dados_de_teste.sql e supabase_remover_dados_de_teste.sql"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"

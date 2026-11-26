@@ -14,7 +14,7 @@ O container do Claude **não consegue falar direto com o Postgres** (só HTTPS),
    select decrypted_secret from vault.decrypted_secrets where name = 'chave_dados';
    ```
    Copie o valor do segundo comando **para um gerenciador de senhas**. Se for perdido, os CPFs ficam irrecuperáveis. Não cole no chat.
-4. **Authentication:** *Sign In / Providers → Email* ligado (senha mínima 8; "Confirm email" pode ficar desligado em desenvolvimento). *Multi-Factor* com **TOTP** habilitado. *URL Configuration:* Site URL = URL do app; Redirect URLs = `https://SEU-DOMINIO-RAILWAY/auth/callback` e `http://localhost:3000/auth/callback`.
+4. **Authentication:** *Sign In / Providers → Email* ligado (senha mínima 8; "Confirm email" pode ficar desligado em desenvolvimento). *URL Configuration:* Site URL = URL do app; Redirect URLs = `https://SEU-DOMINIO-RAILWAY/auth/callback` e `http://localhost:3000/auth/callback`.
 5. **Primeiro usuário:** *Authentication → Users → Add user → Create new user* (marque *Auto Confirm User*). Ao entrar no app, ele cria a organização.
 6. **Chaves:** *Settings → API Keys* (publishable e secret) e *Integrations → Data API* (Project URL). *Connect → Session pooler* (porta 5432) para a `DATABASE_URL`.
 
