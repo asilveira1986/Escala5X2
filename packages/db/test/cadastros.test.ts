@@ -248,9 +248,8 @@ describe('cadastro automático e primeiros passos', () => {
     const org = await comoUsuario(db, u, async (c) => (await c.query<{ id: string }>(`select criar_organizacao('Contabilidade Nova','contabilidade') id`)).rows[0]!.id);
     const m = await db.query(`select papel from membro where organizacao_id=$1 and usuario_id=$2`, [org, u]);
     expect(m.rows).toEqual([{ papel: 'admin' }]);
-    // admin só enxerga a organização depois da verificação em duas etapas
-    expect((await comoUsuario(db, u, (c) => c.query('select 1 from organizacao'), 'aal1')).rowCount).toBe(0);
-    expect((await comoUsuario(db, u, (c) => c.query('select 1 from organizacao'), 'aal2')).rowCount).toBe(1);
+    // sem MFA: o admin enxerga a organização logo depois de entrar
+    expect((await comoUsuario(db, u, (c) => c.query('select 1 from organizacao'), 'aal1')).rowCount).toBe(1);
   });
   it('usuário não consegue chamar a função do gatilho nem inserir em usuario de outro', async () => {
     await expect(comoUsuario(db, admA, (c) => c.query(`select criar_usuario_ao_cadastrar()`))).rejects.toThrow(/permission denied/);

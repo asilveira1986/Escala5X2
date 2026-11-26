@@ -15,7 +15,7 @@ O container do Claude **não consegue falar direto com o Postgres** (só HTTPS),
    ```
    Copie o valor do segundo comando **para um gerenciador de senhas**. Se for perdido, os CPFs ficam irrecuperáveis. Não cole no chat.
 4. **Authentication:** *Sign In / Providers → Email* ligado (senha mínima 8; "Confirm email" pode ficar desligado em desenvolvimento). *Multi-Factor* com **TOTP** habilitado. *URL Configuration:* Site URL = URL do app; Redirect URLs = `https://SEU-DOMINIO-RAILWAY/auth/callback` e `http://localhost:3000/auth/callback`.
-5. **Primeiro usuário:** *Authentication → Users → Add user → Create new user* (marque *Auto Confirm User*). Ao entrar no app, ele cria a organização e cadastra o autenticador.
+5. **Primeiro usuário:** *Authentication → Users → Add user → Create new user* (marque *Auto Confirm User*). Ao entrar no app, ele cria a organização.
 6. **Chaves:** *Settings → API Keys* (publishable e secret) e *Integrations → Data API* (Project URL). *Connect → Session pooler* (porta 5432) para a `DATABASE_URL`.
 
 ## 2. Hospedagem (Railway)
@@ -32,4 +32,3 @@ Cinco variáveis: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `
 | "Invalid login credentials" | Usuário não criado, sem *Auto Confirm*, ou senha errada |
 | Volta sempre ao login | Variáveis `NEXT_PUBLIC_*` ausentes ou antigas no Railway (cada mudança refaz o build) |
 | Erro ao abrir link do e-mail | *Redirect URLs* sem `/auth/callback` |
-| Erro ao cadastrar autenticador | MFA/TOTP desligado no Supabase |

@@ -15,7 +15,7 @@ export type AvisoCobranca = { tom: 'info' | 'atencao' | 'risco'; texto: string }
 export type EstadoCobranca = { aviso: AvisoCobranca | null; bloqueado: boolean };
 type Props = {
   cobranca?: EstadoCobranca; naoLidas?: number; email: string; empresas: EmpresaDoMenu[]; ehGestor: boolean; temMinhaEscala: boolean; temCarteira: boolean; estadoInicial: EstadoMenu;
-  aviso?: ReactNode; children: ReactNode;
+  children: ReactNode;
 };
 
 /** Ícones do menu herdam a cor do texto (a cor da identidade é estado, não decoração). */
@@ -28,7 +28,7 @@ function gravar(e: EstadoMenu) {
 }
 
 /** Menu lateral recolhível, com grupos e subitens, que vira gaveta no celular. */
-export function Shell({ cobranca, naoLidas = 0, email, empresas, ehGestor, temMinhaEscala, temCarteira, estadoInicial, aviso, children }: Props) {
+export function Shell({ cobranca, naoLidas = 0, email, empresas, ehGestor, temMinhaEscala, temCarteira, estadoInicial, children }: Props) {
   const pathname = usePathname() ?? '/';
   const router = useRouter();
   const [recolhido, setRecolhido] = useState(estadoInicial.recolhido);
@@ -79,7 +79,6 @@ export function Shell({ cobranca, naoLidas = 0, email, empresas, ehGestor, temMi
   const bloqueioAtivo = !!cobranca?.bloqueado && !pathname.startsWith('/cobranca');
   return (
     <>
-      {aviso}
       <div className="min-h-dvh lg:flex">
         <aside aria-label="Menu lateral" className={`sticky top-0 hidden h-dvh shrink-0 tema-menu border-r border-linha bg-cartao transition-[width] duration-200 lg:block ${recolhido ? 'w-16' : 'w-60'}`}>
           {painel(recolhido ? 'rail' : 'completo')}

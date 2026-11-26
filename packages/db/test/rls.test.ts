@@ -82,12 +82,12 @@ describe('isolamento entre organizações', () => {
   });
 });
 
-describe('papéis e MFA', () => {
-  it('admin sem MFA (aal1) não enxerga dados', async () => {
+describe('papéis (sem MFA)', () => {
+  it('admin acessa os dados da própria organização sem verificação em duas etapas', async () => {
     const r = await comoUsuario(db, ana, (c) => c.query('select id from empresa'), 'aal1');
-    expect(r.rowCount).toBe(0);
+    expect(r.rows.map((x) => x.id)).toEqual([empA]);
   });
-  it('RH (sem MFA obrigatório) acessa a empresa, mas não administra membros', async () => {
+  it('RH acessa a empresa, mas não administra membros', async () => {
     const r = await comoUsuario(db, carla, (c) => c.query('select id from empresa'), 'aal1');
     expect(r.rows.map((x) => x.id)).toEqual([empA]);
     await expect(comoUsuario(db, carla, (c) => c.query(`insert into membro values ($1,$2,'rh')`, [orgA, bruno]), 'aal1'))

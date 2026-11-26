@@ -1,6 +1,4 @@
--- JornadaCerta: adiciona o interruptor da verificação em duas etapas a um banco já instalado (migrations 0001 a 0004).
--- Rode UMA vez. Transação única: se falhar, nada é aplicado.
-begin;
+-- Volta a exigir MFA (aal2) dos papéis sensíveis: recria o interruptor da migration 0005 (ligado, o padrão seguro).
 -- Interruptor da verificação em duas etapas (MFA).
 --
 -- Por regra, admin, contador, advogado e superadmin só enxergam dados com MFA (aal2). Este interruptor existe
@@ -49,7 +47,3 @@ begin
 end $$;
 revoke all on function definir_mfa_obrigatorio(boolean, text) from public, anon, authenticated;
 grant execute on function definir_mfa_obrigatorio(boolean, text) to service_role;
-
--- conferência: deve mostrar mfa_obrigatorio = true (ligado, o padrão seguro)
-select chave, valor as ligado, motivo from public.configuracao_sistema where chave = 'mfa_obrigatorio';
-commit;
