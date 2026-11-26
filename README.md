@@ -3,7 +3,7 @@
 SaaS multiempresa para adequação à escala 5x2 (EC 141/2026). Monorepo pnpm + Turborepo.
 
 ```
-apps/web            Next.js 15 (login, MFA, painéis)
+apps/web            Next.js 15 (login, painéis)
 packages/db         migrations SQL (up/down), RLS, auditoria e testes contra Postgres
 packages/rules-engine  motor de regras em TS puro (Fase 1)
 ```

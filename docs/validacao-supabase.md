@@ -17,11 +17,11 @@ Este roteiro é o que a próxima sessão deve executar, nesta ordem, parando no 
 
 ## 2. Primeiro usuário
 - Criar o usuário pelo painel (Authentication → Users, Auto Confirm) ou pela API Admin. O gatilho 0004 cria `public.usuario`.
-- No app: entrar → tela "Crie a sua organização" → cadastro do autenticador (TOTP) → ver a organização.
+- No app: entrar → tela "Crie a sua organização" → ver a organização.
 - Superadmin da plataforma (só por SQL): `insert into membro values ('00000000-0000-0000-0000-000000000001', '<uid>', 'superadmin');`
 
 ## 3. Fluxo ponta a ponta (app local `pnpm --filter @jc/web dev` ou deploy de preview)
-1. Login por senha; link mágico; MFA obrigatório para admin.
+1. Login por senha; link mágico; Google.
 2. Criar empresa (CNPJ válido). Upload de planilha (URL assinada ao Storage), mapeamento, validação, confirmação.
 3. Worker: `pnpm --filter @jc/jobs start` com `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Conferir que a importação passa de "processando" a "concluída".
 4. Diagnóstico, simulador (incluindo cenário bloqueado por redução salarial), exportação PDF e XLSX (conferir o registro em `auditoria`).

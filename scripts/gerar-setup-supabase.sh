@@ -43,21 +43,6 @@ alter default privileges in schema public grant all on functions to postgres, an
 alter default privileges in schema public grant all on sequences to postgres, anon, authenticated, service_role;
 commit;
 SQL
-# Atualização incremental do interruptor de MFA (para bancos que já têm as migrations 0001 a 0004).
-INC=$DB/setup/supabase_atualizar_interruptor_mfa.sql
-{
-  echo "-- JornadaCerta: adiciona o interruptor da verificação em duas etapas a um banco já instalado (migrations 0001 a 0004)."
-  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
-  echo "begin;"
-  cat "$DB/migrations/0005_interruptor_mfa.up.sql"
-  cat <<'SQL'
-
--- conferência: deve mostrar mfa_obrigatorio = true (ligado, o padrão seguro)
-select chave, valor as ligado, motivo from public.configuracao_sistema where chave = 'mfa_obrigatorio';
-commit;
-SQL
-} > "$INC"
-echo "gerado: $INC"
 # Atualização incremental das escalas (Fase 2) para bancos que já têm as migrations 0001 a 0005.
 INC6=$DB/setup/supabase_atualizar_escalas.sql
 {
@@ -242,4 +227,14 @@ INC24=$DB/setup/supabase_atualizar_comunicados.sql
   echo "commit;"
 } > "$INC24"
 echo "gerado: $INC24"
+# Fim do MFA (migration 0025) para bancos que já têm as migrations 0001 a 0024.
+INC25=$DB/setup/supabase_atualizar_sem_mfa.sql
+{
+  echo "-- JornadaCerta: retira a verificação em duas etapas (migration 0025) de um banco que já tem as migrations 0001 a 0024."
+  echo "-- Rode UMA vez. Transação única: se falhar, nada é aplicado."
+  echo "begin;"
+  cat "$DB/migrations/0025_sem_mfa.up.sql"
+  echo "commit;"
+} > "$INC25"
+echo "gerado: $INC25"
 echo "gerado: $OUT ($(wc -l < "$OUT") linhas) e $UNDO"

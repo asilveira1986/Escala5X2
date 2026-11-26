@@ -112,3 +112,8 @@ Telas pensadas para o celular, no mesmo padrão:
 
 - **Nova escala:** cabeçalho com "Voltar às escalas", o formulário numa linha (nome, mês, setor, criar) e o cartão "Como funciona" com os três passos (criar, montar a grade à mão ou com propostas automáticas, publicar). Sem turno cadastrado, o aviso leva ao cadastro.
 - **Editor:** cabeçalho no formato dos itens (nome, período e versão, situação), resumo (impedem a publicação, alertas, informações, pessoas na grade), barra de ações (PDF, Excel, Histórico à esquerda; Repetir 1ª semana, Salvar e Publicar à direita). Dias e células da grade em mono, com legenda dos contornos (impede, alerta, informação, folga). As propostas automáticas ganham número em cada cartão. As regras de validação e de publicação não mudaram.
+
+## Login (e fim do MFA)
+
+- **Login:** "Entrar" com e-mail e senha (botão Mostrar/Ocultar a senha), divisor "ou", "Entrar com Google" (com aviso se falhar) e o link de acesso por e-mail num bloco recolhível, que abre sozinho ao enviar ou errar. O painel azul-noite ao lado (a partir de telas largas) continua com a marca e os três pontos de valor.
+- **MFA retirado:** a verificação em duas etapas deixou de existir. Saíram a tela `/mfa`, o redirecionamento no middleware (`lib/acesso.ts` agora só decide entre login e app), a faixa "modo de teste" e o interruptor; a migration `0025_sem_mfa` faz `mfa_ok()` liberar sempre e remove a tabela e as funções do interruptor (a `down` os recria). Para bancos já instalados, rode `packages/db/setup/supabase_atualizar_sem_mfa.sql` no SQL Editor.

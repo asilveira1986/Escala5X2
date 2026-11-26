@@ -1,7 +1,7 @@
 # Fase 1 — MVP de diagnóstico
 
 ## Entregue
-- **Regras legais como dados** (`regra_jornada`, seeds idempotentes, editáveis só por superadmin com MFA, auditadas). Convenção: prioridade 100 = geral, 200 = escopo (porte/terceirizada), 300 = exceção individual; maior prioridade vence na mescla. Um teste garante que a seed SQL e o fixture do motor não divergem.
+- **Regras legais como dados** (`regra_jornada`, seeds idempotentes, editáveis só por superadmin, auditadas). Convenção: prioridade 100 = geral, 200 = escopo (porte/terceirizada), 300 = exceção individual; maior prioridade vence na mescla. Um teste garante que a seed SQL e o fixture do motor não divergem.
 - **Motor `@jc/rules-engine`** (TS puro): `resolverRegras`, `diagnosticar`, `simular`. 69 testes, 100% linhas / 89,5% ramos. Datas são strings `aaaa-mm-dd` (sem fuso); dinheiro em centavos inteiros.
 - **Cadastros**: sindicato, unidade, setor, colaborador, contrato_versao (sem sobreposição), acordos e cláusulas, com RLS e auditoria. `organizacao_id` é herdada da empresa por gatilho (não dá para forjar).
 - **PII**: CPF e telefone cifrados (pgcrypto, chave no Vault ou `app.chave_dados`); busca por HMAC; revelar exige permissão e é auditado.

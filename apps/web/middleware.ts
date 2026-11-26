@@ -1,6 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { decidirAcesso, PAPEIS_COM_MFA } from './lib/acesso';
+import { decidirAcesso } from './lib/acesso';
 import { env } from './lib/env';
 import { hashUsuario } from './lib/pwa/uid';
 
@@ -19,29 +19,8 @@ export async function middleware(req: NextRequest) {
   });
 
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
-  let papeis: string[] = [];
-  if (user) {
-    const { data } = await supabase.from('membro').select('papel').eq('usuario_id', user.id);
-    papeis = (data ?? []).map((m) => m.papel as string);
-  }
-
-  // Interruptor de MFA: só consulta quando algum papel sensível está em jogo. Qualquer falha = exigir (padrão seguro).
-  let mfaObrigatorio = true;
-  if (user && papeis.some((p) => (PAPEIS_COM_MFA as readonly string[]).includes(p))) {
-    const { data, error } = await supabase.rpc('mfa_obrigatorio');
-    if (!error && data === false) mfaObrigatorio = false;
-  }
-
-  const destino = decidirAcesso({
-    caminho: req.nextUrl.pathname,
-    autenticado: !!user,
-    nivelAtual: aal?.currentLevel === 'aal2' ? 'aal2' : aal?.currentLevel === 'aal1' ? 'aal1' : null,
-    papeis,
-    mfaCadastrado: aal?.nextLevel === 'aal2',
-    mfaObrigatorio,
-  });
+  const destino = decidirAcesso({ caminho: req.nextUrl.pathname, autenticado: !!user });
   if (destino) return NextResponse.redirect(new URL(destino, req.url));
   // Marca as respostas autenticadas com o usuário: o service worker só serve a cópia offline à mesma pessoa.
   if (user) res.headers.set('x-jc-uid', await hashUsuario(user.id));
